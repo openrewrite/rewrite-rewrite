@@ -22,10 +22,3 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-engine:latest.release")
     testImplementation("org.junit-pioneer:junit-pioneer:2.3.0")
 }
-
-nexusPublishing {
-    repositories.getByName("sonatype") {
-        nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
-        snapshotRepositoryUrl.set(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
-    }
-}
