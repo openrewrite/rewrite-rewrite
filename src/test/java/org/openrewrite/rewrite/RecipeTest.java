@@ -16,6 +16,7 @@
 package org.openrewrite.rewrite;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.marker.SearchResult;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
@@ -23,7 +24,7 @@ import org.openrewrite.test.RewriteTest;
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.yaml.Assertions.yaml;
 
-public class RecipeTest implements RewriteTest {
+class RecipeTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
@@ -31,8 +32,9 @@ public class RecipeTest implements RewriteTest {
           SearchResult.found(recipe.getTree(), recipe.getDisplayName() + "=" + recipe.getDescription()))));
     }
 
-    @Test
-    void classDefinedRecipe() {
+  @DocumentExample
+  @Test
+  void classDefinedRecipe() {
         rewriteRun(
           //language=java
           java(
