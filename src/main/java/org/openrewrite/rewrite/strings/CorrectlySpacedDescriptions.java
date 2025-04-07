@@ -35,7 +35,11 @@ public class CorrectlySpacedDescriptions extends Recipe {
 
   @Override
   public String getDescription() {
-    return "When a description is defined over several lines this recipe finds and corrects missing trailing spaces.";
+    return "Recipe descriptions should be cleanly formatted. This recipe forces correct spacing in descriptions. " +
+      "A single line description should not start with- or end with horizontal whitespace (e.g. `return \"This is a correct single line description\";`)\n" +
+      "In a multi line description the lines (except the last line which follows the single line rule) should not start with whitespace and end with a single space (e.g.\n" +
+      "| `return \"This is a correct \" + \n" +
+      "|   \"multi line description\";`).";
   }
 
   @Override
@@ -67,8 +71,10 @@ public class CorrectlySpacedDescriptions extends Recipe {
         Expression l = b.getLeft();
         if (l instanceof J.Binary) {
           J.Binary lb = handle((J.Binary) l);
-          J.Literal r = (J.Literal) lb.getRight();
-          lb = lb.withRight(updateExpression(r, true));
+          if (lb.getRight() instanceof J.Literal) {
+            J.Literal r = (J.Literal) lb.getRight();
+            lb = lb.withRight(updateExpression(r, true));
+          }
           return b.withLeft(lb);
         } else if (l instanceof J.Literal) {
           return b.withLeft(updateExpression((J.Literal)l, true));
