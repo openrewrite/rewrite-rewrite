@@ -230,4 +230,37 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void lineBreaks() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.Recipe;
+
+              class Test extends Recipe {
+                  @Override
+                  public String getDescription() {
+                    return "A description\\n" +
+                      "   even with lines \\n subject to change" +
+                      "can deliberately include\\nnew lines.";
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.Recipe;
+
+              class Test extends Recipe {
+                  @Override
+                  public String getDescription() {
+                    return "A description\\n" +
+                      "even with lines \\n subject to change " +
+                      "can deliberately include\\nnew lines.";
+                  }
+              }
+              """
+          )
+        );
+    }
 }

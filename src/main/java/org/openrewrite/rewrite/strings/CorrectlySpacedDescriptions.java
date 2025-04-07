@@ -25,8 +25,10 @@ import org.openrewrite.java.tree.J;
 
 public class CorrectlySpacedDescriptions extends Recipe {
 
-  private static final String STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR = "^[^\\s].*[^\\s]$";
+  private static final String STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR = "^[^\\s][\\s\\S]*[^\\s]$";
   private static final String STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_SPACE = "^[^\\s].*[^\\s] $";
+  private static final String STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_LINEBREAK = "^[^\\s].*[^\\s]\\n$";
+  private static final String ENDS_WITH_LINEBREAK = "^.*\\s*[\\n\\r]\\s*$";
 
   @Override
   public String getDisplayName() {
@@ -83,15 +85,21 @@ public class CorrectlySpacedDescriptions extends Recipe {
         }
       }
 
-      private J.Literal updateExpression(J.Literal expression, boolean endWithSpace) {
+      private J.Literal updateExpression(J.Literal expression, boolean endWithWhiteSpace) {
         if(expression.getValue() instanceof String) {
           String value = (String) expression.getValue();
-          if ((endWithSpace && !value.matches(STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_SPACE)) ||
-            (!endWithSpace && !value.matches(STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR))) {
+          boolean matchesEndsWithWhitespaceTemplate = value.matches(STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_SPACE) ||
+            value.matches(STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_LINEBREAK);
+          if ((endWithWhiteSpace && !matchesEndsWithWhitespaceTemplate) ||
+              (!endWithWhiteSpace && !value.matches(STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR))) {
             value = value.replaceAll("^\\s+", "");
             value = value.replaceAll("\\h*$", "");
-            value += endWithSpace ? " " : "";
-            expression = expression.withValue(value).withValueSource("\"" + value.replace("\"", "\\\"") + "\"");
+            value = value.replaceAll("\\n", "\\\\n");
+            if (endWithWhiteSpace && !value.matches(ENDS_WITH_LINEBREAK)) {
+              value += " ";
+            }
+            String valueSource = value.replace("\"", "\\\"");
+            expression = expression.withValue(value).withValueSource("\"" + valueSource + "\"");
           }
         }
         return expression;
