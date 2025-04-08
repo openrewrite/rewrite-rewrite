@@ -58,7 +58,7 @@ public class CorrectlySpacedDescriptions extends Recipe {
       @Override
       public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
         if (GET_DESCRIPTION_MATCHER.matches(method.getMethodType())) {
-          J.MethodDeclaration md = (J.MethodDeclaration) new JavaIsoVisitor<ExecutionContext>() {
+          return (J.MethodDeclaration) new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Binary visitBinary(J.Binary b, ExecutionContext ctx) {
               if (isLiteralString(b.getLeft())) {
@@ -67,10 +67,7 @@ public class CorrectlySpacedDescriptions extends Recipe {
                 return handle(b);
               }
             }
-          }.visit(method, ctx, getCursor().getParentOrThrow());
-          if (md != null) {
-            return md;
-          }
+          }.visitNonNull(method, ctx, getCursor().getParentOrThrow());
         }
         return super.visitMethodDeclaration(method, ctx);
       }
