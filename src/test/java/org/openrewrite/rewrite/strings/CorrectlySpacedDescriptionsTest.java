@@ -64,7 +64,6 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
               """
           )
         );
-        System.out.println(new CorrectlySpacedDescriptions().getDescription());
     }
 
     @Test
