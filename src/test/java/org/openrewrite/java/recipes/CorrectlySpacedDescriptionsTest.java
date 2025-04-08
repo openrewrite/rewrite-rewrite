@@ -198,7 +198,7 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
                   @Override
                   public String getDescription() {
                     return "A description:\\n" +
-                      "- with  \\n" +
+                      "- with\\n" +
                       " - a  " +
                       "- list " +
                       " * dash\\n" +
@@ -219,7 +219,7 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
                       " - list\\n" +
                       " * dash\\n" +
                       " * or\\n" +
-                      " * dot";
+                      " * dot\\n\\n";
                   }
               }
               """
