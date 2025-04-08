@@ -15,10 +15,8 @@
  */
 package org.openrewrite.java.recipes;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
+import org.openrewrite.*;
 import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresMethod;
@@ -27,12 +25,8 @@ import org.openrewrite.java.tree.J;
 
 public class CorrectlySpacedDescriptions extends Recipe {
 
-  private static final String STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR = "^\\S.*\\S$";
-  private static final String STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_SPACE = "^\\S.*\\S $";
-  private static final String STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_LINEBREAK = "^\\S.*\\s*\\n+\\s*$";
   private static final String ENDS_WITH_LINEBREAK = "[\\s\\S]*\\n+\\s*$";
   private static final String IS_ONLY_WHITESPACE = "^\\s*$";
-  private static final String IS_CORRECTLY_SPACED_MAYBE_MD_LIST = "^\\s[-*]\\s\\S*\\n$";
   private static final String IS_MAYBE_MD_LIST = "^\\s?[-*]\\s\\S[\\s\\S]*";
   private static final String IS_MAYBE_END_OF_MD_LINK = ".*]$";
 
@@ -59,32 +53,115 @@ public class CorrectlySpacedDescriptions extends Recipe {
         if (GET_DESCRIPTION_MATCHER.matches(method.getMethodType())) {
           return (J.MethodDeclaration) new JavaIsoVisitor<ExecutionContext>() {
             @Override
-            public J.Binary visitBinary(J.Binary b, ExecutionContext ctx) {
-              if (isLiteralString(b.getLeft())) {
-                return maybeCorrectSpacing(b).withRight(updateLiteral((J.Literal) b.getRight(), false));
-              } else {
-                return maybeCorrectSpacing(b);
+            public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {
+              J.Binary b = super.visitBinary(binary, ctx);
+              b = maybeFormatLeft(b);
+              if (getCursor().getParentTreeCursor().getValue() instanceof J.Return) {
+                b = maybeFormatRight(b);
               }
+              return b;
             }
           }.visitNonNull(method, ctx, getCursor().getParentOrThrow());
         }
         return super.visitMethodDeclaration(method, ctx);
       }
 
-      private J.Binary maybeCorrectSpacing(J.Binary b) {
-        Expression l = b.getLeft();
-        if (l instanceof J.Binary && isLiteralString(b.getRight())) {
-          J.Binary lb = maybeCorrectSpacing((J.Binary) l);
-          if (lb.getRight() instanceof J.Literal && isLiteralString(lb.getLeft())) {
-            J.Literal lr = (J.Literal) lb.getRight();
-            lb = lb.withRight(updateLiteral(lr, true));
+      private J.Binary maybeFormatLeft(J.Binary b) {
+        Expression left = b.getLeft();
+        Expression right = b.getRight();
+        if (left instanceof J.Binary) {
+          J.Binary updatedLeft = maybeFormatLeftNeighbour((J.Binary) left, right);
+          if (updatedLeft != left) {
+            return b.withLeft(updatedLeft);
           }
-          return b.withLeft(lb);
-        } else if (l instanceof J.Literal && isLiteralString(b.getRight())) {
-          return b.withLeft(updateLiteral((J.Literal) l, true));
-        } else {
-          return b;
+        } else if (isLiteralString(left)) {
+          J.Literal updatedLeft = maybeFormatLiteralPrefix((J.Literal) left);
+          if (isLiteralString(right)) {
+            updatedLeft = maybeFormatLiteralSuffix(updatedLeft);
+          }
+          if (updatedLeft != left) {
+            return b.withLeft(updatedLeft);
+          }
         }
+        return b;
+      }
+
+      private J.Binary maybeFormatLeftNeighbour(J.Binary left, Expression right) {
+        J.Literal result = null;
+        if (isLiteralString(left.getRight())) {
+          if (isLiteralString(right)) {
+            result = maybeFormatLiteralSuffix((J.Literal) left.getRight());
+          }
+          if (isLiteralString(left.getLeft())) {
+            result = maybeFormatLiteralPrefix(result != null ? result : (J.Literal) left.getRight());
+          }
+          if(result != null) {
+            return left.withRight(result);
+          }
+        }
+        return left;
+      }
+
+      private J.Binary maybeFormatRight(J.Binary b) {
+        Expression left = b.getLeft();
+        Expression right = b.getRight();
+        J.Literal updatedRight = maybeFormatLiteralSuffix((J.Literal) right, true);
+        if (isLiteralString(left)) {
+          updatedRight = maybeFormatLiteralPrefix(updatedRight);
+        }
+        if (updatedRight != right) {
+          return b.withRight(updatedRight);
+        }
+
+        return b;
+      }
+
+      private J.Literal maybeFormatLiteralPrefix(J.Literal l) {
+        if (l.getValue() instanceof String) {
+          String value = (String) l.getValue();
+          if (value.matches(IS_ONLY_WHITESPACE)) {
+            return l;
+          }
+          if (value.matches(IS_MAYBE_MD_LIST)) {
+            value = " " + value.replaceAll("^\\h*", "");
+          } else {
+            value = value.replaceAll("^\\s+", "");
+          }
+          if (!value.equals(l.getValue())) {
+            String valueSource = value.replace("\"", "\\\"");
+            valueSource = valueSource.replaceAll("\\n", "\\\\n");
+            return l.withValue(value).withValueSource("\"" + valueSource + "\"");
+          }
+        }
+        return l;
+      }
+
+      private J.Literal maybeFormatLiteralSuffix(J.Literal l) {
+        return maybeFormatLiteralSuffix(l, false);
+      }
+
+      private J.Literal maybeFormatLiteralSuffix(J.Literal l, boolean isLastLine) {
+        if (l.getValue() instanceof String) {
+          String value = (String) l.getValue();
+          if (value.matches(IS_ONLY_WHITESPACE) || value.matches(IS_MAYBE_END_OF_MD_LINK)) {
+            return l;
+          }
+          if (value.matches(IS_MAYBE_MD_LIST)) {
+            value = value.replaceAll("\\s*$", "");
+            value += isLastLine ? "" : "\n";
+          } else if (!isLastLine && value.matches(ENDS_WITH_LINEBREAK)) {
+            value = value.substring(0, value.lastIndexOf("\n") + 1);
+          } else {
+            value = value.replaceAll("\\s*$", "");
+            value += isLastLine ? "" : " ";
+          }
+          if (!value.equals(l.getValue())) {
+            String valueSource = value.replace("\"", "\\\"");
+            valueSource = valueSource.replaceAll("\\n", "\\\\n");
+            return l.withValue(value).withValueSource("\"" + valueSource + "\"");
+          }
+        }
+        return l;
       }
 
       private boolean isLiteralString(Expression exp) {
@@ -95,53 +172,6 @@ public class CorrectlySpacedDescriptions extends Recipe {
           return isLiteralString(((J.Binary) exp).getRight());
         }
         return false;
-      }
-
-      private J.Literal updateLiteral(J.Literal expression, boolean endWithWhiteSpace) {
-        if (expression.getValue() instanceof String) {
-          String value = (String) expression.getValue();
-          boolean matchesEndsWithWhitespaceTemplate = value.matches(STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_SPACE) ||
-            value.matches(STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_LINEBREAK);
-          if (value.matches(IS_ONLY_WHITESPACE) || value.matches(IS_MAYBE_END_OF_MD_LINK) || value.matches(IS_CORRECTLY_SPACED_MAYBE_MD_LIST)) {
-            return expression;
-          } else if (value.matches(IS_MAYBE_MD_LIST)) {
-            value = formatMDList(value);
-          } else if ((endWithWhiteSpace && !matchesEndsWithWhitespaceTemplate) ||
-            (!endWithWhiteSpace && !value.matches(STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR))) {
-            value = formatLine(endWithWhiteSpace, value);
-          }
-          if (!value.equals(expression.getValue())) {
-            String valueSource = value.replace("\"", "\\\"");
-            valueSource = valueSource.replaceAll("\\n", "\\\\n");
-            return expression.withValue(value).withValueSource("\"" + valueSource + "\"");
-          }
-        }
-        return expression;
-      }
-
-      private String formatLine(boolean endWithWhiteSpace, String value) {
-        value = value.replaceAll("^\\s+", "");
-        if (endWithWhiteSpace && !value.matches(ENDS_WITH_LINEBREAK)) {
-          value = value.replaceAll("\\h*$", "");
-          value += " ";
-        } else if (endWithWhiteSpace && value.matches(ENDS_WITH_LINEBREAK)) {
-          value = value.substring(0, value.lastIndexOf("\n") + 1);
-        } else if (!endWithWhiteSpace) {
-          value = value.replaceAll("\\s*$", "");
-        }
-        return value;
-      }
-
-      private String formatMDList(String value) {
-        value = value.replaceAll("^\\h*", "");
-        value = value.replaceAll("\\h*$", "");
-        if (!value.matches(ENDS_WITH_LINEBREAK)) {
-          value += "\n";
-        } else {
-          value = value.substring(0, value.lastIndexOf("\n") + 1);
-        }
-        value = " " + value;
-        return value;
       }
     };
     return Preconditions.check(new DeclaresMethod<>(GET_DESCRIPTION_MATCHER), visitor);

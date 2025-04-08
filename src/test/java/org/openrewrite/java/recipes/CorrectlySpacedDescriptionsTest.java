@@ -219,7 +219,7 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
                       " - list\\n" +
                       " * dash\\n" +
                       " * or\\n" +
-                      " * dot\\n\\n";
+                      " * dot";
                   }
               }
               """
@@ -275,6 +275,22 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
         rewriteRun(
           //language=java
           java(
+            """
+              import org.openrewrite.Recipe;
+
+              class Test extends Recipe {
+
+                  private static final String SOME_CONST = "quoted";
+
+                  @Override
+                  public String getDescription() {
+                    return "It should " +
+                      "leave `" + SOME_CONST + "` " +
+                      " constants and " + SOME_CONST + " other" +
+                      "non literal " + SOME_CONST + " strings.";
+                  }
+              }
+              """,
             """
               import org.openrewrite.Recipe;
 
