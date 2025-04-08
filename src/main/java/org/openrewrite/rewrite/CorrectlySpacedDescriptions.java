@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.rewrite.strings;
+package org.openrewrite.rewrite;
 
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
@@ -21,6 +21,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.DeclaresMethod;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
@@ -35,6 +36,8 @@ public class CorrectlySpacedDescriptions extends Recipe {
   private static final String IS_CORRECTLY_SPACED_MAYBE_MD_LIST = "^\\s[-*]\\s\\S*\\n$";
   private static final String IS_MAYBE_MD_LIST = "^\\s?[-*]\\s\\S[\\s\\S]*";
   private static final String IS_MAYBE_END_OF_MD_LINK = ".*]$";
+
+  private static final MethodMatcher GET_DESCRIPTION_MATCHER = new MethodMatcher("org.openrewrite.Recipe getDescription()", true);
 
   @Override
   public String getDisplayName() {
@@ -54,11 +57,11 @@ public class CorrectlySpacedDescriptions extends Recipe {
     JavaIsoVisitor<ExecutionContext> visitor = new JavaIsoVisitor<ExecutionContext>() {
       @Override
       public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-        if (new MethodMatcher("org.openrewrite.Recipe getDescription()", true).matches(method.getMethodType())) {
-          J md = new JavaIsoVisitor<ExecutionContext>() {
+        if (GET_DESCRIPTION_MATCHER.matches(method.getMethodType())) {
+          J.MethodDeclaration md = (J.MethodDeclaration) new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Binary visitBinary(J.Binary b, ExecutionContext ctx) {
-              if(isLiteralString(b.getLeft())) {
+              if (isLiteralString(b.getLeft())) {
                 return handle(b).withRight(updateLiteral((J.Literal) b.getRight(), false));
               } else {
                 return handle(b);
@@ -66,7 +69,7 @@ public class CorrectlySpacedDescriptions extends Recipe {
             }
           }.visit(method, ctx, getCursor().getParentOrThrow());
           if (md != null) {
-            return (J.MethodDeclaration) md;
+            return md;
           }
         }
         return super.visitMethodDeclaration(method, ctx);
@@ -89,10 +92,10 @@ public class CorrectlySpacedDescriptions extends Recipe {
       }
 
       private boolean isLiteralString(Expression exp) {
-        if(exp instanceof J.Literal) {
+        if (exp instanceof J.Literal) {
           return ((J.Literal) exp).getValue() instanceof String;
         }
-        if(exp instanceof J.Binary) {
+        if (exp instanceof J.Binary) {
           return isLiteralString(((J.Binary) exp).getRight());
         }
         return false;
@@ -111,7 +114,7 @@ public class CorrectlySpacedDescriptions extends Recipe {
             (!endWithWhiteSpace && !value.matches(STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR))) {
             value = formatLine(endWithWhiteSpace, value);
           }
-          if(!value.equals(expression.getValue())) {
+          if (!value.equals(expression.getValue())) {
             String valueSource = value.replace("\"", "\\\"");
             valueSource = valueSource.replaceAll("\\n", "\\\\n");
             return expression.withValue(value).withValueSource("\"" + valueSource + "\"");
@@ -136,7 +139,7 @@ public class CorrectlySpacedDescriptions extends Recipe {
       private String formatMDList(String value) {
         value = value.replaceAll("^\\h*", "");
         value = value.replaceAll("\\h*$", "");
-        if(!value.matches(ENDS_WITH_LINEBREAK)) {
+        if (!value.matches(ENDS_WITH_LINEBREAK)) {
           value += "\n";
         } else {
           value = value.substring(0, value.lastIndexOf("\n") + 1);
@@ -145,6 +148,6 @@ public class CorrectlySpacedDescriptions extends Recipe {
         return value;
       }
     };
-    return Preconditions.check(new UsesType<>(Recipe.class.getTypeName(), false), visitor);
+    return Preconditions.check(new DeclaresMethod<>(GET_DESCRIPTION_MATCHER), visitor);
   }
 }
