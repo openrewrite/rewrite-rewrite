@@ -38,6 +38,7 @@ recipeList:
   - org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods
   #- org.openrewrite.staticanalysis.UnnecessaryThrows
   - org.openrewrite.staticanalysis.UseDiamondOperator
+  - org.openrewrite.rewrite.CorrectlySpacedDescriptions
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.recipes.JavaRecipeBestPractices
