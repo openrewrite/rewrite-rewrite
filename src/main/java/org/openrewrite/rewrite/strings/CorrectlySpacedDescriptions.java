@@ -106,16 +106,28 @@ public class CorrectlySpacedDescriptions extends Recipe {
           if (value.matches(IS_ONLY_WHITESPACE) || value.matches(IS_MAYBE_END_OF_MD_LINK) || value.matches(IS_CORRECTLY_SPACED_MAYBE_MD_LIST)) {
             return expression;
           } else if (value.matches(IS_MAYBE_MD_LIST)) {
-            return formatMdList(expression, value);
+            String result = formatMDList(value);
+            if(!result.equals(expression.getValue())) {
+              String valueSource = result.replace("\"", "\\\"");
+              valueSource = valueSource.replaceAll("\\n", "\\\\n");
+              return expression.withValue(result).withValueSource("\"" + valueSource + "\"");
+            }
+            return expression;
           } else if ((endWithWhiteSpace && !matchesEndsWithWhitespaceTemplate) ||
             (!endWithWhiteSpace && !value.matches(STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR))) {
-            return formatLine(expression, endWithWhiteSpace, value);
+            String result = formatLine(endWithWhiteSpace, value);
+            if(!result.equals(expression.getValue())) {
+              String valueSource = result.replace("\"", "\\\"");
+              valueSource = valueSource.replaceAll("\\n", "\\\\n");
+              return expression.withValue(result).withValueSource("\"" + valueSource + "\"");
+            }
+            return expression;
           }
         }
         return expression;
       }
 
-      private J.Literal formatLine(J.Literal expression, boolean endWithWhiteSpace, String value) {
+      private String formatLine(boolean endWithWhiteSpace, String value) {
         value = value.replaceAll("^\\s+", "");
         if (endWithWhiteSpace && !value.matches(ENDS_WITH_LINEBREAK)) {
           value = value.replaceAll("\\h*$", "");
@@ -125,15 +137,10 @@ public class CorrectlySpacedDescriptions extends Recipe {
         } else if (!endWithWhiteSpace) {
           value = value.replaceAll("\\s*$", "");
         }
-        String valueSource = value.replace("\"", "\\\"");
-        valueSource = valueSource.replaceAll("\\n", "\\\\n");
-        if(!value.equals(expression.getValue())) {
-          return expression.withValue(value).withValueSource("\"" + valueSource + "\"");
-        }
-        return expression;
+        return value;
       }
 
-      private J.Literal formatMdList(J.Literal expression, String value) {
+      private String formatMDList(String value) {
         value = value.replaceAll("^\\h*", "");
         value = value.replaceAll("\\h*$", "");
         if(!value.matches(ENDS_WITH_LINEBREAK)) {
@@ -142,12 +149,7 @@ public class CorrectlySpacedDescriptions extends Recipe {
           value = value.substring(0, value.lastIndexOf("\n") + 1);
         }
         value = " " + value;
-        String valueSource = value.replace("\"", "\\\"");
-        valueSource = valueSource.replaceAll("\\n", "\\\\n");
-        if(!value.equals(expression.getValue())) {
-          return expression.withValue(value).withValueSource("\"" + valueSource + "\"");
-        }
-        return expression;
+        return value;
       }
     };
     return Preconditions.check(new UsesType<>(Recipe.class.getTypeName(), false), visitor);
