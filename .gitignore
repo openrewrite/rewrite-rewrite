@@ -49,3 +49,5 @@ out/
 build/
 src/main/generated/
 .moderne/
+
+.DS_Store
