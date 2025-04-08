@@ -106,22 +106,15 @@ public class CorrectlySpacedDescriptions extends Recipe {
           if (value.matches(IS_ONLY_WHITESPACE) || value.matches(IS_MAYBE_END_OF_MD_LINK) || value.matches(IS_CORRECTLY_SPACED_MAYBE_MD_LIST)) {
             return expression;
           } else if (value.matches(IS_MAYBE_MD_LIST)) {
-            String result = formatMDList(value);
-            if(!result.equals(expression.getValue())) {
-              String valueSource = result.replace("\"", "\\\"");
-              valueSource = valueSource.replaceAll("\\n", "\\\\n");
-              return expression.withValue(result).withValueSource("\"" + valueSource + "\"");
-            }
-            return expression;
+            value = formatMDList(value);
           } else if ((endWithWhiteSpace && !matchesEndsWithWhitespaceTemplate) ||
             (!endWithWhiteSpace && !value.matches(STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR))) {
-            String result = formatLine(endWithWhiteSpace, value);
-            if(!result.equals(expression.getValue())) {
-              String valueSource = result.replace("\"", "\\\"");
-              valueSource = valueSource.replaceAll("\\n", "\\\\n");
-              return expression.withValue(result).withValueSource("\"" + valueSource + "\"");
-            }
-            return expression;
+            value = formatLine(endWithWhiteSpace, value);
+          }
+          if(!value.equals(expression.getValue())) {
+            String valueSource = value.replace("\"", "\\\"");
+            valueSource = valueSource.replaceAll("\\n", "\\\\n");
+            return expression.withValue(value).withValueSource("\"" + valueSource + "\"");
           }
         }
         return expression;
