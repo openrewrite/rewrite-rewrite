@@ -68,83 +68,6 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
     }
 
     @Test
-    void correctSingleLineDescription() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import org.openrewrite.Recipe;
-
-              class Test extends Recipe {
-                  @Override
-                  public String getDescription() {
-                    return "A description.";
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void incorrectLeadingSpaceSingleLineDescription() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import org.openrewrite.Recipe;
-
-              class Test extends Recipe {
-                  @Override
-                  public String getDescription() {
-                    return "   A description.";
-                  }
-              }
-              """,
-            """
-              import org.openrewrite.Recipe;
-
-              class Test extends Recipe {
-                  @Override
-                  public String getDescription() {
-                    return "A description.";
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void incorrectTrailingSpaceSingleLineDescription() {
-        rewriteRun(
-          //language=java
-          java(
-            """
-              import org.openrewrite.Recipe;
-
-              class Test extends Recipe {
-                  @Override
-                  public String getDescription() {
-                    return "A description.   ";
-                  }
-              }
-              """,
-            """
-              import org.openrewrite.Recipe;
-
-              class Test extends Recipe {
-                  @Override
-                  public String getDescription() {
-                    return "A description.";
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void correctMultiLineDescription() {
         rewriteRun(
           //language=java
@@ -242,9 +165,9 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
               class Test extends Recipe {
                   @Override
                   public String getDescription() {
-                    return "A description\\n" +
-                      "   even with lines \\n subject to change" +
-                      "can deliberately include\\nnew lines.";
+                    return "A description\\n\\n" +
+                      "   even with lines \\n subject to change \\n " +
+                      "can deliberately include\\nnew lines. \\n ";
                   }
               }
               """,
@@ -254,9 +177,118 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
               class Test extends Recipe {
                   @Override
                   public String getDescription() {
-                    return "A description\\n" +
-                      "even with lines \\n subject to change " +
+                    return "A description\\n\\n" +
+                      "even with lines \\n subject to change \\n" +
                       "can deliberately include\\nnew lines.";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void markdownList() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.Recipe;
+
+              class Test extends Recipe {
+                  @Override
+                  public String getDescription() {
+                    return "A description:\\n" +
+                      "- with  \\n" +
+                      " - a  " +
+                      "- list " +
+                      " * dash\\n" +
+                      "* or  " +
+                      " * dot\\n\\n";
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.Recipe;
+
+              class Test extends Recipe {
+                  @Override
+                  public String getDescription() {
+                    return "A description:\\n" +
+                      " - with\\n" +
+                      " - a\\n" +
+                      " - list\\n" +
+                      " * dash\\n" +
+                      " * or\\n" +
+                      " * dot\\n\\n";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void onlyWhitespace() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.Recipe;
+
+              class Test extends Recipe {
+                  @Override
+                  public String getDescription() {
+                    return "            " +
+                      " \\n \\n   " +
+                      " \\n \\t \\t   " +
+                      "      ";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mdlink() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.Recipe;
+
+              class Test extends Recipe {
+                  @Override
+                  public String getDescription() {
+                    return "It should leave " +
+                      "[md links which are long alone]" +
+                      "(www.example.com)";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void onlyHandleStringConcatenation() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.Recipe;
+
+              class Test extends Recipe {
+
+                  private static final String SOME_CONST = "quoted";
+
+                  @Override
+                  public String getDescription() {
+                    return "It should " +
+                      "leave `" + SOME_CONST + "` " +
+                      "constants and " + SOME_CONST + " other " +
+                      "non literal " + SOME_CONST + " strings.";
                   }
               }
               """

@@ -16,19 +16,25 @@
 package org.openrewrite.rewrite.strings;
 
 import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
 public class CorrectlySpacedDescriptions extends Recipe {
 
-  private static final String STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR = "^[^\\s][\\s\\S]*[^\\s]$";
-  private static final String STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_SPACE = "^[^\\s].*[^\\s] $";
-  private static final String STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_LINEBREAK = "^[^\\s].*[^\\s]\\n$";
-  private static final String ENDS_WITH_LINEBREAK = "^.*\\s*[\\n\\r]\\s*$";
+  private static final String STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR = "^\\S.*\\S$";
+  private static final String STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_SPACE = "^\\S.*\\S $";
+  private static final String STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_LINEBREAK = "^\\S.*\\s*\\n+\\s*$";
+  private static final String ENDS_WITH_LINEBREAK = "[\\s\\S]*\\n+\\s*$";
+  private static final String IS_ONLY_WHITESPACE = "^\\s*$";
+  private static final String IS_CORRECTLY_SPACED_MAYBE_MD_LIST = "^\\s[-*]\\s\\S*\\n$";
+  private static final String IS_MAYBE_MD_LIST = "^\\s?[-*]\\s\\S[\\s\\S]*";
+  private static final String IS_MAYBE_END_OF_MD_LINK = ".*]$";
 
   @Override
   public String getDisplayName() {
@@ -37,32 +43,29 @@ public class CorrectlySpacedDescriptions extends Recipe {
 
   @Override
   public String getDescription() {
-    return "Recipe descriptions should be cleanly formatted. This recipe forces correct spacing in descriptions. " +
-      "A single line description should not start with- or end with horizontal whitespace (e.g. `return \"This is a correct single line description\";`)\n" +
-      "In a multi line description the lines (except the last line which follows the single line rule) should not start with whitespace and end with a single space (e.g.\n" +
-      "| `return \"This is a correct \" + \n" +
-      "|   \"multi line description\";`).";
+    return "Recipe descriptions should be cleanly formatted. This recipe forces correct spacing in multiline descriptions. " +
+      "In a multi line description the lines should not start with whitespace and end with a single space " +
+      "except for the last line which should end with a \".\" " +
+      "(e.g.\n  ```return \"This is a correct \" + \n   \"multi line description\";```).";
   }
 
   @Override
   public TreeVisitor<?, ExecutionContext> getVisitor() {
-    return new JavaIsoVisitor<ExecutionContext>() {
+    JavaIsoVisitor<ExecutionContext> visitor = new JavaIsoVisitor<ExecutionContext>() {
       @Override
-      public J. MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+      public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
         if (new MethodMatcher("org.openrewrite.Recipe getDescription()", true).matches(method.getMethodType())) {
           J md = new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.Binary visitBinary(J.Binary b, ExecutionContext ctx) {
-              return handle(b).withRight(updateExpression((J.Literal)b.getRight(), false));
+              if(isLiteralString(b.getLeft())) {
+                return handle(b).withRight(updateLiteral((J.Literal) b.getRight(), false));
+              } else {
+                return handle(b);
+              }
             }
-
-            @Override
-            public J.Literal visitLiteral(J.Literal l, ExecutionContext ctx) {
-              return updateExpression(l, false);
-            }
-
           }.visit(method, ctx, getCursor().getParentOrThrow());
-          if(md != null) {
+          if (md != null) {
             return (J.MethodDeclaration) md;
           }
         }
@@ -71,39 +74,82 @@ public class CorrectlySpacedDescriptions extends Recipe {
 
       private J.Binary handle(J.Binary b) {
         Expression l = b.getLeft();
-        if (l instanceof J.Binary) {
+        if (l instanceof J.Binary && isLiteralString(b.getRight())) {
           J.Binary lb = handle((J.Binary) l);
-          if (lb.getRight() instanceof J.Literal) {
-            J.Literal r = (J.Literal) lb.getRight();
-            lb = lb.withRight(updateExpression(r, true));
+          if (lb.getRight() instanceof J.Literal && isLiteralString(lb.getLeft())) {
+            J.Literal lr = (J.Literal) lb.getRight();
+            lb = lb.withRight(updateLiteral(lr, true));
           }
           return b.withLeft(lb);
-        } else if (l instanceof J.Literal) {
-          return b.withLeft(updateExpression((J.Literal)l, true));
+        } else if (l instanceof J.Literal && isLiteralString(b.getRight())) {
+          return b.withLeft(updateLiteral((J.Literal) l, true));
         } else {
           return b;
         }
       }
 
-      private J.Literal updateExpression(J.Literal expression, boolean endWithWhiteSpace) {
-        if(expression.getValue() instanceof String) {
+      private boolean isLiteralString(Expression exp) {
+        if(exp instanceof J.Literal) {
+          return ((J.Literal) exp).getValue() instanceof String;
+        }
+        if(exp instanceof J.Binary) {
+          return isLiteralString(((J.Binary) exp).getRight());
+        }
+        return false;
+      }
+
+      private J.Literal updateLiteral(J.Literal expression, boolean endWithWhiteSpace) {
+        if (expression.getValue() instanceof String) {
           String value = (String) expression.getValue();
           boolean matchesEndsWithWhitespaceTemplate = value.matches(STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_SPACE) ||
             value.matches(STARTS_WITH_NON_WHITESPACE_CHAR_ENDS_WITH_LINEBREAK);
-          if ((endWithWhiteSpace && !matchesEndsWithWhitespaceTemplate) ||
-              (!endWithWhiteSpace && !value.matches(STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR))) {
-            value = value.replaceAll("^\\s+", "");
-            value = value.replaceAll("\\h*$", "");
-            value = value.replaceAll("\\n", "\\\\n");
-            if (endWithWhiteSpace && !value.matches(ENDS_WITH_LINEBREAK)) {
-              value += " ";
-            }
-            String valueSource = value.replace("\"", "\\\"");
-            expression = expression.withValue(value).withValueSource("\"" + valueSource + "\"");
+          if (value.matches(IS_ONLY_WHITESPACE) || value.matches(IS_MAYBE_END_OF_MD_LINK) || value.matches(IS_CORRECTLY_SPACED_MAYBE_MD_LIST)) {
+            return expression;
+          } else if (value.matches(IS_MAYBE_MD_LIST)) {
+            return formatMdList(expression, value);
+          } else if ((endWithWhiteSpace && !matchesEndsWithWhitespaceTemplate) ||
+            (!endWithWhiteSpace && !value.matches(STARTS_AND_ENDS_WITH_NON_WHITESPACE_CHAR))) {
+            return formatLine(expression, endWithWhiteSpace, value);
           }
         }
         return expression;
       }
+
+      private J.Literal formatLine(J.Literal expression, boolean endWithWhiteSpace, String value) {
+        value = value.replaceAll("^\\s+", "");
+        if (endWithWhiteSpace && !value.matches(ENDS_WITH_LINEBREAK)) {
+          value = value.replaceAll("\\h*$", "");
+          value += " ";
+        } else if (endWithWhiteSpace && value.matches(ENDS_WITH_LINEBREAK)) {
+          value = value.substring(0, value.lastIndexOf("\n") + 1);
+        } else if (!endWithWhiteSpace) {
+          value = value.replaceAll("\\s*$", "");
+        }
+        String valueSource = value.replace("\"", "\\\"");
+        valueSource = valueSource.replaceAll("\\n", "\\\\n");
+        if(!value.equals(expression.getValue())) {
+          return expression.withValue(value).withValueSource("\"" + valueSource + "\"");
+        }
+        return expression;
+      }
+
+      private J.Literal formatMdList(J.Literal expression, String value) {
+        value = value.replaceAll("^\\h*", "");
+        value = value.replaceAll("\\h*$", "");
+        if(!value.matches(ENDS_WITH_LINEBREAK)) {
+          value += "\n";
+        } else {
+          value = value.substring(0, value.lastIndexOf("\n") + 1);
+        }
+        value = " " + value;
+        String valueSource = value.replace("\"", "\\\"");
+        valueSource = valueSource.replaceAll("\\n", "\\\\n");
+        if(!value.equals(expression.getValue())) {
+          return expression.withValue(value).withValueSource("\"" + valueSource + "\"");
+        }
+        return expression;
+      }
     };
+    return Preconditions.check(new UsesType<>(Recipe.class.getTypeName(), false), visitor);
   }
 }
