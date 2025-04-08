@@ -38,7 +38,6 @@ recipeList:
   - org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods
   #- org.openrewrite.staticanalysis.UnnecessaryThrows
   - org.openrewrite.staticanalysis.UseDiamondOperator
-  - org.openrewrite.rewrite.CorrectlySpacedDescriptions
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.recipes.JavaRecipeBestPractices
@@ -50,6 +49,7 @@ preconditions:
       checkAssignability: true
 recipeList:
   - org.openrewrite.java.recipes.BlankLinesAroundFieldsWithAnnotations
+  - org.openrewrite.java.recipes.CorrectlySpacedDescriptions
   - org.openrewrite.java.recipes.ExecutionContextParameterName
   - org.openrewrite.java.recipes.MissingOptionExample
   - org.openrewrite.java.recipes.NoMutableStaticFieldsInRecipes
