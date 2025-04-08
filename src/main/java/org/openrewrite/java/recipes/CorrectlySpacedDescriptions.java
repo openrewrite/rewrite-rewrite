@@ -129,10 +129,9 @@ public class CorrectlySpacedDescriptions extends Recipe {
                     if (value.matches(IS_ONLY_WHITESPACE)) {
                         return l;
                     }
+                    value = value.replaceAll("^\\h+", "");
                     if (value.matches(IS_MAYBE_MD_LIST)) {
-                        value = " " + value.replaceAll("^\\h*", "");
-                    } else {
-                        value = value.replaceAll("^\\s+", "");
+                        value = " " + value;
                     }
                     if (!value.equals(l.getValue())) {
                         String valueSource = value.replace("\"", "\\\"");
@@ -160,11 +159,13 @@ public class CorrectlySpacedDescriptions extends Recipe {
                             value = value.replaceAll("\\h*$", "");
                             value += isLastLine ? "" : "\n";
                         }
-                    } else if (!isLastLine && value.matches(ENDS_WITH_LINEBREAK)) {
-                        value = value.substring(0, value.lastIndexOf("\n") + 1);
                     } else {
-                        value = value.replaceAll("\\s*$", "");
-                        value += isLastLine ? "" : " ";
+                        if (value.matches(ENDS_WITH_LINEBREAK)) {
+                            value = value.substring(0, value.lastIndexOf("\n") + 1);
+                        } else {
+                            value = value.replaceAll("\\h*$", "");
+                            value += isLastLine ? "" : " ";
+                        }
                     }
                     if (!value.equals(l.getValue())) {
                         String valueSource = value.replace("\"", "\\\"");

@@ -178,7 +178,7 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
                   public String getDescription() {
                     return "A description\\n\\n" +
                       "even with lines \\n subject to change \\n" +
-                      "can deliberately include\\nnew lines.";
+                      "can deliberately include\\nnew lines. \\n";
                   }
               }
               """
