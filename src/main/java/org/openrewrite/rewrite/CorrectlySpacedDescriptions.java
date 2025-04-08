@@ -22,7 +22,6 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresMethod;
-import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
@@ -62,9 +61,9 @@ public class CorrectlySpacedDescriptions extends Recipe {
             @Override
             public J.Binary visitBinary(J.Binary b, ExecutionContext ctx) {
               if (isLiteralString(b.getLeft())) {
-                return handle(b).withRight(updateLiteral((J.Literal) b.getRight(), false));
+                return maybeCorrectSpacing(b).withRight(updateLiteral((J.Literal) b.getRight(), false));
               } else {
-                return handle(b);
+                return maybeCorrectSpacing(b);
               }
             }
           }.visitNonNull(method, ctx, getCursor().getParentOrThrow());
@@ -72,10 +71,10 @@ public class CorrectlySpacedDescriptions extends Recipe {
         return super.visitMethodDeclaration(method, ctx);
       }
 
-      private J.Binary handle(J.Binary b) {
+      private J.Binary maybeCorrectSpacing(J.Binary b) {
         Expression l = b.getLeft();
         if (l instanceof J.Binary && isLiteralString(b.getRight())) {
-          J.Binary lb = handle((J.Binary) l);
+          J.Binary lb = maybeCorrectSpacing((J.Binary) l);
           if (lb.getRight() instanceof J.Literal && isLiteralString(lb.getLeft())) {
             J.Literal lr = (J.Literal) lb.getRight();
             lb = lb.withRight(updateLiteral(lr, true));
