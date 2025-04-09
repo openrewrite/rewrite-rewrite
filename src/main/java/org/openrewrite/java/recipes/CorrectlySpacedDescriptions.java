@@ -57,9 +57,15 @@ public class CorrectlySpacedDescriptions extends Recipe {
                         @Override
                         public J.Binary visitBinary(J.Binary binary, ExecutionContext ctx) {
                             J.Binary b = super.visitBinary(binary, ctx);
-                            b = maybeFormatLeft(b);
+                            // The left prefix is only modified when it's the first element of the J.Binary
+                            if (b.getLeft() instanceof J.Literal) {
+                                b = maybeFormatLeftPrefix(b);
+                            }
+                            b = maybeFormatLeftSuffix(b);
+                            b = maybeFormatRightPrefix(b);
+                            // The right suffix is only modified when it's tha last element of the J.Binary
                             if (getCursor().getParentTreeCursor().getValue() instanceof J.Return) {
-                                b = maybeFormatRight(b);
+                                b = maybeFormatRightSuffix(b);
                             }
                             return b;
                         }
@@ -68,58 +74,38 @@ public class CorrectlySpacedDescriptions extends Recipe {
                 return super.visitMethodDeclaration(method, ctx);
             }
 
-            private J.Binary maybeFormatLeft(J.Binary b) {
-                Expression left = b.getLeft();
-                Expression right = b.getRight();
-                if (left instanceof J.Binary) {
-                    J.Binary updatedLeft = maybeFormatBinaryLeft((J.Binary) left, right);
-                    if (updatedLeft != left) {
-                        return b.withLeft(updatedLeft);
-                    }
-                } else if (isLiteralString(left)) {
-                    J.Literal updatedLeft = maybeFormatLiteralLeft((J.Literal) left, right);
-                    if (updatedLeft != left) {
-                        return b.withLeft(updatedLeft);
+            private J.Binary maybeFormatLeftPrefix(J.Binary b) {
+                return b.withLeft(maybeFormatLiteralPrefix((J.Literal) b.getLeft()));
+            }
+
+            private J.Binary maybeFormatLeftSuffix(J.Binary b) {
+                if (b.getLeft() instanceof J.Literal && b.getRight() instanceof J.Literal) {
+                    return b.withLeft(maybeFormatLiteralSuffix((J.Literal) b.getLeft()));
+                }
+                if (b.getLeft() instanceof J.Binary && b.getRight() instanceof J.Literal) {
+                    J.Binary left = (J.Binary) b.getLeft();
+                    Expression right = left.getRight();
+                    if (right instanceof J.Literal) {
+                        return b.withLeft(left.withRight(maybeFormatLiteralSuffix((J.Literal) right)));
                     }
                 }
                 return b;
             }
 
-            private J.Binary maybeFormatBinaryLeft(J.Binary left, Expression right) {
-                J.Literal result = null;
-                if (isLiteralString(left.getRight())) {
-                    if (isLiteralString(right)) {
-                        result = maybeFormatLiteralSuffix((J.Literal) left.getRight());
-                    }
-                    if (isLiteralString(left.getLeft())) {
-                        result = maybeFormatLiteralPrefix(result != null ? result : (J.Literal) left.getRight());
-                    }
-                    if (result != null) {
-                        return left.withRight(result);
-                    }
+            private J.Binary maybeFormatRightPrefix(J.Binary b) {
+                if (b.getLeft() instanceof J.Literal ||
+                      (b.getLeft() instanceof J.Binary &&
+                      ((J.Binary)b.getLeft()).getRight() instanceof J.Literal) &&
+                      b.getRight() instanceof J.Literal) {
+                    return b.withRight(maybeFormatLiteralPrefix((J.Literal) b.getRight()));
                 }
-                return left;
+                return b;
             }
 
-            private J.Literal maybeFormatLiteralLeft(J.Literal left, Expression right) {
-                J.Literal updatedLeft = maybeFormatLiteralPrefix(left);
-                if (isLiteralString(right)) {
-                    updatedLeft = maybeFormatLiteralSuffix(updatedLeft);
+            private J.Binary maybeFormatRightSuffix(J.Binary b) {
+                if (b.getRight() instanceof J.Literal) {
+                    return b.withRight(maybeFormatLiteralSuffix((J.Literal) b.getRight(), true));
                 }
-                return updatedLeft;
-            }
-
-            private J.Binary maybeFormatRight(J.Binary b) {
-                Expression left = b.getLeft();
-                Expression right = b.getRight();
-                J.Literal updatedRight = maybeFormatLiteralSuffix((J.Literal) right, true);
-                if (isLiteralString(left)) {
-                    updatedRight = maybeFormatLiteralPrefix(updatedRight);
-                }
-                if (updatedRight != right) {
-                    return b.withRight(updatedRight);
-                }
-
                 return b;
             }
 
@@ -174,16 +160,6 @@ public class CorrectlySpacedDescriptions extends Recipe {
                     }
                 }
                 return l;
-            }
-
-            private boolean isLiteralString(Expression exp) {
-                if (exp instanceof J.Literal) {
-                    return ((J.Literal) exp).getValue() instanceof String;
-                }
-                if (exp instanceof J.Binary) {
-                    return isLiteralString(((J.Binary) exp).getRight());
-                }
-                return false;
             }
         };
         return Preconditions.check(new DeclaresMethod<>(GET_DESCRIPTION_MATCHER), visitor);
