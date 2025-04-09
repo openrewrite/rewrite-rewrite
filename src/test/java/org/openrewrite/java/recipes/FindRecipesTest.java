@@ -1,11 +1,11 @@
 /*
- * Copyright 2022 the original author or authors.
+ * Copyright 2025 the original author or authors.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * <p>
- * https://www.apache.org/licenses/LICENSE-2.0
+ * https://docs.moderne.io/licensing/moderne-source-available-license
  * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -51,26 +51,26 @@ class FindRecipesTest implements RewriteTest {
               import org.openrewrite.internal.lang.NonNullApi;
               import org.openrewrite.Recipe;
               import org.openrewrite.internal.lang.Nullable;
-              
+
               @NonNullApi
               class MyRecipe extends Recipe {
                 @Option(displayName = "Method pattern",
                         description = "A method pattern that is used to find matching method declarations/invocations.",
                         example = "org.mockito.Matchers anyVararg()")
                 String methodPattern;
-              
+
                 @Option(displayName = "New access level",
                         description = "New method access level to apply to the method, like \\"public\\".",
                         example = "public",
                         valid = {"private", "protected", "package", "public"},
                         required = false)
                 String newAccessLevel;
-              
+
                 @Override
                 public String getDisplayName() {
                     return "My recipe";
                 }
-              
+
                 @Override
                 public String getDescription() {
                     return "This is my recipe.";
@@ -82,26 +82,26 @@ class FindRecipesTest implements RewriteTest {
               import org.openrewrite.internal.lang.NonNullApi;
               import org.openrewrite.Recipe;
               import org.openrewrite.internal.lang.Nullable;
-              
+
               @NonNullApi
               class /*~~>*/MyRecipe extends Recipe {
                 @Option(displayName = "Method pattern",
                         description = "A method pattern that is used to find matching method declarations/invocations.",
                         example = "org.mockito.Matchers anyVararg()")
                 String methodPattern;
-              
+
                 @Option(displayName = "New access level",
                         description = "New method access level to apply to the method, like \\"public\\".",
                         example = "public",
                         valid = {"private", "protected", "package", "public"},
                         required = false)
                 String newAccessLevel;
-              
+
                 @Override
                 public String getDisplayName() {
                     return "My recipe";
                 }
-              
+
                 @Override
                 public String getDescription() {
                     return "This is my recipe.";
@@ -118,7 +118,7 @@ class FindRecipesTest implements RewriteTest {
           java(
             """
               import java.util.function.UnaryOperator;
-              
+
               class SomeTest {
                   private final UnaryOperator<String> notEmpty = actual -> {
                       //noinspection CodeBlock2Expr
@@ -154,7 +154,7 @@ class FindRecipesTest implements RewriteTest {
           java(
             """
               import org.openrewrite.java.template.RecipeDescriptor;
-              
+
               @RecipeDescriptor(
                   name = "Some refaster rule",
                   description = "This is a refaster rule."
@@ -164,7 +164,7 @@ class FindRecipesTest implements RewriteTest {
               """,
             """
               import org.openrewrite.java.template.RecipeDescriptor;
-              
+
               /*~~>*/@RecipeDescriptor(
                   name = "Some refaster rule",
                   description = "This is a refaster rule."
