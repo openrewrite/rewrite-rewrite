@@ -44,7 +44,7 @@ public class CorrectlySpacedDescriptions extends Recipe {
         return "Recipe descriptions should be cleanly formatted. This recipe forces correct spacing in multiline descriptions. " +
               "In a multi line description the lines should not start with whitespace and end with a single space " +
               "except for the last line which should end with a \".\" " +
-              "(e.g.\n  ```return \"This is a correct \" + \n   \"multi line description\";```).";
+              "(e.g.\n```\n  return \"This is a correct \" + \n   \"multi line description\";\n```\n).";
     }
 
     @Override
