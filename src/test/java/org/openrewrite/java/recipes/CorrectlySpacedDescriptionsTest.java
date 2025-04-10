@@ -284,8 +284,7 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
 
                   @Override
                   public String getDescription() {
-                    return "It should " +
-                      "leave `" + SOME_CONST + "` " +
+                    return "It should leave `" + SOME_CONST + "` " +
                       " constants and " + SOME_CONST + " other" +
                       "non literal " + SOME_CONST + " strings.";
                   }
@@ -300,8 +299,7 @@ class CorrectlySpacedDescriptionsTest implements RewriteTest {
 
                   @Override
                   public String getDescription() {
-                    return "It should " +
-                      "leave `" + SOME_CONST + "` " +
+                    return "It should leave `" + SOME_CONST + "` " +
                       "constants and " + SOME_CONST + " other " +
                       "non literal " + SOME_CONST + " strings.";
                   }
