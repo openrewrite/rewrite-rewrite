@@ -93,10 +93,10 @@ public class CorrectlySpacedDescriptions extends Recipe {
             }
 
             private J.Binary maybeFormatRightPrefix(J.Binary b) {
-                if (b.getLeft() instanceof J.Literal ||
+                boolean leftElementIsLiteral = b.getLeft() instanceof J.Literal ||
                       (b.getLeft() instanceof J.Binary &&
-                      ((J.Binary)b.getLeft()).getRight() instanceof J.Literal) &&
-                      b.getRight() instanceof J.Literal) {
+                            ((J.Binary) b.getLeft()).getRight() instanceof J.Literal);
+                if (leftElementIsLiteral && b.getRight() instanceof J.Literal) {
                     return b.withRight(maybeFormatLiteralPrefix((J.Literal) b.getRight()));
                 }
                 return b;
