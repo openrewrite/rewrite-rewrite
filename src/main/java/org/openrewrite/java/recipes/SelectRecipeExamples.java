@@ -55,8 +55,8 @@ public class SelectRecipeExamples extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Add `@DocumentExample` to the first non-issue and not a disabled unit test of a recipe as an example," +
-               " if there are not any examples yet.";
+        return "Add `@DocumentExample` to the first non-issue and not a disabled unit test of a recipe as an example, " +
+               "if there are not any examples yet.";
     }
 
     @Override
