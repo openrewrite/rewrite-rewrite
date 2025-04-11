@@ -15,18 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
-import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.TypeUtils;
-
-import java.util.Arrays;
-import java.util.StringJoiner;
-import java.util.regex.Pattern;
 
 public class SourceSpecTextBlockNewLine extends Recipe {
     @Override
