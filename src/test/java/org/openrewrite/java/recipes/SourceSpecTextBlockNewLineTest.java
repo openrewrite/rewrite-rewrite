@@ -89,8 +89,7 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                   }
               }
               """,
-
-            """
+              """
               import org.openrewrite.test.RewriteTest;
               import static org.openrewrite.test.SourceSpecs.text;
 
@@ -142,8 +141,7 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                   }
               }
               """,
-
-            """
+              """
               import org.openrewrite.test.RewriteTest;
               import static org.openrewrite.test.SourceSpecs.text;
 
@@ -204,8 +202,7 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                   }
               }
               """,
-
-            """
+              """
               import org.openrewrite.test.RewriteTest;
               import static org.openrewrite.test.SourceSpecs.text;
 
@@ -267,7 +264,7 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                   }
               }
               """,
-            """
+              """
               import org.openrewrite.test.RewriteTest;
               import static org.openrewrite.test.SourceSpecs.text;
 
