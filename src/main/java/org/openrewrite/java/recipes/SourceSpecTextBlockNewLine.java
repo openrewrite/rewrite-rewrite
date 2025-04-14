@@ -68,8 +68,8 @@ public class SourceSpecTextBlockNewLine extends Recipe {
                     // Add newline to the last element of a text block
                     formattedElements = ListUtils.mapLast(formattedElements, jrp -> {
                         Expression argument = jrp.getElement();
-                        if (argument instanceof J.Literal && !jrp.getAfter().getWhitespace().startsWith("\n")) {
-                            return jrp.withAfter(Space.format(method.getPrefix().getWhitespace()));
+                        if (argument instanceof J.Literal) {
+                            return jrp.withAfter(method.getPrefix());
                         }
                         return jrp;
                     });
