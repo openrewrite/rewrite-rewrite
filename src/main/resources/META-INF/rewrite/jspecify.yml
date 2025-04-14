@@ -37,7 +37,15 @@ recipeList:
       groupId: org.jspecify
       artifactId: jspecify
       version: latest.release
-      onlyIfUsing: org.openrewrite.internal.lang.*Null*
+      onlyIfUsing: org.openrewrite.internal.lang.Nullable
+      configuration: implementation
+      scope: compile
+      acceptTransitive: true
+  - org.openrewrite.java.dependencies.AddDependency:
+      groupId: org.jspecify
+      artifactId: jspecify
+      version: latest.release
+      onlyIfUsing: org.openrewrite.internal.lang.NonNull
       configuration: implementation
       scope: compile
       acceptTransitive: true
