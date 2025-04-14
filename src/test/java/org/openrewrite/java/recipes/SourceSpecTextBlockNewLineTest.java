@@ -33,9 +33,93 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
 
     @DocumentExample
     @Test
+    void builderToString() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(
+                       text(
+                          \"""
+                           class Test {
+              \s
+                              \s
+                               void test() {
+                                   System.out.println("Hello, world!");
+                               }
+                           }
+                           \"""
+                       )
+                    );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void newlineAfterOpening() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(
+                       text(\"""
+                           class Test {
+              \s
+                              \s
+                               void test() {
+                                   System.out.println("Hello, world!");
+                               }
+                           }
+                           \"""
+                       )
+                    );
+                  }
+              }
+              """,
+
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(
+                       text(
+                          ""\"
+                           class Test {
+              \s
+                              \s
+                               void test() {
+                                   System.out.println("Hello, world!");
+                               }
+                           }
+                           \"""
+                       )
+                    );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void newlineAfterClosing() {
         rewriteRun(
-          spec -> spec.expectedCyclesThatMakeChanges(2),
+          //language=java
           java(
             """
               import org.openrewrite.test.RewriteTest;
@@ -86,9 +170,9 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
     }
 
     @Test
-    void newlineBetweenMultipleParameters() {
+    void newlineBetweenMultipleTextBlocks() {
         rewriteRun(
-          spec -> spec.expectedCyclesThatMakeChanges(2),
+          //language=java
           java(
             """
               import org.openrewrite.test.RewriteTest;
@@ -138,7 +222,7 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                                }
                            }
                            \""",
-                          ""\"
+                           ""\"
                            class Test {
               \s
                               \s
@@ -147,6 +231,61 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                                }
                            }
                            ""\"
+                       )
+                    );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void newlineWithConsumer() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(
+                       text(
+                          \"""
+                           class Test {
+              \s
+                              \s
+                               void test() {
+                                   System.out.println("Hello, world!");
+                               }
+                           }
+                           \""", sourceSpecs -> {}
+                       )
+                    );
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(
+                       text(
+                          ""\"
+                           class Test {
+              \s
+                              \s
+                               void test() {
+                                   System.out.println("Hello, world!");
+                               }
+                           }
+                           \""",
+                           sourceSpecs -> {
+                           }
                        )
                     );
                   }
