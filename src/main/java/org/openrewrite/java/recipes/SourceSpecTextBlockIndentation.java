@@ -21,7 +21,6 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.Arrays;
@@ -99,12 +98,7 @@ public class SourceSpecTextBlockIndentation extends Recipe {
                                         }
                                     }
 
-                                    J.Literal withFixedSource = source.withValueSource(fixedSource.toString());
-                                    if (withFixedSource.getPrefix().getComments().isEmpty() &&
-                                        withFixedSource.getPrefix().getWhitespace().isEmpty()) {
-                                        return maybeAutoFormat(withFixedSource, withFixedSource.withPrefix(Space.format("\n")), ctx);
-                                    }
-                                    return withFixedSource;
+                                    return source.withValueSource(fixedSource.toString());
                                 }
 
                             }
