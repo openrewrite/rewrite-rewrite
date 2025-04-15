@@ -22,6 +22,7 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -75,8 +76,8 @@ public class SourceSpecTextBlockNewLine extends Recipe {
                         }
 
                         Expression argument = jrp.getElement();
-                        if (argument instanceof J.Literal) {
-                            return jrp.withAfter(method.getPrefix());
+                        if (isTextBlock(argument)) {
+                            return jrp.withAfter(method.getPrefix().withComments(Collections.emptyList()));
                         }
                         return jrp;
                     });
