@@ -292,4 +292,25 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
         );
     }
 
+    @Test
+    void noChangeWhenNotTextBlock() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(
+                       text("(1 + 1)"),
+                       text("(1 + 1)", "1 + 1")
+                    );
+                  }
+              }
+              """
+          )
+        );
+    }
 }
