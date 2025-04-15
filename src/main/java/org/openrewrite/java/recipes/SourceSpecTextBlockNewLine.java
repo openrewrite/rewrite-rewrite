@@ -23,6 +23,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class SourceSpecTextBlockNewLine extends Recipe {
     @Override
@@ -38,6 +39,8 @@ public class SourceSpecTextBlockNewLine extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new JavaIsoVisitor<ExecutionContext>() {
+            final Pattern endTextBlockOnOwnLine = Pattern.compile("\\s+\"\"\"\\s*$");
+
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 if (method.getMethodType() != null && TypeUtils.isOfClassType(method.getMethodType().getReturnType(),
@@ -51,10 +54,10 @@ public class SourceSpecTextBlockNewLine extends Recipe {
                     // Add new lines to the beginning of the text blocks and arguments that follow a text block
                     List<JRightPadded<Expression>> formattedElements = ListUtils.map(elements, (i, jrp) -> {
                         Expression argument = jrp.getElement();
-                        boolean isCurrentLiteral = argument instanceof J.Literal;
-                        boolean isPreviousLiteral = i > 0 && elements.get(i - 1).getElement() instanceof J.Literal;
+                        boolean isCurrentTextBlock = isTextBlock(argument);
+                        boolean isPreviousTextBlock = i > 0 && isTextBlock(elements.get(i - 1).getElement());
 
-                        if ((isCurrentLiteral || isPreviousLiteral) &&
+                        if ((isCurrentTextBlock || isPreviousTextBlock) &&
                                 argument.getPrefix().getComments().isEmpty() &&
                                 !argument.getPrefix().getWhitespace().startsWith("\n")
                         ) {
@@ -65,8 +68,12 @@ public class SourceSpecTextBlockNewLine extends Recipe {
                         return jrp;
                     });
 
-                    // Add newline to the last element of a text block
+                    // Add same method spacing to closing bracket for the last element of a text block
                     formattedElements = ListUtils.mapLast(formattedElements, jrp -> {
+                        if (jrp == null) {
+                            return null;
+                        }
+
                         Expression argument = jrp.getElement();
                         if (argument instanceof J.Literal) {
                             return jrp.withAfter(method.getPrefix());
@@ -77,6 +84,16 @@ public class SourceSpecTextBlockNewLine extends Recipe {
                     return methodPadding.withArguments(argumentsPadding.withElements(formattedElements));
                 }
                 return super.visitMethodInvocation(method, ctx);
+            }
+
+            private boolean isTextBlock(Expression expression) {
+                if (!(expression instanceof J.Literal)) {
+                    return false;
+                }
+
+                J.Literal source = (J.Literal) expression;
+                return source.getValueSource() != null && source.getValueSource().startsWith("\"\"\"") &&
+                        endTextBlockOnOwnLine.matcher(source.getValueSource()).find();
             }
         };
     }

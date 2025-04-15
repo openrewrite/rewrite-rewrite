@@ -33,7 +33,7 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void builderToString() {
+    void newlineAfterClosing() {
         rewriteRun(
           //language=java
           java(
@@ -46,6 +46,27 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                     rewriteRun(
                        text(
                           \"""
+                           class Test {
+              \s
+                              \s
+                               void test() {
+                                   System.out.println("Hello, world!");
+                               }
+                           }
+                           \""")
+                    );
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(
+                       text(
+                          ""\"
                            class Test {
               \s
                               \s
@@ -89,37 +110,6 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                   }
               }
               """,
-              """
-              import org.openrewrite.test.RewriteTest;
-              import static org.openrewrite.test.SourceSpecs.text;
-
-              class MyRecipeTest implements RewriteTest {
-                  void test() {
-                    rewriteRun(
-                       text(
-                          ""\"
-                           class Test {
-              \s
-                              \s
-                               void test() {
-                                   System.out.println("Hello, world!");
-                               }
-                           }
-                           \"""
-                       )
-                    );
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void newlineAfterClosing() {
-        rewriteRun(
-          //language=java
-          java(
             """
               import org.openrewrite.test.RewriteTest;
               import static org.openrewrite.test.SourceSpecs.text;
@@ -128,28 +118,7 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                   void test() {
                     rewriteRun(
                        text(
-                          \"""
-                           class Test {
-              \s
-                              \s
-                               void test() {
-                                   System.out.println("Hello, world!");
-                               }
-                           }
-                           \""")
-                    );
-                  }
-              }
-              """,
-              """
-              import org.openrewrite.test.RewriteTest;
-              import static org.openrewrite.test.SourceSpecs.text;
-
-              class MyRecipeTest implements RewriteTest {
-                  void test() {
-                    rewriteRun(
-                       text(
-                          ""\"
+                            ""\"
                            class Test {
               \s
                               \s
@@ -202,7 +171,7 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                   }
               }
               """,
-              """
+            """
               import org.openrewrite.test.RewriteTest;
               import static org.openrewrite.test.SourceSpecs.text;
 
@@ -219,7 +188,7 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                                }
                            }
                            \""",
-                           ""\"
+                            ""\"
                            class Test {
               \s
                               \s
@@ -264,7 +233,7 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                   }
               }
               """,
-              """
+            """
               import org.openrewrite.test.RewriteTest;
               import static org.openrewrite.test.SourceSpecs.text;
 
@@ -281,8 +250,8 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                                }
                            }
                            \""",
-                           sourceSpecs -> {
-                           }
+                            sourceSpecs -> {
+                            }
                        )
                     );
                   }
@@ -291,4 +260,36 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void builderToString() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(
+                       text(
+                          \"""
+                           class Test {
+              \s
+                              \s
+                               void test() {
+                                   System.out.println("Hello, world!");
+                               }
+                           }
+                           \"""
+                       )
+                    );
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }
