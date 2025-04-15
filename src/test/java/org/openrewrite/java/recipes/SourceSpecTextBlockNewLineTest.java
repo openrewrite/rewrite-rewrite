@@ -313,4 +313,46 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotDuplicateComment() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(
+                       //language=markdown
+                       text(
+                         \"""
+                         # Header
+                         \""")
+                    );
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(
+                       //language=markdown
+                       text(
+                         \"""
+                         # Header
+                         \"""
+                       )
+                    );
+                  }
+              }
+              """
+          )
+        );
+    }
 }
