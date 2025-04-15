@@ -76,7 +76,7 @@ public class SourceSpecTextBlockNewLine extends Recipe {
                         }
 
                         Expression argument = jrp.getElement();
-                        if (isTextBlock(argument)) {
+                        if (isTextBlock(argument) && !jrp.getAfter().getWhitespace().startsWith("\n")) {
                             return jrp.withAfter(method.getPrefix().withComments(Collections.emptyList()));
                         }
                         return jrp;

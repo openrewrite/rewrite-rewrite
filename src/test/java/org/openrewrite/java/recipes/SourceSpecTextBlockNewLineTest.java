@@ -315,6 +315,29 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
     }
 
     @Test
+    void noChangeWhenTextBlockHasNoWhitespace() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(text(
+                         \"""
+                         # Header
+                         \"""
+                    ));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotDuplicateComment() {
         rewriteRun(
           //language=java
