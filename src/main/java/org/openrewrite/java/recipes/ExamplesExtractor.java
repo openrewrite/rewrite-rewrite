@@ -222,13 +222,8 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             String exampleDescription = getCursor().getNearestMessage(DESCRIPTION_KEY);
 
             RecipeExample example = new RecipeExample();
-            for (int i = sourceStartIndex; i < args.size(); i++) {
-                RecipeExample.Source source = extractRecipeExampleSource(args.get(i));
-                if (source != null) {
-                    example.getSources().add(source);
-                }
-            }
-
+            List<Expression> sourceArgs = args.subList(sourceStartIndex, args.size());
+            example.setSources(extractRecipeExampleSources(sourceArgs));
             if (!example.getSources().isEmpty()) {
                 example.setDescription(exampleDescription);
                 example.setParameters(recipe.getParameters());
@@ -258,14 +253,12 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                     type = newClass.getType();
                                 }
 
-                                if (TypeUtils.isAssignableTo("org.openrewrite.Recipe", type)) {
-                                    if (type instanceof JavaType.Class) {
-                                        JavaType.Class tc = (JavaType.Class) type;
-                                        RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
-                                        recipeNameAndParameters.setName(tc.getFullyQualifiedName());
-                                        recipeNameAndParameters.setParameters(extractParameters(newClass.getArguments()));
-                                        recipe.set(recipeNameAndParameters);
-                                    }
+                                if (TypeUtils.isAssignableTo("org.openrewrite.Recipe", type) && type instanceof JavaType.Class) {
+                                    JavaType.Class tc = (JavaType.Class) type;
+                                    RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
+                                    recipeNameAndParameters.setName(tc.getFullyQualifiedName());
+                                    recipeNameAndParameters.setParameters(extractParameters(newClass.getArguments()));
+                                    recipe.set(recipeNameAndParameters);
                                 }
                                 return newClass;
                             }
@@ -281,7 +274,8 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                         recipe.set(recipeNameAndParameters);
                                     }
                                     return method;
-                                } else if (RECIPE_FROM_RESOURCES_METHOD_MATCHER.matches(method)) {
+                                }
+                                if (RECIPE_FROM_RESOURCES_METHOD_MATCHER.matches(method)) {
                                     Expression arg = method.getArguments().get(method.getArguments().size() - 1);
                                     if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
                                         RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
@@ -290,7 +284,6 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                     }
                                     return method;
                                 }
-
                                 return super.visitMethodInvocation(method, recipe);
                             }
                         }.visit(tree, recipe);
@@ -320,14 +313,13 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                     .collect(toList());
         }
 
-        private RecipeExample.@Nullable Source extractRecipeExampleSource(Expression sourceSpecArg) {
-            RecipeExample.Source source = new RecipeExample.Source("", null, null, "");
-
-            new JavaIsoVisitor<RecipeExample.Source>() {
+        private List<RecipeExample.Source> extractRecipeExampleSources(List<Expression> sourceSpecArg) {
+            return new JavaIsoVisitor<List<RecipeExample.Source>>() {
                 @Override
-                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method,
-                                                                RecipeExample.Source source) {
-                    method = super.visitMethodInvocation(method, source);
+                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, List<RecipeExample.Source> sources) {
+                    method = super.visitMethodInvocation(method, sources);
+
+                    RecipeExample.Source source = new RecipeExample.Source("", null, null, "");
                     String language;
                     if (BUILD_GRADLE_METHOD_MATCHER.matches(method)) {
                         source.setPath("build.gradle");
@@ -357,15 +349,12 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                     if (after != null) {
                         source.setAfter((String) after.getValue());
                     }
+                    if (StringUtils.isNotEmpty(source.getBefore()) || StringUtils.isNotEmpty(source.getAfter())) {
+                        sources.add(source);
+                    }
                     return method;
                 }
-            }.visit(sourceSpecArg, source);
-
-            if (StringUtils.isNotEmpty(source.getBefore()) || StringUtils.isNotEmpty(source.getAfter())) {
-                return source;
-            } else {
-                return null;
-            }
+            }.reduce(sourceSpecArg, new ArrayList<>());
         }
     }
 
