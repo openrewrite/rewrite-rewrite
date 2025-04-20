@@ -77,6 +77,7 @@ class ExamplesExtractorTest implements RewriteTest {
               yaml(
                 null, // newly created
                 """
+                  ---
                   type: specs.openrewrite.org/v1beta/example
                   recipeName: org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
                   examples:
@@ -103,7 +104,7 @@ class ExamplesExtractorTest implements RewriteTest {
                       path: A.java
                       language: java
                   """,
-                spec -> spec.path("/src/main/resources/META-INF/rewrite/examples.yml")
+                spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
               )
             ),
             // language=java

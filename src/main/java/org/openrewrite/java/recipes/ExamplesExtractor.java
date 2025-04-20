@@ -17,6 +17,7 @@ package org.openrewrite.java.recipes;
 
 import lombok.Data;
 import lombok.Value;
+import lombok.With;
 import org.intellij.lang.annotations.Language;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -31,15 +32,22 @@ import org.openrewrite.java.trait.Annotated;
 import org.openrewrite.java.trait.Literal;
 import org.openrewrite.java.trait.Traits;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.marker.Marker;
+import org.openrewrite.marker.Markers;
+import org.openrewrite.yaml.YamlIsoVisitor;
 import org.openrewrite.yaml.YamlParser;
+import org.openrewrite.yaml.tree.Yaml.Documents;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.Collections.singleton;
 
 public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumulator> {
 
@@ -76,42 +84,90 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
     @Override
     public TreeVisitor<?, ExecutionContext> getScanner(Accumulator acc) {
-        return new ExamplesExtractorVisitor(acc);
+        ExamplesExtractorVisitor examplesExtractorVisitor = new ExamplesExtractorVisitor(acc);
+        return new TreeVisitor<Tree, ExecutionContext>() {
+            @Override
+            public Tree preVisit(Tree tree, ExecutionContext ctx) {
+                stopAfterPreVisit();
+                if (tree instanceof JavaSourceFile) {
+                    examplesExtractorVisitor.visit(tree, ctx);
+                } else if (tree instanceof Documents) {
+                    new YamlIsoVisitor<ExecutionContext>() {
+                        @Override
+                        public Documents visitDocuments(Documents documents, ExecutionContext ctx) {
+                            Path sourcePath = documents.getSourcePath();
+                            if (sourcePath.endsWith("examples.yml")) {
+                                acc.existingExampleFiles.add(sourcePath);
+                            }
+                            return documents;
+                        }
+                    }.visit(tree, ctx);
+                }
+                return tree;
+            }
+        };
     }
 
     @Override
     public Collection<? extends SourceFile> generate(Accumulator acc, ExecutionContext ctx) {
         YamlPrinter yamlPrinter = new YamlPrinter();
         YamlParser yamlParser = YamlParser.builder().build();
-
         List<SourceFile> yamlRecipeExampleSourceFiles = new ArrayList<>();
         for (Map.Entry<JavaProject, Map<String, List<RecipeExample>>> entry : acc.projectRecipeExamples.entrySet()) {
-            JavaProject project = entry.getKey();
-            Map<String, List<RecipeExample>> recipeExamples = entry.getValue();
-
-            String yaml = yamlPrinter.print(recipeExamples);
-            yamlParser.parse(yaml)
-                    .<SourceFile>map(sf -> sf.withSourcePath(Paths.get(
-                            project.getProjectName(),
-                            "src/main/resources",
-                            "META-INF/rewrite",
-                            "examples.yml"
-                    )))
-                    .forEach(yamlRecipeExampleSourceFiles::add);
+            String yaml = yamlPrinter.print(entry.getValue());
+            Path targetPath = Paths.get(
+                    "/", entry.getKey().getProjectName(),
+                    "src/main/resources",
+                    "META-INF/rewrite",
+                    "examples.yml"
+            );
+            if (!acc.existingExampleFiles.contains(targetPath)) {
+                yamlParser.parse(yaml)
+                        .<SourceFile>map(sf -> sf.withSourcePath(targetPath)
+                                .withMarkers(Markers.build(singleton(new Written(Tree.randomId())))))
+                        .forEach(yamlRecipeExampleSourceFiles::add);
+            }
         }
-
         return yamlRecipeExampleSourceFiles;
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor(Accumulator acc) {
-        return super.getVisitor(acc); // TODO Write to existing files
+        return new YamlIsoVisitor<ExecutionContext>() {
+            @Override
+            public Documents visitDocuments(Documents doc, ExecutionContext ctx) {
+                if (acc.existingExampleFiles.contains(doc.getSourcePath()) &&
+                        !doc.getMarkers().findFirst(Written.class).isPresent()) {
+                    YamlPrinter yamlPrinter = new YamlPrinter();
+                    YamlParser yamlParser = YamlParser.builder().build();
+                    for (Map.Entry<JavaProject, Map<String, List<RecipeExample>>> entry : acc.projectRecipeExamples.entrySet()) {
+                        String yaml = yamlPrinter.print(entry.getValue());
+                        Optional<SourceFile> first = yamlParser.parse(yaml).findFirst();
+                        if (first.isPresent()) {
+                            SourceFile sourceFile = first.get();
+                            if (sourceFile instanceof Documents) {
+                                return doc.withDocuments(((Documents) sourceFile).getDocuments())
+                                        .withMarkers(Markers.build(singleton(new Written(Tree.randomId()))));
+                            }
+                        }
+                    }
+                }
+                return doc;
+            }
+        };
     }
 
     @Value
-    public class Accumulator {
+    public static class Accumulator {
+        List<Path> existingExampleFiles = new ArrayList<>();
         // Project -> RecipeName -> Examples
         Map<JavaProject, Map<String, List<RecipeExample>>> projectRecipeExamples = new HashMap<>();
+    }
+
+    @Value
+    @With
+    public static class Written implements Marker {
+        UUID id;
     }
 
     static class ExamplesExtractorVisitor extends JavaIsoVisitor<ExecutionContext> {
@@ -127,14 +183,13 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
         @Override
         public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            J visit = super.visit(tree, ctx);
-            if (visit instanceof JavaSourceFile) {
-                visit.getMarkers().findFirst(JavaProject.class).ifPresent(javaProject -> {
+            if (tree instanceof JavaSourceFile) {
+                tree.getMarkers().findFirst(JavaProject.class).ifPresent(javaProject -> {
                     getCursor().putMessage(PROJECT_KEY, javaProject);
                     acc.projectRecipeExamples.computeIfAbsent(javaProject, key -> new HashMap<>());
                 });
             }
-            return visit;
+            return super.visit(tree, ctx);
         }
 
         @Override
@@ -145,7 +200,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                 return method;
             }
 
-            Optional<Annotated> annotated = Traits.annotated(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER).get(method, getCursor().getParentOrThrow());
+            Optional<Annotated> annotated = Traits.annotated(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER).lower(getCursor()).findAny();
             if (annotated.isPresent()) {
                 String exampleDescription = annotated.get().getDefaultAttribute("value").map(Literal::getString).orElse("");
                 getCursor().putMessageOnFirstEnclosing(J.MethodDeclaration.class, DESCRIPTION_KEY, exampleDescription);
@@ -361,15 +416,13 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
     static class YamlPrinter {
 
+        @Language("yaml")
         String print(Map<String, List<RecipeExample>> recipeExamples) {
             Yaml yaml = new Yaml();
             StringWriter stringWriter = new StringWriter();
             for (Map.Entry<String, List<RecipeExample>> recipeEntry : recipeExamples.entrySet()) {
-                String recipeName = recipeEntry.getKey();
-                List<RecipeExample> examples = recipeEntry.getValue();
-                Map<String, Object> yamlDoc = print(recipeName, examples);
-                stringWriter.append("---\n");
-                stringWriter.append(yaml.dumpAsMap(yamlDoc));
+                Map<String, Object> yamlDoc = print(recipeEntry.getKey(), recipeEntry.getValue());
+                stringWriter.append("---\n").append(yaml.dumpAsMap(yamlDoc));
             }
             return stringWriter.toString();
         }
