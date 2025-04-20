@@ -367,8 +367,8 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
                     // arg0 is always `before`. arg1 is optional to be `after`, to adjust if code changed
                     List<Expression> args = method.getArguments();
-                    J.Literal before = !args.isEmpty() ? args.get(0) instanceof J.Literal ? (J.Literal) args.get(0) : null : null;
-                    J.Literal after = args.size() > 1 ? args.get(1) instanceof J.Literal ? (J.Literal) args.get(1) : null : null;
+                    J.Literal before = !args.isEmpty() ? args.get(0).getType() == JavaType.Primitive.String ? (J.Literal) args.get(0) : null : null;
+                    J.Literal after = args.size() > 1 ? args.get(1).getType() == JavaType.Primitive.String ? (J.Literal) args.get(1) : null : null;
                     if (before != null && before.getValue() != null) {
                         source.setBefore((String) before.getValue());
                     }
