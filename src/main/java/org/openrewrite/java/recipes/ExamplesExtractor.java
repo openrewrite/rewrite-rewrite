@@ -67,6 +67,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
     private static final MethodMatcher POM_XML_METHOD_MATCHER = new MethodMatcher("org.openrewrite.maven.Assertions pomXml(..)");
     private static final MethodMatcher ACTIVE_RECIPES_METHOD_MATCHER = new MethodMatcher("org.openrewrite.config.Environment activateRecipes(..)");
     private static final MethodMatcher PATH_METHOD_MATCHER = new MethodMatcher("org.openrewrite.test.SourceSpec path(java.lang.String)");
+    private static final MethodMatcher RECIPE_METHOD_MATCHER = new MethodMatcher("org.openrewrite.test.RecipeSpec#recipe*(..)");
 
     @Override
     public String getDisplayName() {
@@ -260,7 +261,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             return new JavaIsoVisitor<AtomicReference<RecipeNameAndParameters>>() {
                 @Override
                 public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicReference<RecipeNameAndParameters> recipe) {
-                    if (isRecipeSpecRecipeMethod(method)) {
+                    if (RECIPE_METHOD_MATCHER.matches(method)) {
                         new JavaIsoVisitor<AtomicReference<RecipeNameAndParameters>>() {
                             @Override
                             public J.NewClass visitNewClass(J.NewClass newClass, AtomicReference<RecipeNameAndParameters> recipe) {
@@ -400,7 +401,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                 try {
                     Stream<SourceFile> cusStream = JavaParser.fromJavaVersion()
                             .build().parse(content);
-                    Optional<SourceFile> firstElement = cusStream.findFirst();
+                    Optional<SourceFile> firstElement = cusStream.findFirst(); // FIXME slow!
 
                     if (firstElement.isPresent()) {
                         return firstElement.get().getSourcePath().toString();
@@ -412,18 +413,14 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             return null;
         }
 
-        private boolean isRecipeSpecRecipeMethod(J.MethodInvocation method) {
-            return "recipe".equals(method.getName().getSimpleName()) &&
-                    method.getSelect() != null &&
-                    TypeUtils.isOfClassType(method.getSelect().getType(), "org.openrewrite.test.RecipeSpec");
-        }
     }
 
     static class YamlPrinter {
 
+        private final Yaml yaml = new Yaml();
+
         @Language("yaml")
         String print(Map<String, List<RecipeExample>> recipeExamples) {
-            Yaml yaml = new Yaml();
             StringWriter stringWriter = new StringWriter();
             for (Map.Entry<String, List<RecipeExample>> recipeEntry : recipeExamples.entrySet()) {
                 Map<String, Object> yamlDoc = print(recipeEntry.getKey(), recipeEntry.getValue());
