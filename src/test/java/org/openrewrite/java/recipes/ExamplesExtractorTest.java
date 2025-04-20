@@ -96,7 +96,6 @@ class ExamplesExtractorTest implements RewriteTest {
                               sb.append(1).append(op).append(2);
                           }
                       }
-                    path: A.java
                     language: java
                 """,
               spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
@@ -268,7 +267,6 @@ class ExamplesExtractorTest implements RewriteTest {
                               sb.append(1).append(op).append(2);
                           }
                       }
-                    path: A.java
                     language: java
                 """,
               spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
@@ -359,7 +357,6 @@ class ExamplesExtractorTest implements RewriteTest {
                               sb.append(1).append(op).append(2);
                           }
                       }
-                    path: A.java
                     language: java
                 """,
               spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
@@ -529,7 +526,6 @@ class ExamplesExtractorTest implements RewriteTest {
                   - before: |
                       interface In {}
                       interface Out {}
-                    path: In.java
                     language: java
                   - before: |
                       import java.util.function.Function;
@@ -543,7 +539,6 @@ class ExamplesExtractorTest implements RewriteTest {
                           void test(Function<? super In, ? extends Out> f) {
                           }
                       }
-                    path: Test.java
                     language: java
                 - description: ''
                   parameters:
@@ -554,7 +549,6 @@ class ExamplesExtractorTest implements RewriteTest {
                   - before: |
                       interface In {}
                       interface Out {}
-                    path: In.java
                     language: java
                   - before: |
                       import java.util.function.Function;
@@ -568,7 +562,6 @@ class ExamplesExtractorTest implements RewriteTest {
                           void test(Function<In, ? extends Out> f) {
                           }
                       }
-                    path: Test.java
                     language: java
                 """,
               spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
@@ -673,7 +666,6 @@ class ExamplesExtractorTest implements RewriteTest {
                               s.getTimeToLive();
                           }
                       }
-                    path: org/openrewrite/example/Test.java
                     language: java
                 """,
               spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
@@ -728,7 +720,6 @@ class ExamplesExtractorTest implements RewriteTest {
                   sources:
                   - before: class A {}
                     after: class B {}
-                    path: A.java
                     language: java
                 """,
               spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
@@ -867,7 +858,6 @@ class ExamplesExtractorTest implements RewriteTest {
                     after: |
                       class A {
                       }
-                    path: A.java
                     language: java
                 ---
                 type: specs.openrewrite.org/v1beta/example
@@ -884,7 +874,6 @@ class ExamplesExtractorTest implements RewriteTest {
                     after: |
                       class A {
                       }
-                    path: A.java
                     language: java
                 """,
               spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
@@ -997,7 +986,6 @@ class ExamplesExtractorTest implements RewriteTest {
                     after: |
                       class A {
                       }
-                    path: A.java
                     language: java
                   - before: |
                       import java.util.List;
@@ -1006,7 +994,6 @@ class ExamplesExtractorTest implements RewriteTest {
                     after: |
                       class B {
                       }
-                    path: B.java
                     language: java
                 """,
               spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
@@ -1090,7 +1077,6 @@ class ExamplesExtractorTest implements RewriteTest {
                     after: |
                       class A {
                       }
-                    path: A.java
                     language: java
                 """,
               spec -> spec.path("/projectA/src/main/resources/META-INF/rewrite/examples.yml")
@@ -1155,7 +1141,6 @@ class ExamplesExtractorTest implements RewriteTest {
                     after: |
                       class B {
                       }
-                    path: B.java
                     language: java
                 """,
               spec -> spec.path("/projectB/src/main/resources/META-INF/rewrite/examples.yml")

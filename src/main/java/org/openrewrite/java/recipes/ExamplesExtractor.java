@@ -219,6 +219,12 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             return method;
         }
 
+        @Data
+        private static class RecipeNameAndParameters {
+            String name = "";
+            List<String> parameters = new ArrayList<>();
+        }
+
         @Override
         public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
             List<Expression> args = method.getArguments();
@@ -334,8 +340,6 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                     .collect(toList());
         }
 
-        // TODO ---- Review code below still ----
-
         private RecipeExample.@Nullable Source extractRecipeExampleSource(Expression sourceSpecArg) {
             RecipeExample.Source source = new RecipeExample.Source("", null, null, "");
 
@@ -361,25 +365,17 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                     } else {
                         return method;
                     }
-
                     source.setLanguage(language);
-                    List<Expression> args = method.getArguments();
 
                     // arg0 is always `before`. arg1 is optional to be `after`, to adjust if code changed
-                    J.Literal before = !args.isEmpty() ? (args.get(0) instanceof J.Literal ? (J.Literal) args.get(0) : null) : null;
-                    J.Literal after = args.size() > 1 ? (args.get(1) instanceof J.Literal ? (J.Literal) args.get(1) : null) : null;
-
+                    List<Expression> args = method.getArguments();
+                    J.Literal before = !args.isEmpty() ? args.get(0) instanceof J.Literal ? (J.Literal) args.get(0) : null : null;
+                    J.Literal after = args.size() > 1 ? args.get(1) instanceof J.Literal ? (J.Literal) args.get(1) : null : null;
                     if (before != null && before.getValue() != null) {
                         source.setBefore((String) before.getValue());
                     }
-
                     if (after != null) {
                         source.setAfter((String) after.getValue());
-                    }
-
-                    if (StringUtils.isNullOrEmpty(source.getPath())) {
-                        source.getBefore();
-                        source.setPath(getPath(source.getBefore(), language));
                     }
                     return method;
                 }
@@ -391,35 +387,6 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                 return null;
             }
         }
-
-        @Data
-        private static class RecipeNameAndParameters {
-            String name = "";
-            List<String> parameters = new ArrayList<>();
-        }
-
-        @Nullable
-        String getPath(@Language("java") @Nullable String content, String language) {
-            if (content == null) {
-                return null;
-            }
-
-            if (language.equals("java")) {
-                try {
-                    Stream<SourceFile> cusStream = JavaParser.fromJavaVersion()
-                            .build().parse(content);
-                    Optional<SourceFile> firstElement = cusStream.findFirst(); // FIXME slow!
-
-                    if (firstElement.isPresent()) {
-                        return firstElement.get().getSourcePath().toString();
-                    }
-                } catch (Exception e) {
-                    // do nothing
-                }
-            }
-            return null;
-        }
-
     }
 
     static class YamlPrinter {
