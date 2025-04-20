@@ -208,6 +208,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 }
                 """
             ),
+            //language=yaml
             yaml(
               null,
               """
@@ -252,6 +253,7 @@ class ExamplesExtractorTest implements RewriteTest {
           mavenProject(
             "project",
             java(RECIPE_JAVA_FILE),
+            //language=java
             java(
               """
                 package org.openrewrite.staticanalysis;
@@ -297,6 +299,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 }
                 """
             ),
+            //language=yaml
             yaml(
               null,
               """
@@ -477,6 +480,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 }
                 """
             ),
+            //language=yaml
             yaml(
               null,
               """
@@ -838,6 +842,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 }
                 """
             ),
+            //language=java
             java(
               """
                 package org.openrewrite.staticanalysis;
