@@ -28,6 +28,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.marker.JavaProject;
+import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.trait.Annotated;
 import org.openrewrite.java.trait.Literal;
 import org.openrewrite.java.trait.Traits;
@@ -51,7 +52,8 @@ import static java.util.Collections.singleton;
 
 public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumulator> {
 
-    private static final AnnotationMatcher DOCUMENT_EXAMPLE_ANNOTATION_MATCHER = new AnnotationMatcher("@org.openrewrite.DocumentExample");
+    private static final String DOCUMENT_EXAMPLE = "org.openrewrite.DocumentExample";
+    private static final AnnotationMatcher DOCUMENT_EXAMPLE_ANNOTATION_MATCHER = new AnnotationMatcher("@" + DOCUMENT_EXAMPLE);
 
     private static final MethodMatcher DEFAULTS_METHOD_MATCHER = new MethodMatcher(
             "org.openrewrite.test.RewriteTest defaults(org.openrewrite.test.RecipeSpec)", true);
@@ -84,7 +86,10 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
     @Override
     public TreeVisitor<?, ExecutionContext> getScanner(Accumulator acc) {
-        ExamplesExtractorVisitor examplesExtractorVisitor = new ExamplesExtractorVisitor(acc);
+        TreeVisitor<?, ExecutionContext> examplesExtractorVisitor = Preconditions.check(
+                new UsesType<>(DOCUMENT_EXAMPLE, false),
+                new ExamplesExtractorVisitor(acc)
+        );
         return new TreeVisitor<Tree, ExecutionContext>() {
             @Override
             public Tree preVisit(Tree tree, ExecutionContext ctx) {
