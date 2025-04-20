@@ -847,9 +847,11 @@ class ExamplesExtractorTest implements RewriteTest {
               """
                 ---
                 type: specs.openrewrite.org/v1beta/example
-                recipeName: org.openrewrite.java.RemoveUnusedImports
+                recipeName: org.openrewrite.java.OrderImports
                 examples:
                 - description: ''
+                  parameters:
+                  - 'null'
                   sources:
                   - before: |
                       import java.util.List;
@@ -861,11 +863,9 @@ class ExamplesExtractorTest implements RewriteTest {
                     language: java
                 ---
                 type: specs.openrewrite.org/v1beta/example
-                recipeName: org.openrewrite.java.OrderImports
+                recipeName: org.openrewrite.java.RemoveUnusedImports
                 examples:
                 - description: ''
-                  parameters:
-                  - 'null'
                   sources:
                   - before: |
                       import java.util.List;

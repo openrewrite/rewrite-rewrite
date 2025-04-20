@@ -194,7 +194,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             if (tree instanceof JavaSourceFile) {
                 tree.getMarkers().findFirst(JavaProject.class).ifPresent(javaProject -> {
                     getCursor().putMessage(PROJECT_KEY, javaProject);
-                    acc.projectRecipeExamples.computeIfAbsent(javaProject, key -> new HashMap<>());
+                    acc.projectRecipeExamples.computeIfAbsent(javaProject, key -> new TreeMap<>());
                 });
             }
             return super.visit(tree, ctx);
