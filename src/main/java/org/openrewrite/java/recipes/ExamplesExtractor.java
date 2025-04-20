@@ -124,10 +124,8 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             }
             String yaml = yamlPrinter.print(entry.getValue());
             Path targetPath = Paths.get(
-                    "/", entry.getKey().getProjectName(),
-                    "src/main/resources",
-                    "META-INF/rewrite",
-                    "examples.yml"
+                    "/", entry.getKey().getProjectName(), // FIXME Use sourceset instead
+                    "src/main/resources/META-INF/rewrite/examples.yml"
             );
             if (!acc.existingExampleFiles.contains(targetPath)) {
                 yamlParser.parse(yaml)
@@ -148,7 +146,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                         !doc.getMarkers().findFirst(Written.class).isPresent()) {
                     YamlPrinter yamlPrinter = new YamlPrinter();
                     YamlParser yamlParser = YamlParser.builder().build();
-                    for (Map.Entry<JavaProject, Map<String, List<RecipeExample>>> entry : acc.projectRecipeExamples.entrySet()) {
+                    for (Map.Entry<JavaProject, Map<String, List<RecipeExample>>> entry : acc.projectRecipeExamples.entrySet()) { // FIXME Overwrite only matching file
                         String yaml = yamlPrinter.print(entry.getValue());
                         Optional<SourceFile> first = yamlParser.parse(yaml).findFirst();
                         if (first.isPresent()) {
