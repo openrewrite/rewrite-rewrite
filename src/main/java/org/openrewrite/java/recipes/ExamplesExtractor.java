@@ -474,4 +474,3 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         }
     }
 }
-
