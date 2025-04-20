@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpec;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.mavenProject;
@@ -67,7 +68,7 @@ class ExamplesExtractorTest implements RewriteTest {
         rewriteRun(
           mavenProject(
             "project",
-            java(RECIPE_JAVA_FILE),
+            java(RECIPE_JAVA_FILE, SourceSpec::skip),
             yaml(
               null, // newly created
               """
@@ -161,7 +162,7 @@ class ExamplesExtractorTest implements RewriteTest {
         rewriteRun(
           mavenProject(
             "project",
-            java(RECIPE_JAVA_FILE),
+            java(RECIPE_JAVA_FILE, SourceSpec::skip),
             // language=java
             java(
               """
@@ -252,7 +253,7 @@ class ExamplesExtractorTest implements RewriteTest {
         rewriteRun(
           mavenProject(
             "project",
-            java(RECIPE_JAVA_FILE),
+            java(RECIPE_JAVA_FILE, SourceSpec::skip),
             //language=java
             java(
               """
