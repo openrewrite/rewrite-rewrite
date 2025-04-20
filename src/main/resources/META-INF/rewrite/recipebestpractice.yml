@@ -20,9 +20,10 @@ name: org.openrewrite.recipes.rewrite.OpenRewriteRecipeBestPractices
 displayName: OpenRewrite Recipe best practices
 description: Best practices for OpenRewrite recipe development.
 recipeList:
-  - org.openrewrite.recipes.JavaRecipeBestPractices
-  - org.openrewrite.recipes.RecipeTestingBestPractices
-  - org.openrewrite.recipes.RecipeNullabilityBestPractices
+  - org.openrewrite.java.recipes.JavaRecipeBestPractices
+  - org.openrewrite.java.recipes.RecipeTestingBestPractices
+  - org.openrewrite.java.recipes.RecipeNullabilityBestPractices
+#  - org.openrewrite.java.recipes.ExamplesExtractor
   - org.openrewrite.java.OrderImports
   - org.openrewrite.java.RemoveUnusedImports
   - org.openrewrite.java.format.EmptyNewlineAtEndOfFile
@@ -40,7 +41,7 @@ recipeList:
   - org.openrewrite.staticanalysis.UseDiamondOperator
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.recipes.JavaRecipeBestPractices
+name: org.openrewrite.java.recipes.JavaRecipeBestPractices
 displayName: Java Recipe best practices
 description: Best practices for Java recipe development.
 preconditions:
@@ -63,7 +64,7 @@ recipeList:
       annotationPattern: '@org.openrewrite.NlsRewrite.Description'
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.recipes.RecipeTestingBestPractices
+name: org.openrewrite.java.recipes.RecipeTestingBestPractices
 displayName: Recipe testing best practices
 description: Best practices for testing recipes.
 preconditions:
@@ -83,7 +84,7 @@ recipeList:
       methodPattern: 'org.openrewrite..Assertions *(..)'
 ---
 type: specs.openrewrite.org/v1beta/recipe
-name: org.openrewrite.recipes.RecipeNullabilityBestPractices
+name: org.openrewrite.java.recipes.RecipeNullabilityBestPractices
 displayName: Recipe nullability best practices
 description: Use JSpecify nullable annotations; drop Nonnull annotations; use `NullMarked` on `package-info.java` instead.
 recipeList:

@@ -15,6 +15,8 @@ dependencies {
     implementation("org.openrewrite.recipe:rewrite-static-analysis:$rewriteVersion")
     implementation("org.openrewrite.recipe:rewrite-testing-frameworks:$rewriteVersion")
 
+    implementation("org.yaml:snakeyaml:latest.release")
+
     runtimeOnly("org.openrewrite.recipe:rewrite-java-dependencies:$rewriteVersion")
 
     testImplementation("org.openrewrite:rewrite-test")
