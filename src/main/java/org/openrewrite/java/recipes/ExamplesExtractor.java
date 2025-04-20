@@ -26,7 +26,6 @@ import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.marker.JavaProject;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.trait.Annotated;
 import org.openrewrite.java.trait.Literal;
@@ -118,20 +117,14 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         YamlPrinter yamlPrinter = new YamlPrinter();
         YamlParser yamlParser = YamlParser.builder().build();
         List<SourceFile> yamlRecipeExampleSourceFiles = new ArrayList<>();
-        for (Map.Entry<JavaProject, Map<String, List<RecipeExample>>> entry : acc.projectRecipeExamples.entrySet()) {
+        for (Map.Entry<Path, Map<String, List<RecipeExample>>> entry : acc.projectRecipeExamples.entrySet()) {
             if (entry.getValue().isEmpty()) {
                 continue;
             }
             String yaml = yamlPrinter.print(entry.getValue());
-            Path targetPath = Paths.get(
-                    "/", entry.getKey().getProjectName(),
-                    "src/main/resources",
-                    "META-INF/rewrite",
-                    "examples.yml"
-            );
-            if (!acc.existingExampleFiles.contains(targetPath)) {
+            if (!acc.existingExampleFiles.contains(entry.getKey())) {
                 yamlParser.parse(yaml)
-                        .<SourceFile>map(sf -> sf.withSourcePath(targetPath)
+                        .<SourceFile>map(sf -> sf.withSourcePath(entry.getKey())
                                 .withMarkers(Markers.build(singleton(new Written(Tree.randomId())))))
                         .forEach(yamlRecipeExampleSourceFiles::add);
             }
@@ -146,17 +139,13 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             public Documents visitDocuments(Documents doc, ExecutionContext ctx) {
                 if (acc.existingExampleFiles.contains(doc.getSourcePath()) &&
                         !doc.getMarkers().findFirst(Written.class).isPresent()) {
-                    YamlPrinter yamlPrinter = new YamlPrinter();
-                    YamlParser yamlParser = YamlParser.builder().build();
-                    for (Map.Entry<JavaProject, Map<String, List<RecipeExample>>> entry : acc.projectRecipeExamples.entrySet()) {
-                        String yaml = yamlPrinter.print(entry.getValue());
-                        Optional<SourceFile> first = yamlParser.parse(yaml).findFirst();
-                        if (first.isPresent()) {
-                            SourceFile sourceFile = first.get();
-                            if (sourceFile instanceof Documents) {
-                                return doc.withDocuments(((Documents) sourceFile).getDocuments())
-                                        .withMarkers(Markers.build(singleton(new Written(Tree.randomId()))));
-                            }
+                    String yaml = new YamlPrinter().print(acc.projectRecipeExamples.get(doc.getSourcePath()));
+                    Optional<SourceFile> first = YamlParser.builder().build().parse(yaml).findFirst();
+                    if (first.isPresent()) {
+                        SourceFile sourceFile = first.get();
+                        if (sourceFile instanceof Documents) {
+                            return doc.withDocuments(((Documents) sourceFile).getDocuments())
+                                    .withMarkers(Markers.build(singleton(new Written(Tree.randomId()))));
                         }
                     }
                 }
@@ -168,8 +157,8 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
     @Value
     public static class Accumulator {
         List<Path> existingExampleFiles = new ArrayList<>();
-        // Project -> RecipeName -> Examples
-        Map<JavaProject, Map<String, List<RecipeExample>>> projectRecipeExamples = new HashMap<>();
+        // Target example file path -> RecipeName -> Examples
+        Map<Path, Map<String, List<RecipeExample>>> projectRecipeExamples = new HashMap<>();
     }
 
     @Value
@@ -179,7 +168,6 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
     }
 
     static class ExamplesExtractorVisitor extends JavaIsoVisitor<ExecutionContext> {
-        private static final String PROJECT_KEY = "projectName";
         private static final String RECIPE_KEY = "recipeName";
         private static final String DESCRIPTION_KEY = "description";
 
@@ -187,17 +175,6 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
         public ExamplesExtractorVisitor(Accumulator acc) {
             this.acc = acc;
-        }
-
-        @Override
-        public @Nullable J visit(@Nullable Tree tree, ExecutionContext ctx) {
-            if (tree instanceof JavaSourceFile) {
-                tree.getMarkers().findFirst(JavaProject.class).ifPresent(javaProject -> {
-                    getCursor().putMessage(PROJECT_KEY, javaProject);
-                    acc.projectRecipeExamples.computeIfAbsent(javaProject, key -> new TreeMap<>());
-                });
-            }
-            return super.visit(tree, ctx);
         }
 
         @Override
@@ -238,9 +215,8 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             }
 
             // Through cursor, retrieve the project, recipe and description we've visited so far
-            JavaProject project = getCursor().getNearestMessage(PROJECT_KEY);
             RecipeNameAndParameters recipe = getCursor().getNearestMessage(RECIPE_KEY); // Default or local spec recipe
-            if (project == null || recipe == null) {
+            if (recipe == null) {
                 return method; // Some parser tests do not include a recipe
             }
             String exampleDescription = getCursor().getNearestMessage(DESCRIPTION_KEY);
@@ -256,7 +232,13 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             if (!example.getSources().isEmpty()) {
                 example.setDescription(exampleDescription);
                 example.setParameters(recipe.getParameters());
-                acc.projectRecipeExamples.get(project).computeIfAbsent(recipe.getName(), key -> new ArrayList<>()).add(example);
+
+                String testSourcePath = getCursor().firstEnclosingOrThrow(J.CompilationUnit.class).getSourcePath().toString();
+                String root = testSourcePath.substring(0, testSourcePath.indexOf("src/test/java"));
+                Path targetPath = Paths.get(root).resolve("src/main/resources/META-INF/rewrite/examples.yml");
+                acc.projectRecipeExamples
+                        .computeIfAbsent(targetPath, key -> new TreeMap<>())
+                        .computeIfAbsent(recipe.getName(), key -> new ArrayList<>()).add(example);
             }
 
             return method;
