@@ -63,7 +63,6 @@ class ExamplesExtractorTest implements RewriteTest {
     @DocumentExample
     @Test
     void extractJavaExampleWithDefault() {
-        //language=yaml
         rewriteRun(
           mavenProject(
             "project",
@@ -157,7 +156,6 @@ class ExamplesExtractorTest implements RewriteTest {
 
     @Test
     void existingExampleFile() {
-        //language=yaml
         rewriteRun(
           mavenProject(
             "project",
@@ -225,7 +223,6 @@ class ExamplesExtractorTest implements RewriteTest {
 
     @Test
     void parserTestWithoutRecipe() {
-        //language=yaml
         rewriteRun(
           mavenProject(
             "project",
@@ -258,7 +255,6 @@ class ExamplesExtractorTest implements RewriteTest {
 
     @Test
     void extractJavaExampleRecipeInSpec() {
-        //language=yaml
         rewriteRun(
           mavenProject(
             "project",
@@ -349,8 +345,6 @@ class ExamplesExtractorTest implements RewriteTest {
 
     @Test
     void extractJavaExampleWithNoDescription() {
-        // language=java
-        //language=yaml
         rewriteRun(
           mavenProject(
             "project",
@@ -441,7 +435,6 @@ class ExamplesExtractorTest implements RewriteTest {
 
     @Test
     void extractParameters() {
-        //language=yaml
         rewriteRun(
           mavenProject(
             "project",
@@ -648,7 +641,6 @@ class ExamplesExtractorTest implements RewriteTest {
 
     @Test
     void yamlRecipeFromActiveRecipes() {
-        //language=yaml
         rewriteRun(
           mavenProject(
             "project",
@@ -755,7 +747,6 @@ class ExamplesExtractorTest implements RewriteTest {
 
     @Test
     void yamlRecipeFromResources() {
-        //language=yaml
         rewriteRun(
           mavenProject(
             "project",
@@ -810,7 +801,6 @@ class ExamplesExtractorTest implements RewriteTest {
 
     @Test
     void textBlockAsParameter() {
-        //language=yaml
         rewriteRun(
           mavenProject(
             "project",
@@ -920,45 +910,47 @@ class ExamplesExtractorTest implements RewriteTest {
 
     @Test
     void singleProjectWithTwoRecipeTests() {
-        //language=yaml
         rewriteRun(
           mavenProject(
             "project",
-            yaml(
-              null, // newly created
-              """
-                ---
-                type: specs.openrewrite.org/v1beta/example
-                recipeName: org.openrewrite.java.OrderImports
-                examples:
-                - description: ''
-                  parameters:
-                  - 'null'
-                  sources:
-                  - before: |
-                      import java.util.List;
-                      class A {
-                      }
-                    after: |
-                      class A {
-                      }
-                    language: java
-                ---
-                type: specs.openrewrite.org/v1beta/example
-                recipeName: org.openrewrite.java.RemoveUnusedImports
-                examples:
-                - description: ''
-                  sources:
-                  - before: |
-                      import java.util.List;
-                      class A {
-                      }
-                    after: |
-                      class A {
-                      }
-                    language: java
-                """,
-              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
+            //language=yaml
+            srcMainResources(
+              yaml(
+                null, // newly created
+                """
+                  ---
+                  type: specs.openrewrite.org/v1beta/example
+                  recipeName: org.openrewrite.java.OrderImports
+                  examples:
+                  - description: ''
+                    parameters:
+                    - 'null'
+                    sources:
+                    - before: |
+                        import java.util.List;
+                        class A {
+                        }
+                      after: |
+                        class A {
+                        }
+                      language: java
+                  ---
+                  type: specs.openrewrite.org/v1beta/example
+                  recipeName: org.openrewrite.java.RemoveUnusedImports
+                  examples:
+                  - description: ''
+                    sources:
+                    - before: |
+                        import java.util.List;
+                        class A {
+                        }
+                      after: |
+                        class A {
+                        }
+                      language: java
+                  """,
+                spec -> spec.path("META-INF/rewrite/examples.yml")
+              )
             ),
             //language=java
             srcTestJava(
@@ -1049,35 +1041,37 @@ class ExamplesExtractorTest implements RewriteTest {
         rewriteRun(
           mavenProject(
             "project",
-            yaml(
-              null, // newly created
-              """
-                ---
-                type: specs.openrewrite.org/v1beta/example
-                recipeName: org.openrewrite.java.OrderImports
-                examples:
-                - description: ''
-                  parameters:
-                  - 'null'
-                  sources:
-                  - before: |
-                      import java.util.List;
-                      class A {
-                      }
-                    after: |
-                      class A {
-                      }
-                    language: java
-                  - before: |
-                      import java.util.List;
-                      class B {
-                      }
-                    after: |
-                      class B {
-                      }
-                    language: java
-                """,
-              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
+            srcMainResources(
+              yaml(
+                null, // newly created
+                """
+                  ---
+                  type: specs.openrewrite.org/v1beta/example
+                  recipeName: org.openrewrite.java.OrderImports
+                  examples:
+                  - description: ''
+                    parameters:
+                    - 'null'
+                    sources:
+                    - before: |
+                        import java.util.List;
+                        class A {
+                        }
+                      after: |
+                        class A {
+                        }
+                      language: java
+                    - before: |
+                        import java.util.List;
+                        class B {
+                        }
+                      after: |
+                        class B {
+                        }
+                      language: java
+                  """,
+                spec -> spec.path("META-INF/rewrite/examples.yml")
+              )
             ),
             //language=java
             srcTestJava(
@@ -1141,27 +1135,29 @@ class ExamplesExtractorTest implements RewriteTest {
         rewriteRun(
           mavenProject(
             "projectA",
-            yaml(
-              null, // newly created
-              """
-                ---
-                type: specs.openrewrite.org/v1beta/example
-                recipeName: org.openrewrite.java.OrderImports
-                examples:
-                - description: ''
-                  parameters:
-                  - 'null'
-                  sources:
-                  - before: |
-                      import java.util.List;
-                      class A {
-                      }
-                    after: |
-                      class A {
-                      }
-                    language: java
-                """,
-              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
+            srcMainResources(
+              yaml(
+                null, // newly created
+                """
+                  ---
+                  type: specs.openrewrite.org/v1beta/example
+                  recipeName: org.openrewrite.java.OrderImports
+                  examples:
+                  - description: ''
+                    parameters:
+                    - 'null'
+                    sources:
+                    - before: |
+                        import java.util.List;
+                        class A {
+                        }
+                      after: |
+                        class A {
+                        }
+                      language: java
+                  """,
+                spec -> spec.path("META-INF/rewrite/examples.yml")
+              )
             ),
             //language=java
             srcTestJava(
@@ -1208,25 +1204,27 @@ class ExamplesExtractorTest implements RewriteTest {
           mavenProject(
             "projectB",
             //language=yaml
-            yaml(
-              null, // newly created
-              """
-                ---
-                type: specs.openrewrite.org/v1beta/example
-                recipeName: org.openrewrite.java.RemoveUnusedImports
-                examples:
-                - description: ''
-                  sources:
-                  - before: |
-                      import java.util.List;
-                      class B {
-                      }
-                    after: |
-                      class B {
-                      }
-                    language: java
-                """,
-              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
+            srcMainResources(
+              yaml(
+                null, // newly created
+                """
+                  ---
+                  type: specs.openrewrite.org/v1beta/example
+                  recipeName: org.openrewrite.java.RemoveUnusedImports
+                  examples:
+                  - description: ''
+                    sources:
+                    - before: |
+                        import java.util.List;
+                        class B {
+                        }
+                      after: |
+                        class B {
+                        }
+                      language: java
+                  """,
+                spec -> spec.path("META-INF/rewrite/examples.yml")
+              )
             ),
             //language=java
             srcTestJava(
@@ -1279,27 +1277,29 @@ class ExamplesExtractorTest implements RewriteTest {
         rewriteRun(
           mavenProject(
             "projectA",
-            yaml(
-              "---",
-              """
-                ---
-                type: specs.openrewrite.org/v1beta/example
-                recipeName: org.openrewrite.java.OrderImports
-                examples:
-                - description: ''
-                  parameters:
-                  - 'null'
-                  sources:
-                  - before: |
-                      import java.util.List;
-                      class A {
-                      }
-                    after: |
-                      class A {
-                      }
-                    language: java
-                \n""",
-              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
+            srcMainResources(
+              yaml(
+                "---",
+                """
+                  ---
+                  type: specs.openrewrite.org/v1beta/example
+                  recipeName: org.openrewrite.java.OrderImports
+                  examples:
+                  - description: ''
+                    parameters:
+                    - 'null'
+                    sources:
+                    - before: |
+                        import java.util.List;
+                        class A {
+                        }
+                      after: |
+                        class A {
+                        }
+                      language: java
+                  \n""",
+                spec -> spec.path("META-INF/rewrite/examples.yml")
+              )
             ),
             //language=java
             srcTestJava(
@@ -1341,25 +1341,27 @@ class ExamplesExtractorTest implements RewriteTest {
           mavenProject(
             "projectB",
             //language=yaml
-            yaml(
-              "---",
-              """
-                ---
-                type: specs.openrewrite.org/v1beta/example
-                recipeName: org.openrewrite.java.RemoveUnusedImports
-                examples:
-                - description: ''
-                  sources:
-                  - before: |
-                      import java.util.List;
-                      class B {
-                      }
-                    after: |
-                      class B {
-                      }
-                    language: java
-                \n""",
-              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
+            srcMainResources(
+              yaml(
+                "---",
+                """
+                  ---
+                  type: specs.openrewrite.org/v1beta/example
+                  recipeName: org.openrewrite.java.RemoveUnusedImports
+                  examples:
+                  - description: ''
+                    sources:
+                    - before: |
+                        import java.util.List;
+                        class B {
+                        }
+                      after: |
+                        class B {
+                        }
+                      language: java
+                  \n""",
+                spec -> spec.path("META-INF/rewrite/examples.yml")
+              )
             ),
             //language=java
             srcTestJava(
