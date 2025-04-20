@@ -157,6 +157,37 @@ class ExamplesExtractorTest implements RewriteTest {
     }
 
     @Test
+    void parserTestWithoutRecipe() {
+        //language=yaml
+        rewriteRun(
+          mavenProject(
+            "project",
+            //language=java
+            java(
+              """
+                package org.openrewrite.java;
+
+                import org.junit.jupiter.api.Test;
+                import org.openrewrite.DocumentExample;
+                import org.openrewrite.test.RewriteTest;
+
+                import static org.openrewrite.java.Assertions.java;
+
+                class ParserTest implements RewriteTest {
+
+                    @DocumentExample
+                    @Test
+                    void parseA() {
+                        rewriteRun(java("class A {]"));
+                    }
+                }
+                """
+            )
+          )
+        );
+    }
+
+    @Test
     void extractJavaExampleRecipeInSpec() {
         //language=yaml
         rewriteRun(

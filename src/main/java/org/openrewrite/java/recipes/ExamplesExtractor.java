@@ -121,6 +121,9 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         YamlParser yamlParser = YamlParser.builder().build();
         List<SourceFile> yamlRecipeExampleSourceFiles = new ArrayList<>();
         for (Map.Entry<JavaProject, Map<String, List<RecipeExample>>> entry : acc.projectRecipeExamples.entrySet()) {
+            if (entry.getValue().isEmpty()) {
+                continue;
+            }
             String yaml = yamlPrinter.print(entry.getValue());
             Path targetPath = Paths.get(
                     "/", entry.getKey().getProjectName(),
@@ -202,8 +205,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         @Override
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
             if (DEFAULTS_METHOD_MATCHER.matches(method.getMethodType())) {
-                RecipeNameAndParameters defaultRecipe = findRecipe(method);
-                getCursor().putMessageOnFirstEnclosing(J.ClassDeclaration.class, RECIPE_KEY, defaultRecipe);
+                getCursor().putMessageOnFirstEnclosing(J.ClassDeclaration.class, RECIPE_KEY, findRecipe(method));
                 return method;
             }
 
@@ -285,7 +287,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
                             @Override
                             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method,
-                                                                            AtomicReference<RecipeNameAndParameters> recipeNameAndParametersAtomicReference) {
+                                                                            AtomicReference<RecipeNameAndParameters> recipe) {
                                 if (ACTIVE_RECIPES_METHOD_MATCHER.matches(method)) {
                                     Expression arg = method.getArguments().get(0);
                                     if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
@@ -304,7 +306,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                     return method;
                                 }
 
-                                return super.visitMethodInvocation(method, recipeNameAndParametersAtomicReference);
+                                return super.visitMethodInvocation(method, recipe);
                             }
                         }.visit(tree, recipe);
                     }
