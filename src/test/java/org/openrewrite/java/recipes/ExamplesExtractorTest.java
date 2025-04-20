@@ -69,7 +69,8 @@ class ExamplesExtractorTest implements RewriteTest {
             "project",
             srcMainJava(java(RECIPE_JAVA_FILE, SourceSpec::skip)),
             //language=java
-            srcTestJava(java(
+            srcTestJava(
+              java(
                 """
                   package org.openrewrite.staticanalysis;
 
@@ -148,7 +149,7 @@ class ExamplesExtractorTest implements RewriteTest {
                       }
                     language: java
                 """,
-              spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             )
           )
         );
@@ -161,7 +162,8 @@ class ExamplesExtractorTest implements RewriteTest {
           mavenProject(
             "project",
             //language=java
-            srcTestJava(java(
+            srcTestJava(
+              java(
                 """
                   import org.junit.jupiter.api.Test;
                   import org.openrewrite.DocumentExample;
@@ -215,7 +217,7 @@ class ExamplesExtractorTest implements RewriteTest {
                       class A {}
                     language: java
                 \n""",
-              spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             )
           )
         );
@@ -228,25 +230,27 @@ class ExamplesExtractorTest implements RewriteTest {
           mavenProject(
             "project",
             //language=java
-            java(
-              """
-                package org.openrewrite.java;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.test.RewriteTest;
-
-                import static org.openrewrite.java.Assertions.java;
-
-                class ParserTest implements RewriteTest {
-
-                    @DocumentExample
-                    @Test
-                    void parseA() {
-                        rewriteRun(java("class A {]"));
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.java;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class ParserTest implements RewriteTest {
+
+                      @DocumentExample
+                      @Test
+                      void parseA() {
+                          rewriteRun(java("class A {]"));
+                      }
+                  }
+                  """
+              )
             )
           )
         );
@@ -260,50 +264,52 @@ class ExamplesExtractorTest implements RewriteTest {
             "project",
             java(RECIPE_JAVA_FILE, SourceSpec::skip),
             // language=java
-            java(
-              """
-                package org.openrewrite.staticanalysis;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.test.RecipeSpec;
-                import org.openrewrite.test.RewriteTest;
-
-                import static org.openrewrite.java.Assertions.java;
-
-                class ChainStringBuilderAppendCallsTest implements RewriteTest {
-
-                    @DocumentExample("Objects concatenation.")
-                    @Test
-                    void objectsConcatenation() {
-                        rewriteRun(
-                          spec -> spec.recipe(new ChainStringBuilderAppendCalls()),
-                          java(
-                            \"""
-                              class A {
-                                  void method1() {
-                                      StringBuilder sb = new StringBuilder();
-                                      String op = "+";
-                                      sb.append("A" + op + "B");
-                                      sb.append(1 + op + 2);
-                                  }
-                              }
-                              \""",
-                            \"""
-                              class A {
-                                  void method1() {
-                                      StringBuilder sb = new StringBuilder();
-                                      String op = "+";
-                                      sb.append("A").append(op).append("B");
-                                      sb.append(1).append(op).append(2);
-                                  }
-                              }
-                              \"""
-                          )
-                        );
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.staticanalysis;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class ChainStringBuilderAppendCallsTest implements RewriteTest {
+
+                      @DocumentExample("Objects concatenation.")
+                      @Test
+                      void objectsConcatenation() {
+                          rewriteRun(
+                            spec -> spec.recipe(new ChainStringBuilderAppendCalls()),
+                            java(
+                              \"""
+                                class A {
+                                    void method1() {
+                                        StringBuilder sb = new StringBuilder();
+                                        String op = "+";
+                                        sb.append("A" + op + "B");
+                                        sb.append(1 + op + 2);
+                                    }
+                                }
+                                \""",
+                              \"""
+                                class A {
+                                    void method1() {
+                                        StringBuilder sb = new StringBuilder();
+                                        String op = "+";
+                                        sb.append("A").append(op).append("B");
+                                        sb.append(1).append(op).append(2);
+                                    }
+                                }
+                                \"""
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
             ),
             //language=yaml
             yaml(
@@ -335,7 +341,7 @@ class ExamplesExtractorTest implements RewriteTest {
                       }
                     language: java
                 """,
-              spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             )
           )
         );
@@ -350,50 +356,52 @@ class ExamplesExtractorTest implements RewriteTest {
             "project",
             java(RECIPE_JAVA_FILE, SourceSpec::skip),
             //language=java
-            java(
-              """
-                package org.openrewrite.staticanalysis;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.test.RecipeSpec;
-                import org.openrewrite.test.RewriteTest;
-
-                import static org.openrewrite.java.Assertions.java;
-
-                class ChainStringBuilderAppendCallsTest implements RewriteTest {
-
-                    @DocumentExample
-                    @Test
-                    void objectsConcatenation() {
-                        rewriteRun(
-                          spec -> spec.recipe(new ChainStringBuilderAppendCalls()),
-                          java(
-                            \"""
-                              class A {
-                                  void method1() {
-                                      StringBuilder sb = new StringBuilder();
-                                      String op = "+";
-                                      sb.append("A" + op + "B");
-                                      sb.append(1 + op + 2);
-                                  }
-                              }
-                              \""",
-                            \"""
-                              class A {
-                                  void method1() {
-                                      StringBuilder sb = new StringBuilder();
-                                      String op = "+";
-                                      sb.append("A").append(op).append("B");
-                                      sb.append(1).append(op).append(2);
-                                  }
-                              }
-                              \"""
-                          )
-                        );
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.staticanalysis;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class ChainStringBuilderAppendCallsTest implements RewriteTest {
+
+                      @DocumentExample
+                      @Test
+                      void objectsConcatenation() {
+                          rewriteRun(
+                            spec -> spec.recipe(new ChainStringBuilderAppendCalls()),
+                            java(
+                              \"""
+                                class A {
+                                    void method1() {
+                                        StringBuilder sb = new StringBuilder();
+                                        String op = "+";
+                                        sb.append("A" + op + "B");
+                                        sb.append(1 + op + 2);
+                                    }
+                                }
+                                \""",
+                              \"""
+                                class A {
+                                    void method1() {
+                                        StringBuilder sb = new StringBuilder();
+                                        String op = "+";
+                                        sb.append("A").append(op).append("B");
+                                        sb.append(1).append(op).append(2);
+                                    }
+                                }
+                                \"""
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
             ),
             //language=yaml
             yaml(
@@ -425,7 +433,7 @@ class ExamplesExtractorTest implements RewriteTest {
                       }
                     language: java
                 """,
-              spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             )
           )
         );
@@ -483,97 +491,99 @@ class ExamplesExtractorTest implements RewriteTest {
                 """
             ),
             // language=java
-            java(
-              """
-                package org.openrewrite.staticanalysis;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.config.Environment;
-                import org.openrewrite.test.RecipeSpec;
-                import org.openrewrite.test.RewriteTest;
-                import org.openrewrite.test.SourceSpec;
-
-                import java.util.List;
-
-                import static org.assertj.core.api.Assertions.assertThat;
-                import static org.openrewrite.java.Assertions.java;
-
-                class DeclarationSiteTypeVarianceTest implements RewriteTest {
-
-                    @Override
-                    public void defaults(RecipeSpec spec) {
-                        spec.recipe(new DeclarationSiteTypeVariance(
-                            List.of("java.util.function.Function<IN, OUT>"),
-                            List.of("java.lang.*"),
-                            true
-                        ));
-                    }
-
-                    @DocumentExample
-                    @Test
-                    void inOutVariance() {
-                        rewriteRun(
-                            java(
-                                \"""
-                                  interface In {}
-                                  interface Out {}
-                                  \"""
-                            ),
-                            java(
-                                \"""
-                                  import java.util.function.Function;
-                                  class Test {
-                                      void test(Function<In, Out> f) {
-                                      }
-                                  }
-                                  \""",
-                                \"""
-                                  import java.util.function.Function;
-                                  class Test {
-                                      void test(Function<? super In, ? extends Out> f) {
-                                      }
-                                  }
-                                  \"""
-                            )
-                        );
-                    }
-
-                    @DocumentExample
-                    @Test
-                    void invariance() {
-                        rewriteRun(
-                            spec -> spec.recipe(new DeclarationSiteTypeVariance(
-                                List.of("java.util.function.Function<INVARIANT, OUT>"),
-                                List.of("java.lang.*"),
-                                null
-                            )),
-                            java(
-                                \"""
-                                  interface In {}
-                                  interface Out {}
-                                  \"""
-                            ),
-                            java(
-                                \"""
-                                  import java.util.function.Function;
-                                  class Test {
-                                      void test(Function<In, Out> f) {
-                                      }
-                                  }
-                                  \""",
-                                \"""
-                                  import java.util.function.Function;
-                                  class Test {
-                                      void test(Function<In, ? extends Out> f) {
-                                      }
-                                  }
-                                  \"""
-                            )
-                        );
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.staticanalysis;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.config.Environment;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+                  import org.openrewrite.test.SourceSpec;
+
+                  import java.util.List;
+
+                  import static org.assertj.core.api.Assertions.assertThat;
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class DeclarationSiteTypeVarianceTest implements RewriteTest {
+
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new DeclarationSiteTypeVariance(
+                              List.of("java.util.function.Function<IN, OUT>"),
+                              List.of("java.lang.*"),
+                              true
+                          ));
+                      }
+
+                      @DocumentExample
+                      @Test
+                      void inOutVariance() {
+                          rewriteRun(
+                              java(
+                                  \"""
+                                    interface In {}
+                                    interface Out {}
+                                    \"""
+                              ),
+                              java(
+                                  \"""
+                                    import java.util.function.Function;
+                                    class Test {
+                                        void test(Function<In, Out> f) {
+                                        }
+                                    }
+                                    \""",
+                                  \"""
+                                    import java.util.function.Function;
+                                    class Test {
+                                        void test(Function<? super In, ? extends Out> f) {
+                                        }
+                                    }
+                                    \"""
+                              )
+                          );
+                      }
+
+                      @DocumentExample
+                      @Test
+                      void invariance() {
+                          rewriteRun(
+                              spec -> spec.recipe(new DeclarationSiteTypeVariance(
+                                  List.of("java.util.function.Function<INVARIANT, OUT>"),
+                                  List.of("java.lang.*"),
+                                  null
+                              )),
+                              java(
+                                  \"""
+                                    interface In {}
+                                    interface Out {}
+                                    \"""
+                              ),
+                              java(
+                                  \"""
+                                    import java.util.function.Function;
+                                    class Test {
+                                        void test(Function<In, Out> f) {
+                                        }
+                                    }
+                                    \""",
+                                  \"""
+                                    import java.util.function.Function;
+                                    class Test {
+                                        void test(Function<In, ? extends Out> f) {
+                                        }
+                                    }
+                                    \"""
+                              )
+                          );
+                      }
+                  }
+                  """
+              )
             ),
             //language=yaml
             yaml(
@@ -630,7 +640,7 @@ class ExamplesExtractorTest implements RewriteTest {
                       }
                     language: java
                 """,
-              spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             )
           )
         );
@@ -643,63 +653,65 @@ class ExamplesExtractorTest implements RewriteTest {
           mavenProject(
             "project",
             // language=java
-            java(
-              """
-                package org.openrewrite.java.migrate.net;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.config.Environment;
-                import org.openrewrite.test.RecipeSpec;
-                import org.openrewrite.test.RewriteTest;
-
-                import static org.openrewrite.java.Assertions.java;
-
-                class JavaNetAPIsTest implements RewriteTest {
-                    @Override
-                    public void defaults(RecipeSpec spec) {
-                        spec.recipe(
-                          Environment.builder()
-                            .scanRuntimeClasspath("org.openrewrite.java.migrate.net")
-                            .build()
-                            .activateRecipes("org.openrewrite.java.migrate.net.JavaNetAPIs"));
-                    }
-
-                    @DocumentExample
-                    @Test
-                    void multicastSocketGetTTLToGetTimeToLive() {
-                        //language=java
-                        rewriteRun(
-                          java(
-                            ""\"
-                              package org.openrewrite.example;
-
-                              import java.net.MulticastSocket;
-
-                              public class Test {
-                                  public static void method() {
-                                      MulticastSocket s = new MulticastSocket(0);
-                                      s.getTTL();
-                                  }
-                              }
-                              ""\",
-                            ""\"
-                              package org.openrewrite.example;
-
-                              import java.net.MulticastSocket;
-
-                              public class Test {
-                                  public static void method() {
-                                      MulticastSocket s = new MulticastSocket(0);
-                                      s.getTimeToLive();
-                                  }
-                              }
-                              ""\"
-                          )
-                        );
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.java.migrate.net;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.config.Environment;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class JavaNetAPIsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(
+                            Environment.builder()
+                              .scanRuntimeClasspath("org.openrewrite.java.migrate.net")
+                              .build()
+                              .activateRecipes("org.openrewrite.java.migrate.net.JavaNetAPIs"));
+                      }
+
+                      @DocumentExample
+                      @Test
+                      void multicastSocketGetTTLToGetTimeToLive() {
+                          //language=java
+                          rewriteRun(
+                            java(
+                              ""\"
+                                package org.openrewrite.example;
+
+                                import java.net.MulticastSocket;
+
+                                public class Test {
+                                    public static void method() {
+                                        MulticastSocket s = new MulticastSocket(0);
+                                        s.getTTL();
+                                    }
+                                }
+                                ""\",
+                              ""\"
+                                package org.openrewrite.example;
+
+                                import java.net.MulticastSocket;
+
+                                public class Test {
+                                    public static void method() {
+                                        MulticastSocket s = new MulticastSocket(0);
+                                        s.getTimeToLive();
+                                    }
+                                }
+                                ""\"
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
             ),
             //language=yaml
             yaml(
@@ -734,7 +746,7 @@ class ExamplesExtractorTest implements RewriteTest {
                       }
                     language: java
                 """,
-              spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             )
           )
         );
@@ -748,32 +760,34 @@ class ExamplesExtractorTest implements RewriteTest {
           mavenProject(
             "project",
             // language=java
-            java(
-              """
-                package org.openrewrite.java.migrate.net;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.config.Environment;
-                import org.openrewrite.test.RecipeSpec;
-                import org.openrewrite.test.RewriteTest;
-
-                import static org.openrewrite.java.Assertions.java;
-
-                class JavaNetAPIsTest implements RewriteTest {
-                    @Override
-                    public void defaults(RecipeSpec spec) {
-                        spec.recipeFromResources("org.openrewrite.java.migrate.net.JavaNetAPIs");
-                    }
-
-                    @DocumentExample
-                    @Test
-                    void multicastSocketGetTTLToGetTimeToLive() {
-                        //language=java
-                        rewriteRun(java("class A {}", "class B {}"));
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.java.migrate.net;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.config.Environment;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class JavaNetAPIsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipeFromResources("org.openrewrite.java.migrate.net.JavaNetAPIs");
+                      }
+
+                      @DocumentExample
+                      @Test
+                      void multicastSocketGetTTLToGetTimeToLive() {
+                          //language=java
+                          rewriteRun(java("class A {}", "class B {}"));
+                      }
+                  }
+                  """
+              )
             ),
             //language=yaml
             yaml(
@@ -788,7 +802,7 @@ class ExamplesExtractorTest implements RewriteTest {
                     after: class B {}
                     language: java
                 """,
-              spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             )
           )
         );
@@ -801,61 +815,63 @@ class ExamplesExtractorTest implements RewriteTest {
           mavenProject(
             "project",
             // language=java
-            java(
-              """
-                package org.openrewrite.yaml;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.Issue;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.test.RewriteTest;
-
-                import static org.openrewrite.yaml.Assertions.yaml;
-
-                class MergeYamlTest implements RewriteTest {
-
-                    @DocumentExample
-                    @Test
-                    void nonExistentBlock() {
-                        rewriteRun(
-                          spec -> spec.recipe(new MergeYaml(
-                            "$.spec",
-                            //language=yaml
-                            ""\"
-                              lifecycleRule:
-                                  - action:
-                                        type: Delete
-                                    condition:
-                                        age: 7
-                              ""\",
-                            false,
-                            null,
-                            null,
-                            null
-                          )),
-                          yaml(
-                            ""\"
-                              apiVersion: storage.cnrm.cloud.google.com/v1beta1
-                              kind: StorageBucket
-                              spec:
-                                  bucketPolicyOnly: true
-                              ""\",
-                            ""\"
-                              apiVersion: storage.cnrm.cloud.google.com/v1beta1
-                              kind: StorageBucket
-                              spec:
-                                  bucketPolicyOnly: true
-                                  lifecycleRule:
-                                      - action:
-                                            type: Delete
-                                        condition:
-                                            age: 7
-                              ""\"
-                          )
-                        );
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.yaml;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.Issue;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.yaml.Assertions.yaml;
+
+                  class MergeYamlTest implements RewriteTest {
+
+                      @DocumentExample
+                      @Test
+                      void nonExistentBlock() {
+                          rewriteRun(
+                            spec -> spec.recipe(new MergeYaml(
+                              "$.spec",
+                              //language=yaml
+                              ""\"
+                                lifecycleRule:
+                                    - action:
+                                          type: Delete
+                                      condition:
+                                          age: 7
+                                ""\",
+                              false,
+                              null,
+                              null,
+                              null
+                            )),
+                            yaml(
+                              ""\"
+                                apiVersion: storage.cnrm.cloud.google.com/v1beta1
+                                kind: StorageBucket
+                                spec:
+                                    bucketPolicyOnly: true
+                                ""\",
+                              ""\"
+                                apiVersion: storage.cnrm.cloud.google.com/v1beta1
+                                kind: StorageBucket
+                                spec:
+                                    bucketPolicyOnly: true
+                                    lifecycleRule:
+                                        - action:
+                                              type: Delete
+                                          condition:
+                                              age: 7
+                                ""\"
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
             ),
             //language=yaml
             yaml(
@@ -896,7 +912,7 @@ class ExamplesExtractorTest implements RewriteTest {
                                     age: 7
                     language: yaml
                 """,
-              spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             )
           )
         );
@@ -942,85 +958,86 @@ class ExamplesExtractorTest implements RewriteTest {
                       }
                     language: java
                 """,
-              spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             ),
             //language=java
-            java(
-              """
-                package org.openrewrite.staticanalysis;
+            srcTestJava(
+              java(
+                """
+                  package org.openrewrite.staticanalysis;
 
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.java.OrderImports;
-                import org.openrewrite.test.RecipeSpec;
-                import org.openrewrite.test.RewriteTest;
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.java.OrderImports;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
 
-                import static org.openrewrite.java.Assertions.java;
+                  import static org.openrewrite.java.Assertions.java;
 
-                class OrderImportsTest implements RewriteTest {
-                    @Override
-                    public void defaults(RecipeSpec spec) {
-                        spec.recipe(new OrderImports(null));
-                    }
+                  class OrderImportsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new OrderImports(null));
+                      }
 
-                    @DocumentExample
-                    @Test
-                    void orderImports() {
-                        rewriteRun(
-                          java(
-                            ""\"
-                              import java.util.List;
-                              class A {
-                              }
-                              ""\",
-                            ""\"
-                              class A {
-                              }
+                      @DocumentExample
+                      @Test
+                      void orderImports() {
+                          rewriteRun(
+                            java(
                               ""\"
-                          )
-                        );
-                    }
-                }
+                                import java.util.List;
+                                class A {
+                                }
+                                ""\",
+                              ""\"
+                                class A {
+                                }
+                                ""\"
+                            )
+                          );
+                      }
+                  }
+                  """
+              ),
+              java(
                 """
-            ),
-            //language=java
-            java(
-              """
-                package org.openrewrite.staticanalysis;
+                  package org.openrewrite.staticanalysis;
 
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.java.RemoveUnusedImports;
-                import org.openrewrite.test.RecipeSpec;
-                import org.openrewrite.test.RewriteTest;
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.java.RemoveUnusedImports;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
 
-                import static org.openrewrite.java.Assertions.java;
+                  import static org.openrewrite.java.Assertions.java;
 
-                class RemoveUnusedImportsTest implements RewriteTest {
-                    @Override
-                    public void defaults(RecipeSpec spec) {
-                        spec.recipe(new RemoveUnusedImports());
-                    }
+                  class RemoveUnusedImportsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new RemoveUnusedImports());
+                      }
 
-                    @DocumentExample
-                    @Test
-                    void removeUnusedImports() {
-                        rewriteRun(
-                          java(
-                            \"""
-                              import java.util.List;
-                              class A {
-                              }
-                              \""",
-                            \"""
-                              class A {
-                              }
+                      @DocumentExample
+                      @Test
+                      void removeUnusedImports() {
+                          rewriteRun(
+                            java(
                               \"""
-                          )
-                        );
-                    }
-                }
-                """
+                                import java.util.List;
+                                class A {
+                                }
+                                \""",
+                              \"""
+                                class A {
+                                }
+                                \"""
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
             )
           )
         );
@@ -1060,57 +1077,59 @@ class ExamplesExtractorTest implements RewriteTest {
                       }
                     language: java
                 """,
-              spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             ),
             //language=java
-            java(
-              """
-                package org.openrewrite.staticanalysis;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.java.OrderImports;
-                import org.openrewrite.test.RecipeSpec;
-                import org.openrewrite.test.RewriteTest;
-
-                import static org.openrewrite.java.Assertions.java;
-
-                class OrderImportsTest implements RewriteTest {
-                    @Override
-                    public void defaults(RecipeSpec spec) {
-                        spec.recipe(new OrderImports(null));
-                    }
-
-                    @DocumentExample
-                    @Test
-                    void orderImports() {
-                        rewriteRun(
-                          java(
-                            ""\"
-                              import java.util.List;
-                              class A {
-                              }
-                              ""\",
-                            ""\"
-                              class A {
-                              }
-                              ""\"
-                          ),
-                          java(
-                            \"""
-                              import java.util.List;
-                              class B {
-                              }
-                              \""",
-                            \"""
-                              class B {
-                              }
-                              \"""
-                          )
-                        );
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.staticanalysis;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.java.OrderImports;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class OrderImportsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new OrderImports(null));
+                      }
+
+                      @DocumentExample
+                      @Test
+                      void orderImports() {
+                          rewriteRun(
+                            java(
+                              ""\"
+                                import java.util.List;
+                                class A {
+                                }
+                                ""\",
+                              ""\"
+                                class A {
+                                }
+                                ""\"
+                            ),
+                            java(
+                              \"""
+                                import java.util.List;
+                                class B {
+                                }
+                                \""",
+                              \"""
+                                class B {
+                                }
+                                \"""
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
             )
           )
         );
@@ -1142,46 +1161,48 @@ class ExamplesExtractorTest implements RewriteTest {
                       }
                     language: java
                 """,
-              spec -> spec.path("/projectA/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             ),
             //language=java
-            java(
-              """
-                package org.openrewrite.staticanalysis;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.java.OrderImports;
-                import org.openrewrite.test.RecipeSpec;
-                import org.openrewrite.test.RewriteTest;
-
-                import static org.openrewrite.java.Assertions.java;
-
-                class OrderImportsTest implements RewriteTest {
-                    @Override
-                    public void defaults(RecipeSpec spec) {
-                        spec.recipe(new OrderImports(null));
-                    }
-
-                    @DocumentExample
-                    @Test
-                    void orderImports() {
-                        rewriteRun(
-                          java(
-                            ""\"
-                              import java.util.List;
-                              class A {
-                              }
-                              ""\",
-                            ""\"
-                              class A {
-                              }
-                              ""\"
-                          )
-                        );
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.staticanalysis;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.java.OrderImports;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class OrderImportsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new OrderImports(null));
+                      }
+
+                      @DocumentExample
+                      @Test
+                      void orderImports() {
+                          rewriteRun(
+                            java(
+                              ""\"
+                                import java.util.List;
+                                class A {
+                                }
+                                ""\",
+                              ""\"
+                                class A {
+                                }
+                                ""\"
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
             )
           ),
           mavenProject(
@@ -1205,46 +1226,48 @@ class ExamplesExtractorTest implements RewriteTest {
                       }
                     language: java
                 """,
-              spec -> spec.path("/projectB/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             ),
             //language=java
-            java(
-              """
-                package org.openrewrite.staticanalysis;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.java.RemoveUnusedImports;
-                import org.openrewrite.test.RecipeSpec;
-                import org.openrewrite.test.RewriteTest;
-
-                import static org.openrewrite.java.Assertions.java;
-
-                class RemoveUnusedImportsTest implements RewriteTest {
-                    @Override
-                    public void defaults(RecipeSpec spec) {
-                        spec.recipe(new RemoveUnusedImports());
-                    }
-
-                    @DocumentExample
-                    @Test
-                    void removeUnusedImports() {
-                        rewriteRun(
-                          java(
-                            \"""
-                              import java.util.List;
-                              class B {
-                              }
-                              \""",
-                            \"""
-                              class B {
-                              }
-                              \"""
-                          )
-                        );
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.staticanalysis;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.java.RemoveUnusedImports;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class RemoveUnusedImportsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new RemoveUnusedImports());
+                      }
+
+                      @DocumentExample
+                      @Test
+                      void removeUnusedImports() {
+                          rewriteRun(
+                            java(
+                              \"""
+                                import java.util.List;
+                                class B {
+                                }
+                                \""",
+                              \"""
+                                class B {
+                                }
+                                \"""
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
             )
           )
         );
@@ -1276,41 +1299,43 @@ class ExamplesExtractorTest implements RewriteTest {
                       }
                     language: java
                 \n""",
-              spec -> spec.path("/projectA/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             ),
             //language=java
-            java(
-              """
-                package org.openrewrite.staticanalysis;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.java.OrderImports;
-                import org.openrewrite.test.RewriteTest;
-
-                import static org.openrewrite.java.Assertions.java;
-
-                class OrderImportsTest implements RewriteTest {
-                    @DocumentExample
-                    @Test
-                    void orderImports() {
-                        rewriteRun(
-                          spec -> spec.recipe(new OrderImports(null)),
-                          java(
-                            ""\"
-                              import java.util.List;
-                              class A {
-                              }
-                              ""\",
-                            ""\"
-                              class A {
-                              }
-                              ""\"
-                          )
-                        );
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.staticanalysis;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.java.OrderImports;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class OrderImportsTest implements RewriteTest {
+                      @DocumentExample
+                      @Test
+                      void orderImports() {
+                          rewriteRun(
+                            spec -> spec.recipe(new OrderImports(null)),
+                            java(
+                              ""\"
+                                import java.util.List;
+                                class A {
+                                }
+                                ""\",
+                              ""\"
+                                class A {
+                                }
+                                ""\"
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
             )
           ),
           mavenProject(
@@ -1334,41 +1359,43 @@ class ExamplesExtractorTest implements RewriteTest {
                       }
                     language: java
                 \n""",
-              spec -> spec.path("/projectB/src/main/resources/META-INF/rewrite/examples.yml")
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             ),
             //language=java
-            java(
-              """
-                package org.openrewrite.staticanalysis;
-
-                import org.junit.jupiter.api.Test;
-                import org.openrewrite.DocumentExample;
-                import org.openrewrite.java.RemoveUnusedImports;
-                import org.openrewrite.test.RewriteTest;
-
-                import static org.openrewrite.java.Assertions.java;
-
-                class RemoveUnusedImportsTest implements RewriteTest {
-                    @DocumentExample
-                    @Test
-                    void removeUnusedImports() {
-                        rewriteRun(
-                          spec -> spec.recipe(new RemoveUnusedImports()),
-                          java(
-                            \"""
-                              import java.util.List;
-                              class B {
-                              }
-                              \""",
-                            \"""
-                              class B {
-                              }
-                              \"""
-                          )
-                        );
-                    }
-                }
+            srcTestJava(
+              java(
                 """
+                  package org.openrewrite.staticanalysis;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.java.RemoveUnusedImports;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class RemoveUnusedImportsTest implements RewriteTest {
+                      @DocumentExample
+                      @Test
+                      void removeUnusedImports() {
+                          rewriteRun(
+                            spec -> spec.recipe(new RemoveUnusedImports()),
+                            java(
+                              \"""
+                                import java.util.List;
+                                class B {
+                                }
+                                \""",
+                              \"""
+                                class B {
+                                }
+                                \"""
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
             )
           )
         );
