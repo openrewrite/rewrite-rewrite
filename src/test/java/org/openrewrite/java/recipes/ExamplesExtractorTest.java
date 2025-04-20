@@ -547,7 +547,7 @@ class ExamplesExtractorTest implements RewriteTest {
     }
 
     @Test
-    void extractYamlRecipe() {
+    void yamlRecipeFromActiveRecipes() {
         //language=yaml
         rewriteRun(
           mavenProject(
@@ -643,6 +643,61 @@ class ExamplesExtractorTest implements RewriteTest {
                           }
                       }
                     path: org/openrewrite/example/Test.java
+                    language: java
+                """,
+              spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")
+            )
+          )
+        );
+    }
+
+
+    @Test
+    void yamlRecipeFromResources() {
+        //language=yaml
+        rewriteRun(
+          mavenProject(
+            "project",
+            // language=java
+            java(
+              """
+                package org.openrewrite.java.migrate.net;
+
+                import org.junit.jupiter.api.Test;
+                import org.openrewrite.DocumentExample;
+                import org.openrewrite.config.Environment;
+                import org.openrewrite.test.RecipeSpec;
+                import org.openrewrite.test.RewriteTest;
+
+                import static org.openrewrite.java.Assertions.java;
+
+                class JavaNetAPIsTest implements RewriteTest {
+                    @Override
+                    public void defaults(RecipeSpec spec) {
+                        spec.recipeFromResources("org.openrewrite.java.migrate.net.JavaNetAPIs");
+                    }
+
+                    @DocumentExample
+                    @Test
+                    void multicastSocketGetTTLToGetTimeToLive() {
+                        //language=java
+                        rewriteRun(java("class A {}", "class B {}"));
+                    }
+                }
+                """
+            ),
+            //language=yaml
+            yaml(
+              null, """
+                ---
+                type: specs.openrewrite.org/v1beta/example
+                recipeName: org.openrewrite.java.migrate.net.JavaNetAPIs
+                examples:
+                - description: ''
+                  sources:
+                  - before: class A {}
+                    after: class B {}
+                    path: A.java
                     language: java
                 """,
               spec -> spec.path("/project/src/main/resources/META-INF/rewrite/examples.yml")

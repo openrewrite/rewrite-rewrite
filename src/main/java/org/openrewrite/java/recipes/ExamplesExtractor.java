@@ -66,6 +66,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
     private static final MethodMatcher BUILD_GRADLE_METHOD_MATCHER = new MethodMatcher("org.openrewrite.gradle.Assertions buildGradle(..)");
     private static final MethodMatcher POM_XML_METHOD_MATCHER = new MethodMatcher("org.openrewrite.maven.Assertions pomXml(..)");
     private static final MethodMatcher ACTIVE_RECIPES_METHOD_MATCHER = new MethodMatcher("org.openrewrite.config.Environment activateRecipes(..)");
+    private static final MethodMatcher RECIPE_FROM_RESOURCES_METHOD_MATCHER = new MethodMatcher("org.openrewrite.test.RecipeSpec#recipeFromResource*(..)");
     private static final MethodMatcher PATH_METHOD_MATCHER = new MethodMatcher("org.openrewrite.test.SourceSpec path(java.lang.String)");
     private static final MethodMatcher RECIPE_METHOD_MATCHER = new MethodMatcher("org.openrewrite.test.RecipeSpec#recipe*(..)");
 
@@ -287,6 +288,14 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                                                             AtomicReference<RecipeNameAndParameters> recipeNameAndParametersAtomicReference) {
                                 if (ACTIVE_RECIPES_METHOD_MATCHER.matches(method)) {
                                     Expression arg = method.getArguments().get(0);
+                                    if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
+                                        RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
+                                        recipeNameAndParameters.setName(((J.Literal) arg).getValue().toString());
+                                        recipe.set(recipeNameAndParameters);
+                                    }
+                                    return method;
+                                } else if (RECIPE_FROM_RESOURCES_METHOD_MATCHER.matches(method)) {
+                                    Expression arg = method.getArguments().get(method.getArguments().size() - 1);
                                     if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
                                         RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
                                         recipeNameAndParameters.setName(((J.Literal) arg).getValue().toString());
