@@ -45,10 +45,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Collections.singleton;
+import static java.util.stream.Collectors.toList;
 
 public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumulator> {
 
@@ -236,7 +236,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             // Through cursor, retrieve the project, recipe and description we've visited so far
             JavaProject project = getCursor().getNearestMessage(PROJECT_KEY);
             RecipeNameAndParameters recipe = getCursor().getNearestMessage(RECIPE_KEY); // Default or local spec recipe
-            if (project == null || recipe == null || !recipe.isValid()) {
+            if (project == null || recipe == null) {
                 return method; // Some parser tests do not include a recipe
             }
             String exampleDescription = getCursor().getNearestMessage(DESCRIPTION_KEY);
@@ -258,7 +258,6 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             return method;
         }
 
-// TODO ---- Review code below still ----
 
         private @Nullable RecipeNameAndParameters findRecipe(J tree) {
             return new JavaIsoVisitor<AtomicReference<RecipeNameAndParameters>>() {
@@ -330,9 +329,12 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                         } else {
                             return arg.toString();
                         }
-                    }).filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(toList());
         }
+
+        // TODO ---- Review code below still ----
 
         private RecipeExample.@Nullable Source extractRecipeExampleSource(Expression sourceSpecArg) {
             RecipeExample.Source source = new RecipeExample.Source("", null, null, "");
@@ -394,12 +396,6 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         private static class RecipeNameAndParameters {
             String name = "";
             List<String> parameters = new ArrayList<>();
-
-            @Deprecated
-                // TODO figure out if still needed
-            boolean isValid() {
-                return StringUtils.isNotEmpty(name);
-            }
         }
 
         @Nullable
