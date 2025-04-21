@@ -116,15 +116,17 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
     public Collection<? extends SourceFile> generate(Accumulator acc, ExecutionContext ctx) {
         YamlPrinter yamlPrinter = new YamlPrinter();
         YamlParser yamlParser = YamlParser.builder().build();
-        List<SourceFile> yamlRecipeExampleSourceFiles = new ArrayList<>();
+        List<Documents> yamlRecipeExampleSourceFiles = new ArrayList<>();
         for (Map.Entry<Path, Map<String, List<RecipeExample>>> entry : acc.projectRecipeExamples.entrySet()) {
             if (entry.getValue().isEmpty()) {
                 continue;
             }
-            String yaml = yamlPrinter.print(entry.getValue());
+            @Language("yml") String yaml = yamlPrinter.print(entry.getValue());
             if (!acc.existingExampleFiles.contains(entry.getKey())) {
                 yamlParser.parse(yaml)
-                        .<SourceFile>map(sf -> sf.withSourcePath(entry.getKey())
+                        .filter(sf -> sf instanceof Documents)
+                        .map(sf -> (Documents) sf)
+                        .map(sf -> sf.withSourcePath(entry.getKey())
                                 .withMarkers(Markers.build(singleton(new Written(Tree.randomId())))))
                         .forEach(yamlRecipeExampleSourceFiles::add);
             }
@@ -140,13 +142,13 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                 if (acc.existingExampleFiles.contains(doc.getSourcePath()) &&
                         !doc.getMarkers().findFirst(Written.class).isPresent()) {
                     String yaml = new YamlPrinter().print(acc.projectRecipeExamples.get(doc.getSourcePath()));
-                    Optional<SourceFile> first = YamlParser.builder().build().parse(yaml).findFirst();
+                    Optional<Documents> first = YamlParser.builder().build().parse(yaml)
+                            .filter(sf -> sf instanceof Documents)
+                            .map(sf -> (Documents) sf)
+                            .findFirst();
                     if (first.isPresent()) {
-                        SourceFile sourceFile = first.get();
-                        if (sourceFile instanceof Documents) {
-                            return doc.withDocuments(((Documents) sourceFile).getDocuments())
-                                    .withMarkers(Markers.build(singleton(new Written(Tree.randomId()))));
-                        }
+                        return doc.withDocuments(first.get().getDocuments())
+                                .withMarkers(Markers.build(singleton(new Written(Tree.randomId()))));
                     }
                 }
                 return doc;
@@ -362,7 +364,6 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
         private final Yaml yaml = new Yaml();
 
-        @Language("yaml")
         String print(Map<String, List<RecipeExample>> recipeExamples) {
             StringWriter stringWriter = new StringWriter();
             for (Map.Entry<String, List<RecipeExample>> recipeEntry : recipeExamples.entrySet()) {
