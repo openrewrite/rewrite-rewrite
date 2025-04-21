@@ -1,0 +1,440 @@
+# Copyright 2025 the original author or authors.
+# <p>
+# Licensed under the Moderne Source Available License (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# <p>
+# https://docs.moderne.io/licensing/moderne-source-available-license
+# <p>
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# 
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.BlankLinesAroundFieldsWithAnnotations
+examples:
+- description: ''
+  sources:
+  - before: |
+      class Test {
+          @Deprecated
+          int a;
+          int b;
+          @Deprecated
+          int c;
+          int d;
+      }
+    after: |
+      class Test {
+          @Deprecated
+          int a;
+
+          int b;
+
+          @Deprecated
+          int c;
+
+          int d;
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.CorrectlySpacedDescriptions
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.Recipe;
+
+      class Test extends Recipe {
+          @Override
+          public String getDescription() {
+            return "A description." +
+               " which might" +
+               "consist    " +
+               "   of several lines.";
+          }
+      }
+    after: |
+      import org.openrewrite.Recipe;
+
+      class Test extends Recipe {
+          @Override
+          public String getDescription() {
+            return "A description. " +
+               "which might " +
+               "consist " +
+               "of several lines.";
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.ExecutionContextParameterName
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.*;
+      class SampleRecipe extends Recipe {
+          public void test(ExecutionContext executionContext) {}
+      }
+    after: |
+      import org.openrewrite.*;
+      class SampleRecipe extends Recipe {
+          public void test(ExecutionContext ctx) {}
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.FindRecipes
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.Option;
+      import org.openrewrite.internal.lang.NonNullApi;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.internal.lang.Nullable;
+
+      @NonNullApi
+      class MyRecipe extends Recipe {
+        @Option(displayName = "Method pattern",
+                description = "A method pattern that is used to find matching method declarations/invocations.",
+                example = "org.mockito.Matchers anyVararg()")
+        String methodPattern;
+
+        @Option(displayName = "New access level",
+                description = "New method access level to apply to the method, like \"public\".",
+                example = "public",
+                valid = {"private", "protected", "package", "public"},
+                required = false)
+        String newAccessLevel;
+
+        @Override
+        public String getDisplayName() {
+            return "My recipe";
+        }
+
+        @Override
+        public String getDescription() {
+            return "This is my recipe.";
+        }
+      }
+    after: |
+      import org.openrewrite.Option;
+      import org.openrewrite.internal.lang.NonNullApi;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.internal.lang.Nullable;
+
+      @NonNullApi
+      class /*~~>*/MyRecipe extends Recipe {
+        @Option(displayName = "Method pattern",
+                description = "A method pattern that is used to find matching method declarations/invocations.",
+                example = "org.mockito.Matchers anyVararg()")
+        String methodPattern;
+
+        @Option(displayName = "New access level",
+                description = "New method access level to apply to the method, like \"public\".",
+                example = "public",
+                valid = {"private", "protected", "package", "public"},
+                required = false)
+        String newAccessLevel;
+
+        @Override
+        public String getDisplayName() {
+            return "My recipe";
+        }
+
+        @Override
+        public String getDescription() {
+            return "This is my recipe.";
+        }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.MissingOptionExample
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.Option;
+      import org.openrewrite.Recipe;
+
+      class SomeRecipe extends Recipe {
+          @Option(displayName = "Test", description = "Test")
+          private String test;
+
+          @Override
+          public String getDisplayName() {
+              return "Find missing `@Option` `example` values";
+          }
+          @Override
+          public String getDescription() {
+              return "Find `@Option` annotations that are missing `example` values.";
+          }
+      }
+    after: |
+      import org.openrewrite.Option;
+      import org.openrewrite.Recipe;
+
+      class SomeRecipe extends Recipe {
+          @Option(example = "TODO Provide a usage example for the docs", displayName = "Test", description = "Test")
+          private String test;
+
+          @Override
+          public String getDisplayName() {
+              return "Find missing `@Option` `example` values";
+          }
+          @Override
+          public String getDescription() {
+              return "Find `@Option` annotations that are missing `example` values.";
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.NoMutableStaticFieldsInRecipes
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.Recipe;
+
+      public class A extends Recipe {
+          static final int immutable = 0;
+          static int mutable = 0;
+      }
+    after: |
+      import org.openrewrite.Recipe;
+
+      public class A extends Recipe {
+          static final int immutable = 0;
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.RecipeEqualsAndHashCodeCallSuper
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.Recipe;
+      import lombok.EqualsAndHashCode;
+      import lombok.Value;
+
+      @Value
+      @EqualsAndHashCode(callSuper = true)
+      class MyRecipe extends Recipe {
+      }
+    after: |
+      import org.openrewrite.Recipe;
+      import lombok.EqualsAndHashCode;
+      import lombok.Value;
+
+      @Value
+      @EqualsAndHashCode(callSuper = false)
+      class MyRecipe extends Recipe {
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.RewriteTestClassesShouldNotBePublic
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.test.RecipeSpec;
+      import org.openrewrite.test.RewriteTest;
+
+      // org.openrewrite.java.testing.cleanup.TestsShouldNotBePublicTest skips classes that override defaults()
+      public class ATest implements RewriteTest {
+          @Override
+          public void defaults(RecipeSpec spec) {
+          }
+      }
+    after: |
+      import org.openrewrite.test.RecipeSpec;
+      import org.openrewrite.test.RewriteTest;
+
+      // org.openrewrite.java.testing.cleanup.TestsShouldNotBePublicTest skips classes that override defaults()
+      class ATest implements RewriteTest {
+          @Override
+          public void defaults(RecipeSpec spec) {
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.SelectRecipeExamples
+examples:
+- description: ''
+  sources:
+  - before: |
+      package org.openrewrite.java.cleanup;
+
+      import org.junit.jupiter.api.Test;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.test.RecipeSpec;
+      import org.openrewrite.test.RewriteTest;
+
+      import static org.openrewrite.java.Assertions.java;
+
+      class UnnecessaryParenthesesTest implements RewriteTest {
+          @Override
+          public void defaults(RecipeSpec spec) {
+              spec.recipe(Recipe.noop());
+          }
+
+          @Test
+          void test1() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+
+          @Test
+          void test2() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+      }
+    after: |
+      package org.openrewrite.java.cleanup;
+
+      import org.junit.jupiter.api.Test;
+      import org.openrewrite.DocumentExample;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.test.RecipeSpec;
+      import org.openrewrite.test.RewriteTest;
+
+      import static org.openrewrite.java.Assertions.java;
+
+      class UnnecessaryParenthesesTest implements RewriteTest {
+          @Override
+          public void defaults(RecipeSpec spec) {
+              spec.recipe(Recipe.noop());
+          }
+
+          @DocumentExample
+          @Test
+          void test1() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+
+          @Test
+          void test2() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.SourceSpecTextBlockIndentation
+examples:
+- description: ''
+  sources:
+  - before: "import org.openrewrite.test.RewriteTest;\nimport static org.openrewrite.test.SourceSpecs.text;\n\
+      \nclass MyRecipeTest implements RewriteTest {\n    void test() {\n      rewriteRun(\n\
+      \         text(\n           \"\"\"\n               class Test {\n \n       \
+      \            \n                   void test() {\n                       System.out.println(\"\
+      Hello, world!\");\n                   }\n               }\n             \"\"\
+      \"\n         )\n      );\n    }\n}\n"
+    after: "import org.openrewrite.test.RewriteTest;\nimport static org.openrewrite.test.SourceSpecs.text;\n\
+      \nclass MyRecipeTest implements RewriteTest {\n    void test() {\n      rewriteRun(\n\
+      \         text(\n           \"\"\"\n             class Test {\n \n         \
+      \        \n                 void test() {\n                     System.out.println(\"\
+      Hello, world!\");\n                 }\n             }\n             \"\"\"\n\
+      \         )\n      );\n    }\n}\n"
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.SourceSpecTextBlockNewLine
+examples:
+- description: ''
+  sources:
+  - before: "import org.openrewrite.test.RewriteTest;\nimport static org.openrewrite.test.SourceSpecs.text;\n\
+      \nclass MyRecipeTest implements RewriteTest {\n    void test() {\n      rewriteRun(\n\
+      \         text(\n            \"\"\"\n             class Test {\n \n        \
+      \         \n                 void test() {\n                     System.out.println(\"\
+      Hello, world!\");\n                 }\n             }\n             \"\"\")\n\
+      \      );\n    }\n}\n"
+    after: "import org.openrewrite.test.RewriteTest;\nimport static org.openrewrite.test.SourceSpecs.text;\n\
+      \nclass MyRecipeTest implements RewriteTest {\n    void test() {\n      rewriteRun(\n\
+      \         text(\n            \"\"\"\n             class Test {\n \n        \
+      \         \n                 void test() {\n                     System.out.println(\"\
+      Hello, world!\");\n                 }\n             }\n             \"\"\"\n\
+      \         )\n      );\n    }\n}\n"
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.UseTreeRandomId
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.java.tree.J;
+      import org.openrewrite.java.tree.JavaType;
+      import org.openrewrite.marker.Markers;
+      import org.openrewrite.java.tree.Space;
+
+      import java.util.UUID;
+      import static java.util.UUID.randomUUID;
+
+      class Foo {
+          void bar() {
+              J.Literal literal1 = new J.Literal(UUID.randomUUID(), Space.EMPTY, Markers.EMPTY, null, null, null, JavaType.Primitive.Boolean);
+              J.Literal literal2 = new J.Literal(randomUUID(), Space.EMPTY, Markers.EMPTY, null, null, null, JavaType.Primitive.Boolean);
+          }
+      }
+    after: |
+      import org.openrewrite.Tree;
+      import org.openrewrite.java.tree.J;
+      import org.openrewrite.java.tree.JavaType;
+      import org.openrewrite.marker.Markers;
+      import org.openrewrite.java.tree.Space;
+
+      class Foo {
+          void bar() {
+              J.Literal literal1 = new J.Literal(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, null, null, JavaType.Primitive.Boolean);
+              J.Literal literal2 = new J.Literal(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, null, null, JavaType.Primitive.Boolean);
+          }
+      }
+    language: java
