@@ -23,6 +23,7 @@ import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
 
 import static org.openrewrite.java.Assertions.*;
+import static org.openrewrite.test.SourceSpecs.text;
 import static org.openrewrite.yaml.Assertions.yaml;
 
 class ExamplesExtractorTest implements RewriteTest {
@@ -1398,6 +1399,82 @@ class ExamplesExtractorTest implements RewriteTest {
                   }
                   """
               )
+            )
+          )
+        );
+    }
+
+    @Test
+    void licenseHeader() {
+        rewriteRun(
+          mavenProject(
+            "project",
+            text(
+              """
+                License Header
+                Year ${year}
+                """,
+              spec -> spec.path("gradle/licenseHeader.txt")
+            ),
+            //language=java
+            srcTestJava(
+              java(
+                """
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.java.RemoveUnusedImports;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class RemoveUnusedImportsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new RemoveUnusedImports());
+                      }
+
+                      @DocumentExample
+                      @Test
+                      void removeUnusedImports() {
+                          rewriteRun(
+                            java(
+                              ""\"
+                              import java.util.List;
+                              class A {}
+                              ""\",
+                              ""\"
+                              class A {}
+                              ""\"
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
+            ),
+            //language=yaml
+            yaml(
+              """
+                ---
+                """,
+              """
+                # License Header
+                # Year 2025
+                ---
+                type: specs.openrewrite.org/v1beta/example
+                recipeName: org.openrewrite.java.RemoveUnusedImports
+                examples:
+                - description: ''
+                  sources:
+                  - before: |
+                      import java.util.List;
+                      class A {}
+                    after: |
+                      class A {}
+                    language: java
+                \n""",
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             )
           )
         );

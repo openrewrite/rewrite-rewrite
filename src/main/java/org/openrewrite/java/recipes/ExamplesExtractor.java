@@ -15,7 +15,6 @@
  */
 package org.openrewrite.java.recipes;
 
-import lombok.Data;
 import lombok.Value;
 import lombok.With;
 import org.intellij.lang.annotations.Language;
@@ -33,6 +32,7 @@ import org.openrewrite.java.trait.Traits;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Marker;
 import org.openrewrite.marker.Markers;
+import org.openrewrite.text.PlainText;
 import org.openrewrite.yaml.YamlIsoVisitor;
 import org.openrewrite.yaml.YamlParser;
 import org.openrewrite.yaml.tree.Yaml.Documents;
@@ -106,6 +106,9 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                             return documents;
                         }
                     }.visit(tree, ctx);
+                } else if (tree instanceof PlainText &&
+                        ((PlainText) tree).getSourcePath().endsWith("licenseHeader.txt")) {
+                    acc.licenseHeader = ((PlainText) tree).getText();
                 }
                 return tree;
             }
@@ -121,7 +124,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             if (entry.getValue().isEmpty()) {
                 continue;
             }
-            @Language("yml") String yaml = yamlPrinter.print(entry.getValue());
+            @Language("yml") String yaml = yamlPrinter.print(acc.licenseHeader, entry.getValue());
             if (!acc.existingExampleFiles.contains(entry.getKey())) {
                 yamlParser.parse(yaml)
                         .filter(sf -> sf instanceof Documents)
@@ -141,7 +144,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             public Documents visitDocuments(Documents doc, ExecutionContext ctx) {
                 if (acc.existingExampleFiles.contains(doc.getSourcePath()) &&
                         !doc.getMarkers().findFirst(Written.class).isPresent()) {
-                    String yaml = new YamlPrinter().print(acc.projectRecipeExamples.get(doc.getSourcePath()));
+                    String yaml = new YamlPrinter().print(acc.licenseHeader, acc.projectRecipeExamples.get(doc.getSourcePath()));
                     Optional<Documents> first = YamlParser.builder().build().parse(yaml)
                             .filter(sf -> sf instanceof Documents)
                             .map(sf -> (Documents) sf)
@@ -156,11 +159,11 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         };
     }
 
-    @Value
     public static class Accumulator {
-        List<Path> existingExampleFiles = new ArrayList<>();
+        @Nullable String licenseHeader;
+        final List<Path> existingExampleFiles = new ArrayList<>();
         // Target example file path -> RecipeName -> Examples
-        Map<Path, Map<String, List<RecipeExample>>> projectRecipeExamples = new HashMap<>();
+        final Map<Path, Map<String, List<RecipeExample>>> projectRecipeExamples = new HashMap<>();
     }
 
     @Value
@@ -196,7 +199,6 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             return method;
         }
 
-        @Data
         private static class RecipeNameAndParameters {
             String name = "";
             List<String> parameters = new ArrayList<>();
@@ -228,14 +230,14 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             example.setSources(extractRecipeExampleSources(sourceArgs));
             if (!example.getSources().isEmpty()) {
                 example.setDescription(exampleDescription);
-                example.setParameters(recipe.getParameters());
+                example.setParameters(recipe.parameters);
 
                 String testSourcePath = getCursor().firstEnclosingOrThrow(J.CompilationUnit.class).getSourcePath().toString();
                 String root = testSourcePath.substring(0, testSourcePath.indexOf("src/"));
                 Path targetPath = Paths.get(root).resolve("src/main/resources/META-INF/rewrite/examples.yml");
                 acc.projectRecipeExamples
                         .computeIfAbsent(targetPath, key -> new TreeMap<>())
-                        .computeIfAbsent(recipe.getName(), key -> new ArrayList<>()).add(example);
+                        .computeIfAbsent(recipe.name, key -> new ArrayList<>()).add(example);
             }
 
             return method;
@@ -258,8 +260,8 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                 if (TypeUtils.isAssignableTo("org.openrewrite.Recipe", type) && type instanceof JavaType.Class) {
                                     JavaType.Class tc = (JavaType.Class) type;
                                     RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
-                                    recipeNameAndParameters.setName(tc.getFullyQualifiedName());
-                                    recipeNameAndParameters.setParameters(extractParameters(newClass.getArguments()));
+                                    recipeNameAndParameters.name = (tc.getFullyQualifiedName());
+                                    recipeNameAndParameters.parameters = (extractParameters(newClass.getArguments()));
                                     recipe.set(recipeNameAndParameters);
                                 }
                                 return newClass;
@@ -272,7 +274,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                     Expression arg = method.getArguments().get(0);
                                     if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
                                         RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
-                                        recipeNameAndParameters.setName(((J.Literal) arg).getValue().toString());
+                                        recipeNameAndParameters.name = (((J.Literal) arg).getValue().toString());
                                         recipe.set(recipeNameAndParameters);
                                     }
                                     return method;
@@ -281,7 +283,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                     Expression arg = method.getArguments().get(method.getArguments().size() - 1);
                                     if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
                                         RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
-                                        recipeNameAndParameters.setName(((J.Literal) arg).getValue().toString());
+                                        recipeNameAndParameters.name = (((J.Literal) arg).getValue().toString());
                                         recipe.set(recipeNameAndParameters);
                                     }
                                     return method;
@@ -364,8 +366,16 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
         private final Yaml yaml = new Yaml();
 
-        String print(Map<String, List<RecipeExample>> recipeExamples) {
+        String print(String licenseHeader, Map<String, List<RecipeExample>> recipeExamples) {
             StringWriter stringWriter = new StringWriter();
+            if (StringUtils.isNotEmpty(licenseHeader)) {
+                stringWriter
+                        .append("# ")
+                        .append(licenseHeader
+                                .replace("${year}", "2025") // Hardcoded to avoid suggestions in 2026+
+                                .replace("\n", "\n# "))
+                        .append("\n");
+            }
             for (Map.Entry<String, List<RecipeExample>> recipeEntry : recipeExamples.entrySet()) {
                 Map<String, Object> yamlDoc = print(recipeEntry.getKey(), recipeEntry.getValue());
                 stringWriter.append("---\n").append(yaml.dumpAsMap(yamlDoc));
