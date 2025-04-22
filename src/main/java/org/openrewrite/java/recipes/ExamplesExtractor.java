@@ -15,9 +15,6 @@
  */
 package org.openrewrite.java.recipes;
 
-import lombok.Value;
-import lombok.With;
-import org.intellij.lang.annotations.Language;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.config.RecipeExample;
@@ -30,8 +27,6 @@ import org.openrewrite.java.trait.Annotated;
 import org.openrewrite.java.trait.Literal;
 import org.openrewrite.java.trait.Traits;
 import org.openrewrite.java.tree.*;
-import org.openrewrite.marker.Marker;
-import org.openrewrite.marker.Markers;
 import org.openrewrite.text.PlainText;
 import org.openrewrite.yaml.YamlIsoVisitor;
 import org.openrewrite.yaml.YamlParser;
@@ -44,7 +39,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static java.util.Collections.singleton;
 import static java.util.stream.Collectors.toList;
 
 public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumulator> {
@@ -117,59 +111,43 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
     @Override
     public Collection<? extends SourceFile> generate(Accumulator acc, ExecutionContext ctx) {
-        YamlPrinter yamlPrinter = new YamlPrinter();
-        YamlParser yamlParser = YamlParser.builder().build();
-        List<Documents> yamlRecipeExampleSourceFiles = new ArrayList<>();
-        for (Map.Entry<Path, Map<String, List<RecipeExample>>> entry : acc.projectRecipeExamples.entrySet()) {
-            if (entry.getValue().isEmpty()) {
-                continue;
-            }
-            @Language("yml") String yaml = yamlPrinter.print(acc.licenseHeader, entry.getValue());
-            if (!acc.existingExampleFiles.contains(entry.getKey())) {
-                yamlParser.parse(yaml)
-                        .filter(sf -> sf instanceof Documents)
-                        .map(sf -> (Documents) sf)
-                        .map(sf -> sf.withSourcePath(entry.getKey())
-                                .withMarkers(Markers.build(singleton(new Written(Tree.randomId())))))
-                        .forEach(yamlRecipeExampleSourceFiles::add);
-            }
-        }
-        return yamlRecipeExampleSourceFiles;
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
+        Documents emptyDoc = YamlParser.builder().build()
+                .parse("---\n")
+                .filter(sf -> sf instanceof Documents)
+                .map(sf -> (Documents) sf)
+                .findFirst().get();
+        return acc.projectRecipeExamples.keySet().stream()
+                .filter(path -> !acc.existingExampleFiles.contains(path))
+                .map(emptyDoc::withSourcePath)
+                .map(doc -> doc.withId(Tree.randomId()))
+                .collect(toList());
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor(Accumulator acc) {
         return new YamlIsoVisitor<ExecutionContext>() {
             @Override
-            public Documents visitDocuments(Documents doc, ExecutionContext ctx) {
-                if (acc.existingExampleFiles.contains(doc.getSourcePath()) &&
-                        !doc.getMarkers().findFirst(Written.class).isPresent()) {
-                    String yaml = new YamlPrinter().print(acc.licenseHeader, acc.projectRecipeExamples.get(doc.getSourcePath()));
-                    Optional<Documents> first = YamlParser.builder().build().parse(yaml)
-                            .filter(sf -> sf instanceof Documents)
-                            .map(sf -> (Documents) sf)
-                            .findFirst();
-                    if (first.isPresent()) {
-                        return doc.withDocuments(first.get().getDocuments())
-                                .withMarkers(Markers.build(singleton(new Written(Tree.randomId()))));
-                    }
+            public Documents visitDocuments(Documents existingDocuments, ExecutionContext ctx) {
+                String yaml = new YamlPrinter().print(acc.licenseHeader, acc.projectRecipeExamples.get(existingDocuments.getSourcePath()));
+                Optional<Documents> first = YamlParser.builder().build().parse(yaml)
+                        .filter(sf -> sf instanceof Documents)
+                        .map(sf -> (Documents) sf)
+                        .findFirst();
+                if (first.isPresent() && !first.get().printAll().equals(existingDocuments.printAll())) {
+                    return existingDocuments.withDocuments(first.get().getDocuments());
                 }
-                return doc;
+                return existingDocuments;
             }
         };
     }
 
     public static class Accumulator {
-        @Nullable String licenseHeader;
+        @Nullable
+        String licenseHeader;
         final List<Path> existingExampleFiles = new ArrayList<>();
         // Target example file path -> RecipeName -> Examples
         final Map<Path, Map<String, List<RecipeExample>>> projectRecipeExamples = new HashMap<>();
-    }
-
-    @Value
-    @With
-    public static class Written implements Marker {
-        UUID id;
     }
 
     static class ExamplesExtractorVisitor extends JavaIsoVisitor<ExecutionContext> {
@@ -366,7 +344,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
         private final Yaml yaml = new Yaml();
 
-        String print(String licenseHeader, Map<String, List<RecipeExample>> recipeExamples) {
+        String print(@Nullable String licenseHeader, Map<String, List<RecipeExample>> recipeExamples) {
             StringWriter stringWriter = new StringWriter();
             if (StringUtils.isNotEmpty(licenseHeader)) {
                 stringWriter
