@@ -129,7 +129,11 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         return new YamlIsoVisitor<ExecutionContext>() {
             @Override
             public Documents visitDocuments(Documents existingDocuments, ExecutionContext ctx) {
-                String yaml = new YamlPrinter().print(acc.licenseHeader, acc.projectRecipeExamples.get(existingDocuments.getSourcePath()));
+                Map<String, List<RecipeExample>> recipeExamples = acc.projectRecipeExamples.get(existingDocuments.getSourcePath());
+                if (recipeExamples == null || recipeExamples.isEmpty()) {
+                    return existingDocuments;
+                }
+                String yaml = new YamlPrinter().print(acc.licenseHeader, recipeExamples);
                 Optional<Documents> first = YamlParser.builder().build().parse(yaml)
                         .filter(sf -> sf instanceof Documents)
                         .map(sf -> (Documents) sf)
