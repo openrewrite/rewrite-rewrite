@@ -117,9 +117,10 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                 .filter(sf -> sf instanceof Documents)
                 .map(sf -> (Documents) sf)
                 .findFirst().get();
-        return acc.projectRecipeExamples.keySet().stream()
-                .filter(path -> !acc.existingExampleFiles.contains(path))
-                .map(emptyDoc::withSourcePath)
+        return acc.projectRecipeExamples.entrySet().stream()
+                .filter(entry -> !acc.existingExampleFiles.contains(entry.getKey()))
+                .filter(entry -> !entry.getValue().isEmpty())
+                .map(entry -> emptyDoc.withSourcePath(entry.getKey()))
                 .map(doc -> doc.withId(Tree.randomId()))
                 .collect(toList());
     }
