@@ -837,6 +837,8 @@ class ExamplesExtractorTest implements RewriteTest {
                               false,
                               null,
                               null,
+                              null,
+                              null,
                               null
                             )),
                             yaml(
@@ -882,6 +884,8 @@ class ExamplesExtractorTest implements RewriteTest {
                           condition:
                               age: 7
                   - 'false'
+                  - 'null'
+                  - 'null'
                   - 'null'
                   - 'null'
                   - 'null'
