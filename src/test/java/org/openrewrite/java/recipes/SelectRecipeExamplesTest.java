@@ -27,7 +27,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new SelectRecipeExamples())
+        spec.recipes(new SelectRecipeExamples(), new RecipeExamplesFirst())
           .parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()));
     }
 
