@@ -150,6 +150,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
     public static class Accumulator {
         @Nullable
         String licenseHeader;
+
         final List<Path> existingExampleFiles = new ArrayList<>();
         // Target example file path -> RecipeName -> Examples
         final Map<Path, Map<String, List<RecipeExample>>> projectRecipeExamples = new HashMap<>();

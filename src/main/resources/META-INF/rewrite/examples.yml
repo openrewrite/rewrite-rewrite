@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# 
+#
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.BlankLinesAroundFieldsWithAnnotations
@@ -71,6 +71,87 @@ examples:
           }
       }
     language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.ExamplesExtractor
+examples:
+- description: ''
+  sources:
+  - before: |
+      package org.openrewrite.staticanalysis;
+
+      import org.junit.jupiter.api.Test;
+      import org.openrewrite.DocumentExample;
+      import org.openrewrite.test.RecipeSpec;
+      import org.openrewrite.test.RewriteTest;
+
+      import static org.openrewrite.java.Assertions.java;
+
+      class ChainStringBuilderAppendCallsTest implements RewriteTest {
+          @Override
+          public void defaults(RecipeSpec spec) {
+              spec.recipe(new ChainStringBuilderAppendCalls());
+          }
+
+          @DocumentExample(value = "Objects concatenation.")
+          @Test
+          void objectsConcatenation() {
+              rewriteRun(
+                java(
+                  """
+                    class A {
+                        void method1() {
+                            StringBuilder sb = new StringBuilder();
+                            String op = "+";
+                            sb.append("A" + op + "B");
+                            sb.append(1 + op + 2);
+                        }
+                    }
+                    """,
+                  """
+                    class A {
+                        void method1() {
+                            StringBuilder sb = new StringBuilder();
+                            String op = "+";
+                            sb.append("A").append(op).append("B");
+                            sb.append(1).append(op).append(2);
+                        }
+                    }
+                    """
+                )
+              );
+          }
+      }
+    language: java
+  - after: |
+      ---
+      type: specs.openrewrite.org/v1beta/example
+      recipeName: org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
+      examples:
+      - description: Objects concatenation.
+        sources:
+        - before: |
+            class A {
+                void method1() {
+                    StringBuilder sb = new StringBuilder();
+                    String op = "+";
+                    sb.append("A" + op + "B");
+                    sb.append(1 + op + 2);
+                }
+            }
+          after: |
+            class A {
+                void method1() {
+                    StringBuilder sb = new StringBuilder();
+                    String op = "+";
+                    sb.append("A").append(op).append("B");
+                    sb.append(1).append(op).append(2);
+                }
+            }
+          language: java
+    language: yaml
+  - before: project
+    language: mavenProject
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.ExecutionContextParameterName

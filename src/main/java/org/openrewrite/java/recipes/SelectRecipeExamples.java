@@ -78,7 +78,8 @@ public class SelectRecipeExamples extends Recipe {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
                 if (cd != classDecl) {
                     return cd.withBody(cd.getBody().withStatements(
-                            cd.getBody().getStatements().stream().sorted((left, right) -> {
+                            cd.getBody().getStatements().stream()
+                                    .sorted((left, right) -> {
                                         if (left instanceof J.MethodDeclaration && right instanceof J.MethodDeclaration) {
                                             if ("defaults".equals(((J.MethodDeclaration) left).getSimpleName())) {
                                                 return -1;
