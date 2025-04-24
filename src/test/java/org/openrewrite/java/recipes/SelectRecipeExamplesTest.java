@@ -40,6 +40,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
             """
               package org.openrewrite.java.cleanup;
 
+              import org.junit.jupiter.api.BeforeEach;
               import org.junit.jupiter.api.Test;
               import org.openrewrite.Recipe;
               import org.openrewrite.test.RecipeSpec;
@@ -67,6 +68,8 @@ class SelectRecipeExamplesTest implements RewriteTest {
                       );
                   }
 
+                  @BeforeEach void foo(){}
+
                   @Test
                   void test2() {
                       rewriteRun(
@@ -85,6 +88,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
             """
               package org.openrewrite.java.cleanup;
 
+              import org.junit.jupiter.api.BeforeEach;
               import org.junit.jupiter.api.Test;
               import org.openrewrite.DocumentExample;
               import org.openrewrite.Recipe;
@@ -98,6 +102,8 @@ class SelectRecipeExamplesTest implements RewriteTest {
                   public void defaults(RecipeSpec spec) {
                       spec.recipe(Recipe.noop());
                   }
+
+                  @BeforeEach void foo(){}
 
                   @DocumentExample
                   @Test

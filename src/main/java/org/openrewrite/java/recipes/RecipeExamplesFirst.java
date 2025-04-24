@@ -15,6 +15,8 @@ public class RecipeExamplesFirst extends Recipe {
     private static final String DOCUMENT_EXAMPLE_ANNOTATION_FQN = "org.openrewrite.DocumentExample";
     private static final AnnotationMatcher DOCUMENT_EXAMPLE_ANNOTATION_MATCHER =
             new AnnotationMatcher("@" + DOCUMENT_EXAMPLE_ANNOTATION_FQN);
+    private static final AnnotationMatcher BEFORE_ANNOTATION_MATCHER =
+            new AnnotationMatcher("@org.junit.jupiter.api.Before*");
 
     @Override
     public String getDisplayName() {
@@ -42,22 +44,29 @@ public class RecipeExamplesFirst extends Recipe {
                                             return 1;
                                         }
 
-                                        boolean leftIsExample = ((J.MethodDeclaration) left).getLeadingAnnotations().stream()
-                                                .anyMatch(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER::matches);
-                                        boolean rightIsExample = ((J.MethodDeclaration) right).getLeadingAnnotations().stream()
-                                                .anyMatch(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER::matches);
-                                        if (leftIsExample && rightIsExample) {
-                                            return 0;
-                                        } else if (leftIsExample) {
-                                            return -1;
-                                        } else if (rightIsExample) {
-                                            return 1;
+                                        int i = compareUsingMatcher((J.MethodDeclaration) left, (J.MethodDeclaration) right, BEFORE_ANNOTATION_MATCHER);
+                                        if (i != 0) {
+                                            return i;
                                         }
+                                        return compareUsingMatcher((J.MethodDeclaration) left, (J.MethodDeclaration) right, DOCUMENT_EXAMPLE_ANNOTATION_MATCHER);
                                     }
                                     return 0;
                                 })
                                 .collect(toList())
                 ));
+            }
+
+            private int compareUsingMatcher(J.MethodDeclaration left, J.MethodDeclaration right, AnnotationMatcher matcher) {
+                boolean leftIsExample = left.getLeadingAnnotations().stream().anyMatch(matcher::matches);
+                boolean rightIsExample = right.getLeadingAnnotations().stream().anyMatch(matcher::matches);
+                if (leftIsExample && rightIsExample) {
+                    return 0;
+                } else if (leftIsExample) {
+                    return -1;
+                } else if (rightIsExample) {
+                    return 1;
+                }
+                return 0;
             }
         });
     }
