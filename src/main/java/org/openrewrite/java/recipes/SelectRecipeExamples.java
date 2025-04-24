@@ -21,6 +21,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.*;
 import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 
 public class SelectRecipeExamples extends Recipe {
 
@@ -56,7 +58,7 @@ public class SelectRecipeExamples extends Recipe {
     @Override
     public String getDescription() {
         return "Add `@DocumentExample` to the first non-issue and not a disabled unit test of a recipe as an example, " +
-               "if there are not any examples yet.";
+                "if there are not any examples yet.";
     }
 
     @Override
@@ -73,7 +75,35 @@ public class SelectRecipeExamples extends Recipe {
                     }
                 }
                 selectedCount = 0;
-                return super.visitClassDeclaration(classDecl, ctx);
+                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
+                if (cd != classDecl) {
+                    return cd.withBody(cd.getBody().withStatements(
+                            cd.getBody().getStatements().stream().sorted((left, right) -> {
+                                        if (left instanceof J.MethodDeclaration && right instanceof J.MethodDeclaration) {
+                                            if ("defaults".equals(((J.MethodDeclaration) left).getSimpleName())) {
+                                                return -1;
+                                            } else if ("defaults".equals(((J.MethodDeclaration) right).getSimpleName())) {
+                                                return 1;
+                                            }
+
+                                            boolean leftIsExample = ((J.MethodDeclaration) left).getLeadingAnnotations().stream()
+                                                    .anyMatch(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER::matches);
+                                            boolean rightIsExample = ((J.MethodDeclaration) right).getLeadingAnnotations().stream()
+                                                    .anyMatch(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER::matches);
+                                            if (leftIsExample && rightIsExample) {
+                                                return 0;
+                                            } else if (leftIsExample) {
+                                                return -1;
+                                            } else if (rightIsExample) {
+                                                return 1;
+                                            }
+                                        }
+                                        return 0;
+                                    })
+                                    .collect(toList())
+                    ));
+                }
+                return cd;
             }
 
             @Override
@@ -83,26 +113,17 @@ public class SelectRecipeExamples extends Recipe {
                     return method;
                 }
 
-                List<J.Annotation> annotations = method.getLeadingAnnotations();
-
-                boolean isTest = annotations.stream().anyMatch(TEST_ANNOTATION_MATCHER::matches);
-                if (!isTest) {
-                    return method;
-                }
-
-                boolean hasIssueOrDisabledAnnotation =
-                        annotations.stream().anyMatch(a -> ISSUE_ANNOTATION_MATCHER.matches(a) ||
-                                                           DISABLED_ANNOTATION_MATCHER.matches(a) ||
-                                                           DOCUMENT_EXAMPLE_ANNOTATION_MATCHER.matches(a)
-                        );
-
-                if (hasIssueOrDisabledAnnotation) {
+                List<J.Annotation> annotations = service(AnnotationService.class).getAllAnnotations(getCursor());
+                if (annotations.stream().noneMatch(TEST_ANNOTATION_MATCHER::matches) ||
+                        annotations.stream().anyMatch(a ->
+                                ISSUE_ANNOTATION_MATCHER.matches(a) ||
+                                        DISABLED_ANNOTATION_MATCHER.matches(a) ||
+                                        DOCUMENT_EXAMPLE_ANNOTATION_MATCHER.matches(a))) {
                     return method;
                 }
 
                 J.ClassDeclaration clazz = getCursor().dropParentUntil(J.ClassDeclaration.class::isInstance).getValue();
-                boolean insideNestedClass = clazz != null && clazz.getLeadingAnnotations().stream().anyMatch(NESTED_ANNOTATION_MATCHER::matches);
-                if (insideNestedClass) {
+                if (clazz.getLeadingAnnotations().stream().anyMatch(NESTED_ANNOTATION_MATCHER::matches)) {
                     return method;
                 }
 

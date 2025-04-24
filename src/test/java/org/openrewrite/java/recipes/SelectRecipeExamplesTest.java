@@ -35,6 +35,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void selectFirstExample() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.openrewrite.java.cleanup;
@@ -135,6 +136,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void skipNotChangedTest() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.openrewrite.java.cleanup;
@@ -195,17 +197,6 @@ class SelectRecipeExamplesTest implements RewriteTest {
                       spec.recipe(Recipe.noop());
                   }
 
-                  @Test
-                  void test1() {
-                      rewriteRun(
-                        java(
-                          \"""
-                            BEFORE
-                            \"""
-                        )
-                      );
-                  }
-
                   @DocumentExample
                   @Test
                   void test2() {
@@ -216,6 +207,17 @@ class SelectRecipeExamplesTest implements RewriteTest {
                             \""",
                           \"""
                             AFTER
+                            \"""
+                        )
+                      );
+                  }
+
+                  @Test
+                  void test1() {
+                      rewriteRun(
+                        java(
+                          \"""
+                            BEFORE
                             \"""
                         )
                       );
@@ -229,6 +231,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void skipIssueAnnotatedTests() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.openrewrite.java.cleanup;
@@ -295,9 +298,9 @@ class SelectRecipeExamplesTest implements RewriteTest {
                       spec.recipe(Recipe.noop());
                   }
 
-                  @Issue("https://github.com/openrewrite/rewrite/issues/x")
+                  @DocumentExample
                   @Test
-                  void test1() {
+                  void test2() {
                       rewriteRun(
                         java(
                           \"""
@@ -310,9 +313,9 @@ class SelectRecipeExamplesTest implements RewriteTest {
                       );
                   }
 
-                  @DocumentExample
+                  @Issue("https://github.com/openrewrite/rewrite/issues/x")
                   @Test
-                  void test2() {
+                  void test1() {
                       rewriteRun(
                         java(
                           \"""
@@ -334,6 +337,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void skipDisabledAnnotatedTests() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.openrewrite.java.cleanup;
@@ -375,6 +379,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void ignoreIfHasAnnotated() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.openrewrite.java.cleanup;
@@ -416,6 +421,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void skipNestedClasses() {
         rewriteRun(
+          //language=java
           java(
             """
               import org.junit.jupiter.api.Nested;
