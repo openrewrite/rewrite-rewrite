@@ -27,7 +27,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipes(new SelectRecipeExamples(), new RecipeExamplesFirst())
+        spec.recipes(new SelectRecipeExamples())
           .parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()));
     }
 
@@ -40,7 +40,6 @@ class SelectRecipeExamplesTest implements RewriteTest {
             """
               package org.openrewrite.java.cleanup;
 
-              import org.junit.jupiter.api.BeforeEach;
               import org.junit.jupiter.api.Test;
               import org.openrewrite.Recipe;
               import org.openrewrite.test.RecipeSpec;
@@ -49,6 +48,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
               import static org.openrewrite.java.Assertions.java;
 
               class UnnecessaryParenthesesTest implements RewriteTest {
+
                   @Override
                   public void defaults(RecipeSpec spec) {
                       spec.recipe(Recipe.noop());
@@ -68,8 +68,6 @@ class SelectRecipeExamplesTest implements RewriteTest {
                       );
                   }
 
-                  @BeforeEach void foo(){}
-
                   @Test
                   void test2() {
                       rewriteRun(
@@ -88,7 +86,6 @@ class SelectRecipeExamplesTest implements RewriteTest {
             """
               package org.openrewrite.java.cleanup;
 
-              import org.junit.jupiter.api.BeforeEach;
               import org.junit.jupiter.api.Test;
               import org.openrewrite.DocumentExample;
               import org.openrewrite.Recipe;
@@ -98,12 +95,11 @@ class SelectRecipeExamplesTest implements RewriteTest {
               import static org.openrewrite.java.Assertions.java;
 
               class UnnecessaryParenthesesTest implements RewriteTest {
+
                   @Override
                   public void defaults(RecipeSpec spec) {
                       spec.recipe(Recipe.noop());
                   }
-
-                  @BeforeEach void foo(){}
 
                   @DocumentExample
                   @Test
@@ -203,6 +199,17 @@ class SelectRecipeExamplesTest implements RewriteTest {
                       spec.recipe(Recipe.noop());
                   }
 
+                  @Test
+                  void test1() {
+                      rewriteRun(
+                        java(
+                          \"""
+                            BEFORE
+                            \"""
+                        )
+                      );
+                  }
+
                   @DocumentExample
                   @Test
                   void test2() {
@@ -213,17 +220,6 @@ class SelectRecipeExamplesTest implements RewriteTest {
                             \""",
                           \"""
                             AFTER
-                            \"""
-                        )
-                      );
-                  }
-
-                  @Test
-                  void test1() {
-                      rewriteRun(
-                        java(
-                          \"""
-                            BEFORE
                             \"""
                         )
                       );
@@ -304,9 +300,9 @@ class SelectRecipeExamplesTest implements RewriteTest {
                       spec.recipe(Recipe.noop());
                   }
 
-                  @DocumentExample
+                  @Issue("https://github.com/openrewrite/rewrite/issues/x")
                   @Test
-                  void test2() {
+                  void test1() {
                       rewriteRun(
                         java(
                           \"""
@@ -319,9 +315,9 @@ class SelectRecipeExamplesTest implements RewriteTest {
                       );
                   }
 
-                  @Issue("https://github.com/openrewrite/rewrite/issues/x")
+                  @DocumentExample
                   @Test
-                  void test1() {
+                  void test2() {
                       rewriteRun(
                         java(
                           \"""

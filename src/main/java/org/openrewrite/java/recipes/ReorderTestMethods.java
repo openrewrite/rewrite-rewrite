@@ -1,3 +1,18 @@
+/*
+ * Copyright 2025 the original author or authors.
+ * <p>
+ * Licensed under the Moderne Source Available License (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * https://docs.moderne.io/licensing/moderne-source-available-license
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.openrewrite.java.recipes;
 
 import org.openrewrite.ExecutionContext;
@@ -9,14 +24,16 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
 
+import java.util.Comparator;
+
 import static java.util.stream.Collectors.toList;
 
-public class RecipeExamplesFirst extends Recipe {
+public class ReorderTestMethods extends Recipe {
     private static final String DOCUMENT_EXAMPLE_ANNOTATION_FQN = "org.openrewrite.DocumentExample";
     private static final AnnotationMatcher DOCUMENT_EXAMPLE_ANNOTATION_MATCHER =
             new AnnotationMatcher("@" + DOCUMENT_EXAMPLE_ANNOTATION_FQN);
-    private static final AnnotationMatcher BEFORE_ANNOTATION_MATCHER =
-            new AnnotationMatcher("@org.junit.jupiter.api.Before*");
+    private static final AnnotationMatcher BEFORE_ANNOTATION_MATCHER = new AnnotationMatcher("@org.junit.jupiter.api.Before*");
+    private static final AnnotationMatcher AFTER_ANNOTATION_MATCHER = new AnnotationMatcher("@org.junit.jupiter.api.After*");
 
     @Override
     public String getDisplayName() {
@@ -28,45 +45,31 @@ public class RecipeExamplesFirst extends Recipe {
         return "Reorders `RewriteTest` methods to place `defaults` first, followed by any `@DocumentExample`s.";
     }
 
+    private static final Comparator<J.MethodDeclaration> methodDeclarationComparator = Comparator
+            .<J.MethodDeclaration, Boolean>comparing(md -> md.hasModifier(J.Modifier.Type.Static))
+            .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(BEFORE_ANNOTATION_MATCHER::matches))
+            .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(AFTER_ANNOTATION_MATCHER::matches))
+            .thenComparing(md -> "defaults".equals(md.getSimpleName()))
+            .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER::matches))
+            .reversed();
+
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesType<>(DOCUMENT_EXAMPLE_ANNOTATION_FQN, false), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
+
                 return cd.withBody(cd.getBody().withStatements(
                         cd.getBody().getStatements().stream()
                                 .sorted((left, right) -> {
                                     if (left instanceof J.MethodDeclaration && right instanceof J.MethodDeclaration) {
-                                        if ("defaults".equals(((J.MethodDeclaration) left).getSimpleName())) {
-                                            return -1;
-                                        } else if ("defaults".equals(((J.MethodDeclaration) right).getSimpleName())) {
-                                            return 1;
-                                        }
-
-                                        int i = compareUsingMatcher((J.MethodDeclaration) left, (J.MethodDeclaration) right, BEFORE_ANNOTATION_MATCHER);
-                                        if (i != 0) {
-                                            return i;
-                                        }
-                                        return compareUsingMatcher((J.MethodDeclaration) left, (J.MethodDeclaration) right, DOCUMENT_EXAMPLE_ANNOTATION_MATCHER);
+                                        return methodDeclarationComparator.compare((J.MethodDeclaration) left, (J.MethodDeclaration) right);
                                     }
                                     return 0;
                                 })
                                 .collect(toList())
                 ));
-            }
-
-            private int compareUsingMatcher(J.MethodDeclaration left, J.MethodDeclaration right, AnnotationMatcher matcher) {
-                boolean leftIsExample = left.getLeadingAnnotations().stream().anyMatch(matcher::matches);
-                boolean rightIsExample = right.getLeadingAnnotations().stream().anyMatch(matcher::matches);
-                if (leftIsExample && rightIsExample) {
-                    return 0;
-                } else if (leftIsExample) {
-                    return -1;
-                } else if (rightIsExample) {
-                    return 1;
-                }
-                return 0;
             }
         });
     }
