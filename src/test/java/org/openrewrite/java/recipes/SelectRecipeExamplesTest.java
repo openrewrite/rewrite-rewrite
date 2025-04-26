@@ -27,7 +27,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new SelectRecipeExamples())
+        spec.recipes(new SelectRecipeExamples())
           .parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()));
     }
 
@@ -35,6 +35,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void selectFirstExample() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.openrewrite.java.cleanup;
@@ -47,6 +48,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
               import static org.openrewrite.java.Assertions.java;
 
               class UnnecessaryParenthesesTest implements RewriteTest {
+
                   @Override
                   public void defaults(RecipeSpec spec) {
                       spec.recipe(Recipe.noop());
@@ -93,6 +95,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
               import static org.openrewrite.java.Assertions.java;
 
               class UnnecessaryParenthesesTest implements RewriteTest {
+
                   @Override
                   public void defaults(RecipeSpec spec) {
                       spec.recipe(Recipe.noop());
@@ -135,6 +138,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void skipNotChangedTest() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.openrewrite.java.cleanup;
@@ -229,6 +233,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void skipIssueAnnotatedTests() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.openrewrite.java.cleanup;
@@ -334,6 +339,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void skipDisabledAnnotatedTests() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.openrewrite.java.cleanup;
@@ -375,6 +381,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void ignoreIfHasAnnotated() {
         rewriteRun(
+          //language=java
           java(
             """
               package org.openrewrite.java.cleanup;
@@ -416,6 +423,7 @@ class SelectRecipeExamplesTest implements RewriteTest {
     @Test
     void skipNestedClasses() {
         rewriteRun(
+          //language=java
           java(
             """
               import org.junit.jupiter.api.Nested;

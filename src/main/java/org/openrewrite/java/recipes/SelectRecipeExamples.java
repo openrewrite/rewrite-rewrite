@@ -21,6 +21,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.*;
 import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
@@ -56,7 +57,7 @@ public class SelectRecipeExamples extends Recipe {
     @Override
     public String getDescription() {
         return "Add `@DocumentExample` to the first non-issue and not a disabled unit test of a recipe as an example, " +
-               "if there are not any examples yet.";
+                "if there are not any examples yet.";
     }
 
     @Override
@@ -83,26 +84,17 @@ public class SelectRecipeExamples extends Recipe {
                     return method;
                 }
 
-                List<J.Annotation> annotations = method.getLeadingAnnotations();
-
-                boolean isTest = annotations.stream().anyMatch(TEST_ANNOTATION_MATCHER::matches);
-                if (!isTest) {
-                    return method;
-                }
-
-                boolean hasIssueOrDisabledAnnotation =
-                        annotations.stream().anyMatch(a -> ISSUE_ANNOTATION_MATCHER.matches(a) ||
-                                                           DISABLED_ANNOTATION_MATCHER.matches(a) ||
-                                                           DOCUMENT_EXAMPLE_ANNOTATION_MATCHER.matches(a)
-                        );
-
-                if (hasIssueOrDisabledAnnotation) {
+                List<J.Annotation> annotations = service(AnnotationService.class).getAllAnnotations(getCursor());
+                if (annotations.stream().noneMatch(TEST_ANNOTATION_MATCHER::matches) ||
+                        annotations.stream().anyMatch(a ->
+                                ISSUE_ANNOTATION_MATCHER.matches(a) ||
+                                        DISABLED_ANNOTATION_MATCHER.matches(a) ||
+                                        DOCUMENT_EXAMPLE_ANNOTATION_MATCHER.matches(a))) {
                     return method;
                 }
 
                 J.ClassDeclaration clazz = getCursor().dropParentUntil(J.ClassDeclaration.class::isInstance).getValue();
-                boolean insideNestedClass = clazz != null && clazz.getLeadingAnnotations().stream().anyMatch(NESTED_ANNOTATION_MATCHER::matches);
-                if (insideNestedClass) {
+                if (clazz.getLeadingAnnotations().stream().anyMatch(NESTED_ANNOTATION_MATCHER::matches)) {
                     return method;
                 }
 
