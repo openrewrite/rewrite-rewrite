@@ -324,6 +324,125 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.ReorderTestMethods
+examples:
+- description: ''
+  sources:
+  - before: |
+      package org.openrewrite.java.cleanup;
+
+      import org.junit.jupiter.api.AfterAll;
+      import org.junit.jupiter.api.AfterEach;
+      import org.junit.jupiter.api.BeforeEach;
+      import org.junit.jupiter.api.Test;
+      import org.openrewrite.DocumentExample;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.test.RecipeSpec;
+      import org.openrewrite.test.RewriteTest;
+
+      import static org.openrewrite.java.Assertions.java;
+
+      class UnnecessaryParenthesesTest implements RewriteTest {
+
+          @Test
+          void test2() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+
+          @Override
+          public void defaults(RecipeSpec spec) {
+              spec.recipe(Recipe.noop());
+          }
+
+          @BeforeEach void foo(){}
+
+          @AfterEach void bar(){}
+
+          @DocumentExample
+          @Test
+          void test1() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+
+          @AfterAll static void bar(){}
+      }
+    after: |
+      package org.openrewrite.java.cleanup;
+
+      import org.junit.jupiter.api.AfterAll;
+      import org.junit.jupiter.api.AfterEach;
+      import org.junit.jupiter.api.BeforeEach;
+      import org.junit.jupiter.api.Test;
+      import org.openrewrite.DocumentExample;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.test.RecipeSpec;
+      import org.openrewrite.test.RewriteTest;
+
+      import static org.openrewrite.java.Assertions.java;
+
+      class UnnecessaryParenthesesTest implements RewriteTest {
+
+          @AfterAll static void bar(){}
+
+          @BeforeEach void foo(){}
+
+          @AfterEach void bar(){}
+
+          @Override
+          public void defaults(RecipeSpec spec) {
+              spec.recipe(Recipe.noop());
+          }
+
+          @DocumentExample
+          @Test
+          void test1() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+
+          @Test
+          void test2() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.RewriteTestClassesShouldNotBePublic
 examples:
 - description: ''
@@ -366,6 +485,7 @@ examples:
       import static org.openrewrite.java.Assertions.java;
 
       class UnnecessaryParenthesesTest implements RewriteTest {
+
           @Override
           public void defaults(RecipeSpec spec) {
               spec.recipe(Recipe.noop());
@@ -411,6 +531,7 @@ examples:
       import static org.openrewrite.java.Assertions.java;
 
       class UnnecessaryParenthesesTest implements RewriteTest {
+
           @Override
           public void defaults(RecipeSpec spec) {
               spec.recipe(Recipe.noop());
