@@ -39,6 +39,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumulator> {
@@ -244,8 +245,8 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                 if (TypeUtils.isAssignableTo("org.openrewrite.Recipe", type) && type instanceof JavaType.Class) {
                                     JavaType.Class tc = (JavaType.Class) type;
                                     RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
-                                    recipeNameAndParameters.name = (tc.getFullyQualifiedName());
-                                    recipeNameAndParameters.parameters = (extractParameters(newClass.getArguments()));
+                                    recipeNameAndParameters.name = tc.getFullyQualifiedName();
+                                    recipeNameAndParameters.parameters = extractParameters(newClass.getArguments());
                                     recipe.set(recipeNameAndParameters);
                                 }
                                 return newClass;
@@ -258,7 +259,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                     Expression arg = method.getArguments().get(0);
                                     if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
                                         RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
-                                        recipeNameAndParameters.name = (((J.Literal) arg).getValue().toString());
+                                        recipeNameAndParameters.name = ((J.Literal) arg).getValue().toString();
                                         recipe.set(recipeNameAndParameters);
                                     }
                                     return method;
@@ -267,7 +268,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                     Expression arg = method.getArguments().get(method.getArguments().size() - 1);
                                     if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
                                         RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
-                                        recipeNameAndParameters.name = (((J.Literal) arg).getValue().toString());
+                                        recipeNameAndParameters.name = ((J.Literal) arg).getValue().toString();
                                         recipe.set(recipeNameAndParameters);
                                     }
                                     return method;
@@ -293,6 +294,9 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                             } else {
                                 return ((J.Literal) arg).getValueSource();
                             }
+                        } else if (arg instanceof J.NewArray) {
+                            List<Expression> initializer = Objects.requireNonNull(((J.NewArray) arg).getInitializer());
+                            return extractParameters(initializer).stream().collect(joining(", ", "[ ", " ]"));
                         } else {
                             return arg.toString();
                         }
