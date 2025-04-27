@@ -295,8 +295,9 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                 return ((J.Literal) arg).getValueSource();
                             }
                         } else if (arg instanceof J.NewArray) {
-                            List<Expression> initializer = Objects.requireNonNull(((J.NewArray) arg).getInitializer());
-                            return extractParameters(initializer).stream().collect(joining(", ", "[ ", " ]"));
+                            List<Expression> initializer = ((J.NewArray) arg).getInitializer();
+                            return null == initializer ? "null" : extractParameters(initializer).stream()
+                                    .collect(joining(", ", "[ ", " ]"));
                         } else {
                             return arg.toString();
                         }
