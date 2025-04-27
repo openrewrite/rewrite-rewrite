@@ -358,12 +358,14 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         String print(@Nullable String licenseHeader, Map<String, List<RecipeExample>> recipeExamples) {
             StringWriter stringWriter = new StringWriter();
             if (StringUtils.isNotEmpty(licenseHeader)) {
+                boolean singleLine = !licenseHeader.trim().contains("\n");
                 stringWriter
-                        .append("# ")
-                        .append(licenseHeader
+                        .append(singleLine ? "#\n# " : "# ")
+                        .append(licenseHeader.trim()
                                 .replace("${year}", "2025") // Hardcoded to avoid suggestions in 2026+
-                                .replace("\n", "\n# "))
-                        .append("\n");
+                                .replace("\n", "\n# ")
+                                .trim())
+                        .append(singleLine ? "\n#\n" : "\n");
             }
             for (Map.Entry<String, List<RecipeExample>> recipeEntry : recipeExamples.entrySet()) {
                 Map<String, Object> yamlDoc = print(recipeEntry.getKey(), recipeEntry.getValue());
