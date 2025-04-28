@@ -1463,6 +1463,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 #
                 # License Header
                 #
+
                 ---
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.java.RemoveUnusedImports

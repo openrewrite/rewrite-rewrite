@@ -365,7 +365,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                                 .replace("${year}", "2025") // Hardcoded to avoid suggestions in 2026+
                                 .replace("\n", "\n# ")
                                 .trim())
-                        .append(singleLine ? "\n#\n" : "\n");
+                        .append(singleLine ? "\n#\n\n" : "\n");
             }
             for (Map.Entry<String, List<RecipeExample>> recipeEntry : recipeExamples.entrySet()) {
                 Map<String, Object> yamlDoc = print(recipeEntry.getKey(), recipeEntry.getValue());
