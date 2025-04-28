@@ -28,6 +28,7 @@ import org.openrewrite.java.trait.Literal;
 import org.openrewrite.java.trait.Traits;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.text.PlainText;
+import org.openrewrite.tree.ParseError;
 import org.openrewrite.yaml.YamlIsoVisitor;
 import org.openrewrite.yaml.YamlParser;
 import org.openrewrite.yaml.tree.Yaml.Documents;
@@ -136,12 +137,16 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                     return existingDocuments;
                 }
                 String yaml = new YamlPrinter().print(acc.licenseHeader, recipeExamples);
-                Optional<Documents> first = YamlParser.builder().build().parse(yaml)
-                        .filter(sf -> sf instanceof Documents)
-                        .map(sf -> (Documents) sf)
-                        .findFirst();
-                if (first.isPresent() && !first.get().printAll().equals(existingDocuments.printAll())) {
-                    return existingDocuments.withDocuments(first.get().getDocuments());
+                List<SourceFile> yamlDocuments = YamlParser.builder().build().parse(yaml).collect(toList());
+                if (yamlDocuments.isEmpty()) {
+                    return existingDocuments;
+                }
+                SourceFile first = yamlDocuments.get(0);
+                if (first instanceof ParseError){
+                    return existingDocuments.withMarkers(first.getMarkers());
+                }
+                if (first instanceof Documents && !first.printAll().equals(existingDocuments.printAll())) {
+                    return existingDocuments.withDocuments(((Documents) first).getDocuments());
                 }
                 return existingDocuments;
             }
