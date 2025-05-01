@@ -594,10 +594,6 @@ class ExamplesExtractorTest implements RewriteTest {
                   - 'true'
                   sources:
                   - before: |
-                      interface In {}
-                      interface Out {}
-                    language: java
-                  - before: |
                       import java.util.function.Function;
                       class Test {
                           void test(Function<In, Out> f) {
@@ -610,16 +606,16 @@ class ExamplesExtractorTest implements RewriteTest {
                           }
                       }
                     language: java
+                  - before: |
+                      interface In {}
+                      interface Out {}
+                    language: java
                 - description: ''
                   parameters:
                   - List.of("java.util.function.Function<INVARIANT, OUT>")
                   - List.of("java.lang.*")
                   - 'null'
                   sources:
-                  - before: |
-                      interface In {}
-                      interface Out {}
-                    language: java
                   - before: |
                       import java.util.function.Function;
                       class Test {
@@ -632,6 +628,10 @@ class ExamplesExtractorTest implements RewriteTest {
                           void test(Function<In, ? extends Out> f) {
                           }
                       }
+                    language: java
+                  - before: |
+                      interface In {}
+                      interface Out {}
                     language: java
                 """,
               spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
