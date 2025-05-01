@@ -40,6 +40,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
@@ -142,7 +143,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                     return existingDocuments;
                 }
                 SourceFile first = yamlDocuments.get(0);
-                if (first instanceof ParseError){
+                if (first instanceof ParseError) {
                     return existingDocuments.withMarkers(first.getMarkers());
                 }
                 if (first instanceof Documents && !first.printAll().equals(existingDocuments.printAll())) {
@@ -312,9 +313,9 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         }
 
         private List<RecipeExample.Source> extractRecipeExampleSources(List<Expression> sourceSpecArg) {
-            return new JavaIsoVisitor<List<RecipeExample.Source>>() {
+            JavaIsoVisitor<Set<RecipeExample.Source>> visitor = new JavaIsoVisitor<Set<RecipeExample.Source>>() {
                 @Override
-                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, List<RecipeExample.Source> sources) {
+                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, Set<RecipeExample.Source> sources) {
                     method = super.visitMethodInvocation(method, sources);
 
                     RecipeExample.Source source = new RecipeExample.Source("", null, null, "");
@@ -352,7 +353,10 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                     }
                     return method;
                 }
-            }.reduce(sourceSpecArg, new ArrayList<>());
+            };
+            Set<RecipeExample.Source> sortedSet = visitor.reduce(sourceSpecArg, new TreeSet<>(
+                    comparing(RecipeExample.Source::getLanguage).thenComparing(RecipeExample.Source::getBefore)));
+            return new ArrayList<>(sortedSet);
         }
     }
 
