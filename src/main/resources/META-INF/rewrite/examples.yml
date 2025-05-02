@@ -122,6 +122,8 @@ examples:
           }
       }
     language: java
+  - before: project
+    language: mavenProject
   - after: |
       ---
       type: specs.openrewrite.org/v1beta/example
@@ -149,8 +151,6 @@ examples:
             }
           language: java
     language: yaml
-  - before: project
-    language: mavenProject
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.ExecutionContextParameterName
