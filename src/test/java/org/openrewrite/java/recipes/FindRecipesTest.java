@@ -40,7 +40,7 @@ class FindRecipesTest implements RewriteTest {
           spec -> spec
             .dataTable(RewriteRecipeSource.Row.class, rows -> {
                 assertThat(rows).hasSize(1);
-                RewriteRecipeSource.Row row = rows.get(0);
+                RewriteRecipeSource.Row row = rows.getFirst();
                 assertThat(row.getDisplayName()).isEqualTo("My recipe");
                 assertThat(row.getDescription()).isEqualTo("This is my recipe.");
                 assertThat(row.getOptions()).isEqualTo("[{\"name\":\"methodPattern\",\"displayName\":\"Method pattern\",\"description\":\"A method pattern that is used to find matching method declarations/invocations.\",\"example\":\"org.mockito.Matchers anyVararg()\"},{\"name\":\"newAccessLevel\",\"displayName\":\"New access level\",\"description\":\"New method access level to apply to the method, like \\\"public\\\".\",\"example\":\"public\",\"valid\":[\"private\",\"protected\",\"package\",\"public\"],\"required\":false}]");
@@ -147,7 +147,7 @@ class FindRecipesTest implements RewriteTest {
             ))
             .dataTable(RewriteRecipeSource.Row.class, rows -> {
                 assertThat(rows).hasSize(1);
-                RewriteRecipeSource.Row row = rows.get(0);
+                RewriteRecipeSource.Row row = rows.getFirst();
                 assertThat(row.getDisplayName()).isEqualTo("Some refaster rule");
                 assertThat(row.getDescription()).isEqualTo("This is a refaster rule.");
             }),
@@ -193,8 +193,8 @@ class FindRecipesTest implements RewriteTest {
             ))
             .dataTable(RewriteRecipeSource.Row.class, rows -> {
                 assertThat(rows).hasSize(2);
-                assertThat(rows.get(0).getDisplayName()).isEqualTo("Migrates to Apache Commons Lang 3.x");
-                assertThat(rows.get(0).getSourceCode()).startsWith(
+                assertThat(rows.getFirst().getDisplayName()).isEqualTo("Migrates to Apache Commons Lang 3.x");
+                assertThat(rows.getFirst().getSourceCode()).startsWith(
                   "---\ntype: specs.openrewrite.org/v1beta/recipe\nname: org.openrewrite.apache.commons.lang.UpgradeApacheCommonsLang_2_3");
                 assertThat(rows.get(1).getDisplayName()).isEqualTo("Migrates to Apache POI 3.17");
                 assertThat(rows.get(1).getSourceCode()).startsWith(
