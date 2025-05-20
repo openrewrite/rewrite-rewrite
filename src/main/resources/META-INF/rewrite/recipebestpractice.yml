@@ -23,7 +23,8 @@ recipeList:
   - org.openrewrite.java.recipes.JavaRecipeBestPractices
   - org.openrewrite.java.recipes.RecipeTestingBestPractices
   - org.openrewrite.java.recipes.RecipeNullabilityBestPractices
-  - org.openrewrite.java.recipes.ExamplesExtractor
+  # Disabled while we see indeterminism on PR checks; apply periodically for now
+  #- org.openrewrite.java.recipes.ExamplesExtractor
   - org.openrewrite.java.OrderImports
   - org.openrewrite.java.RemoveUnusedImports
   - org.openrewrite.java.format.EmptyNewlineAtEndOfFile
