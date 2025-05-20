@@ -19,12 +19,16 @@ type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.recipes.rewrite.OpenRewriteRecipeBestPractices
 displayName: OpenRewrite Recipe best practices
 description: Best practices for OpenRewrite recipe development.
+preconditions:
+  # skip recipes for extracted examples as they are likely to contain code to migrate and therefore produce noise
+  - org.openrewrite.FindSourceFiles:
+        relativePath: '!(META-INF/rewrite/examples.yml)'
 recipeList:
   - org.openrewrite.java.recipes.JavaRecipeBestPractices
   - org.openrewrite.java.recipes.RecipeTestingBestPractices
   - org.openrewrite.java.recipes.RecipeNullabilityBestPractices
-  # Disabled while we see indeterminism on PR checks; apply periodically for now
-  #- org.openrewrite.java.recipes.ExamplesExtractor
+  # extract examples; comments in examples.yml indicate that the file should be regenerated
+  - org.openrewrite.java.recipes.ExamplesExtractor
   - org.openrewrite.java.OrderImports
   - org.openrewrite.java.RemoveUnusedImports
   - org.openrewrite.java.format.EmptyNewlineAtEndOfFile
