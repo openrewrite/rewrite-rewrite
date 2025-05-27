@@ -340,8 +340,25 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
                     // arg0 is always `before`. arg1 is optional to be `after`, to adjust if code changed
                     List<Expression> args = method.getArguments();
-                    J.Literal before = !args.isEmpty() ? args.get(0).getType() == JavaType.Primitive.String ? (J.Literal) args.get(0) : null : null;
-                    J.Literal after = args.size() > 1 ? args.get(1).getType() == JavaType.Primitive.String ? (J.Literal) args.get(1) : null : null;
+
+                    // TODO use method matcher
+                    J.Literal before = null;
+                    if (!args.isEmpty()) {
+                        if (args.get(0).getType() == JavaType.Primitive.String) {
+                            before = (J.Literal) args.get(0);
+                        } else if (args.get(0) instanceof J.MethodInvocation && ((J.MethodInvocation) args.get(0)).getSimpleName().equals("formatted")) {
+                            before = (J.Literal) ((J.MethodInvocation) args.get(0)).getSelect();
+                        }
+                    }
+                    J.Literal after = null;
+                    if (args.size() > 1) {
+                        if (args.get(1).getType() == JavaType.Primitive.String) {
+                            after = (J.Literal) args.get(1);
+                        } else if (args.get(1) instanceof J.MethodInvocation && ((J.MethodInvocation) args.get(0)).getSimpleName().equals("formatted")) {
+                            after = (J.Literal) ((J.MethodInvocation) args.get(1)).getSelect();
+                        }
+                    }
+
                     if (before != null && before.getValue() != null) {
                         source.setBefore((String) before.getValue());
                     }
@@ -380,6 +397,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                 Map<String, Object> yamlDoc = print(recipeEntry.getKey(), recipeEntry.getValue());
                 stringWriter.append("---\n").append(yaml.dumpAsMap(yamlDoc));
             }
+            System.out.println(stringWriter);
             return stringWriter.toString();
         }
 

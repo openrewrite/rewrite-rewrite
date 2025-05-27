@@ -156,6 +156,67 @@ class ExamplesExtractorTest implements RewriteTest {
     }
 
     @Test
+    void extractJavaExampleWithParameterizedTest() {
+        rewriteRun(
+          mavenProject(
+            "project",
+            srcMainJava(java(RECIPE_JAVA_FILE, SourceSpec::skip)),
+            //language=java
+            srcTestJava(
+              java(
+                """
+                  package org.openrewrite.staticanalysis;
+
+                  import org.junit.jupiter.params.ParameterizedTest;
+                  import org.junit.jupiter.params.provider.CsvSource;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class ChainStringBuilderAppendCallsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new ChainStringBuilderAppendCalls());
+                      }
+
+                      @DocumentExample(value = "Objects concatenation.")
+                      @ParameterizedTest
+                      @CsvSource({"1,2", "3,4"})
+                      void objectsConcatenation(int first, int second) {
+                          rewriteRun(
+                            java(
+                              \"""
+                                class A {
+                                    void method1() {
+                                        StringBuilder sb = new StringBuilder();
+                                        String op = "+";
+                                        sb.append(%s + op + %s);
+                                    }
+                                }
+                                \""".formatted(first, second),
+                              \"""
+                                class A {
+                                    void method1() {
+                                        StringBuilder sb = new StringBuilder();
+                                        String op = "+";
+                                        sb.append(%s).append(op).append(%s);
+                                    }
+                                }
+                                \""".formatted(first, second)
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
+            )
+          )
+        );
+    }
+
+    @Test
     void existingExampleFile() {
         rewriteRun(
           mavenProject(
