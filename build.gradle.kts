@@ -11,9 +11,19 @@ dependencies {
     implementation(platform("org.openrewrite:rewrite-bom:$rewriteVersion"))
 
     implementation("org.openrewrite:rewrite-java")
+    implementation("org.openrewrite:rewrite-maven")
+    implementation("org.openrewrite:rewrite-gradle")
+    implementation("org.openrewrite:rewrite-sql")
     implementation("org.openrewrite.recipe:rewrite-migrate-java:$rewriteVersion")
     implementation("org.openrewrite.recipe:rewrite-static-analysis:$rewriteVersion")
     implementation("org.openrewrite.recipe:rewrite-testing-frameworks:$rewriteVersion")
+
+    annotationProcessor("org.openrewrite:rewrite-templating:latest.release")
+    implementation("org.openrewrite:rewrite-templating:$rewriteVersion")
+    compileOnly("com.google.errorprone:error_prone_core:latest.release") {
+        exclude("com.google.auto.service", "auto-service-annotations")
+        exclude("io.github.eisop","dataflow-errorprone")
+    }
 
     implementation("org.yaml:snakeyaml:latest.release")
 
