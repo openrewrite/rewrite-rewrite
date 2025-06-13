@@ -25,7 +25,6 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.trait.Annotated;
 import org.openrewrite.java.trait.Literal;
-import org.openrewrite.java.trait.Traits;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.text.PlainText;
 import org.openrewrite.tree.ParseError;
@@ -180,7 +179,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                 return method;
             }
 
-            Optional<Annotated> annotated = Traits.annotated(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER).lower(getCursor()).findAny();
+            Optional<Annotated> annotated = new Annotated.Matcher(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER).lower(getCursor()).findAny();
             if (annotated.isPresent()) {
                 String exampleDescription = annotated.get().getDefaultAttribute("value").map(Literal::getString).orElse("");
                 getCursor().putMessageOnFirstEnclosing(J.MethodDeclaration.class, DESCRIPTION_KEY, exampleDescription);
