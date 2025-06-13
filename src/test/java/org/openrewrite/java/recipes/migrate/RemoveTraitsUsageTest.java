@@ -35,12 +35,13 @@ class RemoveTraitsUsageTest implements RewriteTest {
         rewriteRun(
           java(
             """
+              import org.openrewrite.java.trait.Literal;
               import org.openrewrite.java.trait.Traits;
               import org.openrewrite.marker.SearchResult;
 
               class Test {
                   void test() {
-                      Object literal = Traits.literal();
+                      Literal.Matcher literal = Traits.literal();
                   }
               }
               """,
@@ -50,7 +51,7 @@ class RemoveTraitsUsageTest implements RewriteTest {
 
               class Test {
                   void test() {
-                      Object literal = new Literal.Matcher();
+                      Literal.Matcher literal = new Literal.Matcher();
                   }
               }
               """

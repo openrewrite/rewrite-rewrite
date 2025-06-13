@@ -20,8 +20,9 @@ import com.google.errorprone.refaster.annotation.BeforeTemplate;
 import org.openrewrite.java.template.RecipeDescriptor;
 
 @RecipeDescriptor(
-        name = "Remove `Traits` usage",
-        description = "Removes the usage of static `Traits` class and replace with corresponding constructor calls."
+        name = "Replace static `Traits` methods with constructor calls",
+        description = "Replace the usage of static `Traits` methods with the corresponding constructor calls, " +
+                "as the `Traits` classes were an early abstraction with undesirable import conflicts."
 )
 public class RemoveTraitsUsage {
 
@@ -36,12 +37,12 @@ public class RemoveTraitsUsage {
         )
         public static class Literal {
             @BeforeTemplate
-            Object before() {
+            org.openrewrite.java.trait.Literal.Matcher before() {
                 return org.openrewrite.java.trait.Traits.literal();
             }
 
             @AfterTemplate
-            Object after() {
+            org.openrewrite.java.trait.Literal.Matcher after() {
                 return new org.openrewrite.java.trait.Literal.Matcher();
             }
         }
@@ -52,12 +53,12 @@ public class RemoveTraitsUsage {
         )
         public static class VariableAccess {
             @BeforeTemplate
-            Object before() {
+            org.openrewrite.java.trait.VariableAccess.Matcher before() {
                 return org.openrewrite.java.trait.Traits.variableAccess();
             }
 
             @AfterTemplate
-            Object after() {
+            org.openrewrite.java.trait.VariableAccess.Matcher after() {
                 return new org.openrewrite.java.trait.VariableAccess.Matcher();
             }
         }
@@ -73,12 +74,12 @@ public class RemoveTraitsUsage {
             )
             public static class MethodMatcher {
                 @BeforeTemplate
-                Object before(org.openrewrite.java.MethodMatcher matcher) {
+                org.openrewrite.java.trait.MethodAccess.Matcher before(org.openrewrite.java.MethodMatcher matcher) {
                     return org.openrewrite.java.trait.Traits.methodAccess(matcher);
                 }
 
                 @AfterTemplate
-                Object after(org.openrewrite.java.MethodMatcher matcher) {
+                org.openrewrite.java.trait.MethodAccess.Matcher after(org.openrewrite.java.MethodMatcher matcher) {
                     return new org.openrewrite.java.trait.MethodAccess.Matcher(matcher);
                 }
             }
@@ -89,12 +90,12 @@ public class RemoveTraitsUsage {
             )
             public static class StringSignature {
                 @BeforeTemplate
-                Object before(String signature) {
+                org.openrewrite.java.trait.MethodAccess.Matcher before(String signature) {
                     return org.openrewrite.java.trait.Traits.methodAccess(signature);
                 }
 
                 @AfterTemplate
-                Object after(String signature) {
+                org.openrewrite.java.trait.MethodAccess.Matcher after(String signature) {
                     return new org.openrewrite.java.trait.MethodAccess.Matcher(signature);
                 }
             }
@@ -112,12 +113,12 @@ public class RemoveTraitsUsage {
             )
             public static class AnnotationMatcher {
                 @BeforeTemplate
-                Object before(org.openrewrite.java.AnnotationMatcher matcher) {
+                org.openrewrite.java.trait.Annotated.Matcher before(org.openrewrite.java.AnnotationMatcher matcher) {
                     return org.openrewrite.java.trait.Traits.annotated(matcher);
                 }
 
                 @AfterTemplate
-                Object after(org.openrewrite.java.AnnotationMatcher matcher) {
+                org.openrewrite.java.trait.Annotated.Matcher after(org.openrewrite.java.AnnotationMatcher matcher) {
                     return new org.openrewrite.java.trait.Annotated.Matcher(matcher);
                 }
             }
@@ -128,12 +129,12 @@ public class RemoveTraitsUsage {
             )
             public static class StringSignature {
                 @BeforeTemplate
-                Object before(String signature) {
+                org.openrewrite.java.trait.Annotated.Matcher before(String signature) {
                     return org.openrewrite.java.trait.Traits.annotated(signature);
                 }
 
                 @AfterTemplate
-                Object after(String signature) {
+                org.openrewrite.java.trait.Annotated.Matcher after(String signature) {
                     return new org.openrewrite.java.trait.Annotated.Matcher(signature);
                 }
             }
@@ -144,12 +145,12 @@ public class RemoveTraitsUsage {
             )
             public static class ClassType {
                 @BeforeTemplate
-                Object before(Class<?> annotationType) {
+                org.openrewrite.java.trait.Annotated.Matcher before(Class<?> annotationType) {
                     return org.openrewrite.java.trait.Traits.annotated(annotationType);
                 }
 
                 @AfterTemplate
-                Object after(Class<?> annotationType) {
+                org.openrewrite.java.trait.Annotated.Matcher after(Class<?> annotationType) {
                     return new org.openrewrite.java.trait.Annotated.Matcher(annotationType);
                 }
             }
@@ -167,12 +168,12 @@ public class RemoveTraitsUsage {
         )
         public static class Dependency {
             @BeforeTemplate
-            Object before() {
+            org.openrewrite.maven.trait.MavenDependency.Matcher before() {
                 return org.openrewrite.maven.trait.Traits.mavenDependency();
             }
 
             @AfterTemplate
-            Object after() {
+            org.openrewrite.maven.trait.MavenDependency.Matcher after() {
                 return new org.openrewrite.maven.trait.MavenDependency.Matcher();
             }
         }
@@ -183,12 +184,12 @@ public class RemoveTraitsUsage {
         )
         public static class Plugin {
             @BeforeTemplate
-            Object before() {
+            org.openrewrite.maven.trait.MavenPlugin.Matcher before() {
                 return org.openrewrite.maven.trait.Traits.mavenPlugin();
             }
 
             @AfterTemplate
-            Object after() {
+            org.openrewrite.maven.trait.MavenPlugin.Matcher after() {
                 return new org.openrewrite.maven.trait.MavenPlugin.Matcher();
             }
         }
@@ -205,12 +206,12 @@ public class RemoveTraitsUsage {
         )
         public static class Dependency {
             @BeforeTemplate
-            Object before() {
+            org.openrewrite.gradle.trait.GradleDependency.Matcher before() {
                 return org.openrewrite.gradle.trait.Traits.gradleDependency();
             }
 
             @AfterTemplate
-            Object after() {
+            org.openrewrite.gradle.trait.GradleDependency.Matcher after() {
                 return new org.openrewrite.gradle.trait.GradleDependency.Matcher();
             }
         }
@@ -221,12 +222,12 @@ public class RemoveTraitsUsage {
         )
         public static class JvmTestSuite {
             @BeforeTemplate
-            Object before() {
+            org.openrewrite.gradle.trait.JvmTestSuite.Matcher before() {
                 return org.openrewrite.gradle.trait.Traits.jvmTestSuite();
             }
 
             @AfterTemplate
-            Object after() {
+            org.openrewrite.gradle.trait.JvmTestSuite.Matcher after() {
                 return new org.openrewrite.gradle.trait.JvmTestSuite.Matcher();
             }
         }
