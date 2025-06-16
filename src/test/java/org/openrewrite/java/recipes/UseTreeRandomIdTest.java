@@ -30,8 +30,8 @@ class UseTreeRandomIdTest implements RewriteTest {
           .parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()));
     }
 
-    @Test
     @DocumentExample
+    @Test
     void replacesUUIDRandomId() {
         rewriteRun(
           java(

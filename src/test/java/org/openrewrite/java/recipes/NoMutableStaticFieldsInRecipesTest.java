@@ -32,8 +32,8 @@ class NoMutableStaticFieldsInRecipesTest implements RewriteTest {
           .parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()));
     }
 
-    @Test
     @DocumentExample
+    @Test
     void removeNonFinalStaticFields() {
         rewriteRun(
           java(

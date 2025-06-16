@@ -29,8 +29,8 @@ class RemoveTraitsUsageTest implements RewriteTest {
         spec.recipe(new RemoveTraitsUsageRecipes());
     }
 
-    @Test
     @DocumentExample
+    @Test
     void javaLiteral() {
         rewriteRun(
           java(

@@ -30,8 +30,8 @@ class RewriteTestClassesShouldNotBePublicTest implements RewriteTest {
           .recipe(new RewriteTestClassesShouldNotBePublic());
     }
 
-    @Test
     @DocumentExample
+    @Test
     void rewriteTestThatOverridesDefaults() {
         rewriteRun(
           java(

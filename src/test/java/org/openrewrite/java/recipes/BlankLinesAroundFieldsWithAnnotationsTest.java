@@ -29,8 +29,8 @@ class BlankLinesAroundFieldsWithAnnotationsTest implements RewriteTest {
         spec.recipe(new BlankLinesAroundFieldsWithAnnotations());
     }
 
-    @Test
     @DocumentExample
+    @Test
     void spaceBetweenFields() {
         rewriteRun(
           java(

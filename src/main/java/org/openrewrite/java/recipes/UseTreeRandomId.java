@@ -30,8 +30,8 @@ import org.openrewrite.java.tree.JavaType;
 
 import java.util.Collections;
 
-@Value
 @EqualsAndHashCode(callSuper = false)
+@Value
 public class UseTreeRandomId extends Recipe {
 
     @Override
