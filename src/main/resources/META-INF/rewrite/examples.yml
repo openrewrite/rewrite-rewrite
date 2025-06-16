@@ -639,3 +639,29 @@ examples:
           }
       }
     language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.migrate.RemoveTraitsUsageRecipes
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.java.trait.Literal;
+      import org.openrewrite.java.trait.Traits;
+      import org.openrewrite.marker.SearchResult;
+
+      class Test {
+          void test() {
+              Literal.Matcher literal = Traits.literal();
+          }
+      }
+    after: |
+      import org.openrewrite.java.trait.Literal;
+      import org.openrewrite.marker.SearchResult;
+
+      class Test {
+          void test() {
+              Literal.Matcher literal = new Literal.Matcher();
+          }
+      }
+    language: java
