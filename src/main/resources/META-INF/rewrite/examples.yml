@@ -237,6 +237,33 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.IsLiteralNullRecipe
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.java.tree.Expression;
+      import org.openrewrite.java.tree.J;
+      class Test {
+          void test(Expression e) {
+              if (e instanceof J.Literal && ((J.Literal) e).getValue() == null) {
+                  System.out.println("null");
+              }
+          }
+      }
+    after: |
+      import org.openrewrite.java.tree.Expression;
+      import org.openrewrite.java.tree.J;
+      class Test {
+          void test(Expression e) {
+              if (J.Literal.isLiteralValue(e, null)) {
+                  System.out.println("null");
+              }
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.MissingOptionExample
 examples:
 - description: ''
@@ -536,6 +563,88 @@ examples:
               spec.recipe(Recipe.noop());
           }
 
+          @DocumentExample
+          @Test
+          void test1() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+
+          @Test
+          void test2() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.SingleDocumentExample
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.junit.jupiter.api.Test;
+      import org.openrewrite.DocumentExample;
+      import org.openrewrite.test.RewriteTest;
+
+      import static org.openrewrite.java.Assertions.java;
+
+      class UnnecessaryParenthesesTest implements RewriteTest {
+          @DocumentExample
+          @Test
+          void test1() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+
+          @DocumentExample
+          @Test
+          void test2() {
+              rewriteRun(
+                java(
+                  """
+                    BEFORE
+                    """,
+                  """
+                    AFTER
+                    """
+                )
+              );
+          }
+      }
+    after: |
+      import org.junit.jupiter.api.Test;
+      import org.openrewrite.DocumentExample;
+      import org.openrewrite.test.RewriteTest;
+
+      import static org.openrewrite.java.Assertions.java;
+
+      class UnnecessaryParenthesesTest implements RewriteTest {
           @DocumentExample
           @Test
           void test1() {
