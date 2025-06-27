@@ -87,6 +87,12 @@ recipeList:
   - org.openrewrite.staticanalysis.ReorderAnnotations
   - org.openrewrite.java.UseStaticImport:
       methodPattern: 'org.openrewrite..Assertions *(..)'
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: java.util.Arrays asList(..)
+      fullyQualifiedTargetTypeName: java.util.List
+  - org.openrewrite.java.ChangeMethodName:
+      methodPattern: java.util.List asList(..)
+      newMethodName: of
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.java.recipes.RecipeNullabilityBestPractices
