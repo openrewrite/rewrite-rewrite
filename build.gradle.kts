@@ -30,6 +30,6 @@ dependencies {
 
     testImplementation("org.openrewrite:rewrite-test")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:latest.release")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.+")
     testImplementation("org.junit-pioneer:junit-pioneer:2.3.0")
 }
