@@ -46,8 +46,7 @@ public class ReorderTestMethods extends Recipe {
     }
 
     private static final Comparator<J.MethodDeclaration> methodDeclarationComparator = Comparator
-            .<J.MethodDeclaration, Boolean>comparing(md -> md.hasModifier(J.Modifier.Type.Static) && !md.hasModifier(J.Modifier.Type.Private))
-            .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(BEFORE_ANNOTATION_MATCHER::matches))
+            .<J.MethodDeclaration, Boolean>comparing(md -> md.getLeadingAnnotations().stream().anyMatch(BEFORE_ANNOTATION_MATCHER::matches))
             .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(AFTER_ANNOTATION_MATCHER::matches))
             .thenComparing(md -> "defaults".equals(md.getSimpleName()))
             .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER::matches))

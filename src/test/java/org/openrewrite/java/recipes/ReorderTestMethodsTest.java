@@ -53,6 +53,10 @@ class ReorderTestMethodsTest implements RewriteTest {
 
               class UnnecessaryParenthesesTest implements RewriteTest {
 
+                  private static String helper() {
+                      return "value";
+                  }
+
                   @Test
                   void test2() {
                       rewriteRun(
@@ -92,6 +96,10 @@ class ReorderTestMethodsTest implements RewriteTest {
                   }
 
                   @AfterAll static void bar(){}
+
+                  private static int intHelper() {
+                      return 42;
+                  }
               }
               """,
             """
@@ -110,11 +118,11 @@ class ReorderTestMethodsTest implements RewriteTest {
 
               class UnnecessaryParenthesesTest implements RewriteTest {
 
-                  @AfterAll static void bar(){}
-
                   @BeforeEach void foo(){}
 
                   @AfterEach void bar(){}
+
+                  @AfterAll static void bar(){}
 
                   @Override
                   public void defaults(RecipeSpec spec) {
@@ -136,6 +144,10 @@ class ReorderTestMethodsTest implements RewriteTest {
                       );
                   }
 
+                  private static String helper() {
+                      return "value";
+                  }
+
                   @Test
                   void test2() {
                       rewriteRun(
@@ -148,6 +160,10 @@ class ReorderTestMethodsTest implements RewriteTest {
                             \"""
                         )
                       );
+                  }
+
+                  private static int intHelper() {
+                      return 42;
                   }
               }
               """
