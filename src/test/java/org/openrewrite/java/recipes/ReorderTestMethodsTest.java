@@ -40,7 +40,6 @@ class ReorderTestMethodsTest implements RewriteTest {
             """
               package org.openrewrite.java.cleanup;
 
-              import org.junit.jupiter.api.AfterAll;
               import org.junit.jupiter.api.AfterEach;
               import org.junit.jupiter.api.BeforeEach;
               import org.junit.jupiter.api.Test;
@@ -52,6 +51,10 @@ class ReorderTestMethodsTest implements RewriteTest {
               import static org.openrewrite.java.Assertions.java;
 
               class UnnecessaryParenthesesTest implements RewriteTest {
+
+                  private static void leadingHelperMethod() {
+                      // This method should not affect the ordering of test methods.
+                  }
 
                   @Test
                   void test2() {
@@ -91,13 +94,14 @@ class ReorderTestMethodsTest implements RewriteTest {
                       );
                   }
 
-                  @AfterAll static void bar(){}
+                  private static void trailingHelperMethod() {
+                      // This method should not affect the ordering of test methods.
+                  }
               }
               """,
             """
               package org.openrewrite.java.cleanup;
 
-              import org.junit.jupiter.api.AfterAll;
               import org.junit.jupiter.api.AfterEach;
               import org.junit.jupiter.api.BeforeEach;
               import org.junit.jupiter.api.Test;
@@ -110,7 +114,9 @@ class ReorderTestMethodsTest implements RewriteTest {
 
               class UnnecessaryParenthesesTest implements RewriteTest {
 
-                  @AfterAll static void bar(){}
+                  private static void leadingHelperMethod() {
+                      // This method should not affect the ordering of test methods.
+                  }
 
                   @BeforeEach void foo(){}
 
@@ -148,6 +154,10 @@ class ReorderTestMethodsTest implements RewriteTest {
                             \"""
                         )
                       );
+                  }
+
+                  private static void trailingHelperMethod() {
+                      // This method should not affect the ordering of test methods.
                   }
               }
               """

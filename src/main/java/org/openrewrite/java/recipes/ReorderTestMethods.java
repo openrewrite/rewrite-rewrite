@@ -46,8 +46,7 @@ public class ReorderTestMethods extends Recipe {
     }
 
     private static final Comparator<J.MethodDeclaration> methodDeclarationComparator = Comparator
-            .<J.MethodDeclaration, Boolean>comparing(md -> md.hasModifier(J.Modifier.Type.Static) && !md.hasModifier(J.Modifier.Type.Private))
-            .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(BEFORE_ANNOTATION_MATCHER::matches))
+            .<J.MethodDeclaration, Boolean>comparing(md -> md.getLeadingAnnotations().stream().anyMatch(BEFORE_ANNOTATION_MATCHER::matches))
             .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(AFTER_ANNOTATION_MATCHER::matches))
             .thenComparing(md -> "defaults".equals(md.getSimpleName()))
             .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER::matches))
@@ -61,15 +60,17 @@ public class ReorderTestMethods extends Recipe {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
 
                 return cd.withBody(cd.getBody().withStatements(
-                        cd.getBody().getStatements().stream()
-                                .sorted((left, right) -> {
-                                    if (left instanceof J.MethodDeclaration && right instanceof J.MethodDeclaration) {
-                                        return methodDeclarationComparator.compare((J.MethodDeclaration) left, (J.MethodDeclaration) right);
-                                    }
-                                    return 0;
-                                })
-                                .collect(toList())
-                ));
+                        cd.getBody().getStatements().stream().sorted((left, right) -> {
+                            // Do not change order of helper methods, as those are often at top/bottom.
+                            // This also locks into place methods before and after helper methods.
+                            return left instanceof J.MethodDeclaration && right instanceof J.MethodDeclaration ?
+                                    isHelperMethod((J.MethodDeclaration) left) || isHelperMethod((J.MethodDeclaration) right) ?
+                                            0 : methodDeclarationComparator.compare((J.MethodDeclaration) left, (J.MethodDeclaration) right) : 0;
+                        }).collect(toList())));
+            }
+
+            boolean isHelperMethod(J.MethodDeclaration md) {
+                return md.hasModifier(J.Modifier.Type.Static) || md.hasModifier(J.Modifier.Type.Private);
             }
         });
     }
