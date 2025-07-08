@@ -60,13 +60,12 @@ public class ReorderTestMethods extends Recipe {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
 
                 return cd.withBody(cd.getBody().withStatements(
-                        cd.getBody().getStatements().stream().sorted((left, right) -> {
+                        cd.getBody().getStatements().stream().sorted((left, right) ->
                             // Do not change order of helper methods, as those are often at top/bottom.
                             // This also locks into place methods before and after helper methods.
-                            return left instanceof J.MethodDeclaration && right instanceof J.MethodDeclaration ?
+                            left instanceof J.MethodDeclaration && right instanceof J.MethodDeclaration ?
                                     isHelperMethod((J.MethodDeclaration) left) || isHelperMethod((J.MethodDeclaration) right) ?
-                                            0 : methodDeclarationComparator.compare((J.MethodDeclaration) left, (J.MethodDeclaration) right) : 0;
-                        }).collect(toList())));
+                                            0 : methodDeclarationComparator.compare((J.MethodDeclaration) left, (J.MethodDeclaration) right) : 0).collect(toList())));
             }
 
             boolean isHelperMethod(J.MethodDeclaration md) {
