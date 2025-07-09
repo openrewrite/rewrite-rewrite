@@ -66,7 +66,7 @@ public class RefasterTemplateReturn extends Recipe {
                         // Check if method is void
                         JavaType.Primitive voidType = JavaType.Primitive.Void;
                         if (m.getReturnTypeExpression() == null ||
-                                !voidType.equals(m.getReturnTypeExpression().getType())) {
+                                voidType != m.getReturnTypeExpression().getType()) {
                             return m;
                         }
 
@@ -99,8 +99,8 @@ public class RefasterTemplateReturn extends Recipe {
                         if (needsReturnStatement && expressionToReturn instanceof J.MethodInvocation) {
                             J.MethodInvocation methodCall = (J.MethodInvocation) expressionToReturn;
                             // If the method returns void, we shouldn't convert it to a return statement
-                            if (methodCall.getMethodType() != null && 
-                                JavaType.Primitive.Void.equals(methodCall.getMethodType().getReturnType())) {
+                            if (methodCall.getMethodType() != null &&
+                                    JavaType.Primitive.Void == methodCall.getMethodType().getReturnType()) {
                                 return m;
                             }
                         }
@@ -113,7 +113,8 @@ public class RefasterTemplateReturn extends Recipe {
                             if (exprType instanceof JavaType.Primitive) {
                                 // For primitives, create a J.Primitive
                                 newReturnType = new J.Primitive(
-                                        java.util.UUID.randomUUID(),
+                                        
+                                        Tree.randomId(),
                                         org.openrewrite.java.tree.Space.EMPTY,
                                         org.openrewrite.marker.Markers.EMPTY,
                                         (JavaType.Primitive) exprType
@@ -163,7 +164,8 @@ public class RefasterTemplateReturn extends Recipe {
                                 // Convert expression statement to return statement if needed
                                 if (needsReturnStatement) {
                                     J.Return newReturn = new J.Return(
-                                            java.util.UUID.randomUUID(),
+                                            
+                                            Tree.randomId(),
                                             statement.getPrefix(),
                                             statement.getMarkers(),
                                             expressionToReturn.withPrefix(org.openrewrite.java.tree.Space.SINGLE_SPACE)
