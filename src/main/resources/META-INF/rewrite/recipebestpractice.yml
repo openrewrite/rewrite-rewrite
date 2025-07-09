@@ -34,12 +34,12 @@ recipeList:
   - org.openrewrite.staticanalysis.MissingOverrideAnnotation
   - org.openrewrite.staticanalysis.OperatorWrap:
       wrapOption: EOL
+  - org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
   - org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
   - org.openrewrite.staticanalysis.RemoveUnusedPrivateFields
   - org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods
   #- org.openrewrite.staticanalysis.UnnecessaryThrows
   - org.openrewrite.staticanalysis.UseDiamondOperator
-  - org.openrewrite.java.recipes.migrate.RemoveTraitsUsageRecipes
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.java.recipes.JavaRecipeBestPractices
@@ -58,6 +58,7 @@ recipeList:
   - org.openrewrite.java.recipes.NoMutableStaticFieldsInRecipes
   - org.openrewrite.java.recipes.RecipeEqualsAndHashCodeCallSuper
   - org.openrewrite.java.recipes.UseTreeRandomId
+  - org.openrewrite.java.recipes.migrate.RemoveTraitsUsageRecipes
   - org.openrewrite.staticanalysis.NeedBraces
   - org.openrewrite.staticanalysis.RemoveSystemOutPrintln
   - org.openrewrite.java.RemoveAnnotation:
