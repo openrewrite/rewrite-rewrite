@@ -95,6 +95,16 @@ public class RefasterTemplateReturn extends Recipe {
                             needsReturnStatement = true;
                         }
 
+                        // Skip if it's a method call statement (like System.out.println)
+                        if (needsReturnStatement && expressionToReturn instanceof J.MethodInvocation) {
+                            J.MethodInvocation methodCall = (J.MethodInvocation) expressionToReturn;
+                            // If the method returns void, we shouldn't convert it to a return statement
+                            if (methodCall.getMethodType() != null && 
+                                JavaType.Primitive.Void.equals(methodCall.getMethodType().getReturnType())) {
+                                return m;
+                            }
+                        }
+
                         // Update return type if we have an expression
                         if (expressionToReturn != null && expressionToReturn.getType() != null) {
                             JavaType exprType = expressionToReturn.getType();
