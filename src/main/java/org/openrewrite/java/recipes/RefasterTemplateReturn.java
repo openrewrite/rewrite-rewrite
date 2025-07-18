@@ -15,8 +15,10 @@
  */
 package org.openrewrite.java.recipes;
 
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 
@@ -48,22 +50,13 @@ public class RefasterTemplateReturn extends Recipe {
                     @Override
                     public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
                         J.MethodDeclaration m = super.visitMethodDeclaration(method, ctx);
-
-                        // Check if method has @BeforeTemplate or @AfterTemplate annotation
-                        boolean hasTemplateAnnotation = m.getLeadingAnnotations().stream()
-                                .anyMatch(ann -> {
-                                    String simpleName = ann.getSimpleName();
-                                    return "BeforeTemplate".equals(simpleName) || "AfterTemplate".equals(simpleName);
-                                });
-
-                        if (!hasTemplateAnnotation) {
+                        if (FindAnnotations.find(m, "@com.google.errorprone.refaster.annotation.*Template").isEmpty()) {
                             return m;
                         }
 
                         // Check if method is void
-                        JavaType.Primitive voidType = JavaType.Primitive.Void;
                         if (m.getReturnTypeExpression() == null ||
-                                voidType != m.getReturnTypeExpression().getType()) {
+                                m.getReturnTypeExpression().getType() != JavaType.Primitive.Void) {
                             return m;
                         }
 
@@ -105,53 +98,7 @@ public class RefasterTemplateReturn extends Recipe {
                         // Update return type if we have an expression
                         if (expressionToReturn != null && expressionToReturn.getType() != null) {
                             JavaType exprType = expressionToReturn.getType();
-                            TypeTree newReturnType = null;
-
-                            if (exprType instanceof JavaType.Primitive) {
-                                // For primitives, create a J.Primitive
-                                newReturnType = new J.Primitive(
-                                        Tree.randomId(),
-                                        org.openrewrite.java.tree.Space.EMPTY,
-                                        org.openrewrite.marker.Markers.EMPTY,
-                                        (JavaType.Primitive) exprType
-                                );
-                            } else if (exprType instanceof JavaType.FullyQualified) {
-                                // For object types, use TypeTree.build()
-                                JavaType.FullyQualified fqType = (JavaType.FullyQualified) exprType;
-                                newReturnType = TypeTree.build(fqType.getFullyQualifiedName())
-                                        .withType(exprType);
-                            } else if (exprType instanceof JavaType.Array) {
-                                // For arrays, handle the element type and add array dimensions
-                                JavaType.Array arrayType = (JavaType.Array) exprType;
-                                JavaType elemType = arrayType.getElemType();
-
-                                if (elemType instanceof JavaType.Primitive) {
-                                    // For primitive arrays, create the type name with brackets
-                                    String primitiveKeyword = ((JavaType.Primitive) elemType).getKeyword();
-                                    String arrayBrackets = "";
-                                    JavaType currentType = exprType;
-                                    while (currentType instanceof JavaType.Array) {
-                                        arrayBrackets += "[]";
-                                        currentType = ((JavaType.Array) currentType).getElemType();
-                                    }
-
-                                    // Build a type tree for primitive array (e.g., "int[]")
-                                    newReturnType = TypeTree.build(primitiveKeyword + arrayBrackets)
-                                            .withType(exprType);
-                                } else if (elemType instanceof JavaType.FullyQualified) {
-                                    // For object arrays, use the class name with brackets
-                                    String arrayBrackets = "";
-                                    JavaType currentType = exprType;
-                                    while (currentType instanceof JavaType.Array) {
-                                        arrayBrackets += "[]";
-                                        currentType = ((JavaType.Array) currentType).getElemType();
-                                    }
-
-                                    newReturnType = TypeTree.build(((JavaType.FullyQualified) elemType).getClassName() + arrayBrackets)
-                                            .withType(exprType);
-                                }
-                            }
-
+                            TypeTree newReturnType = createReturnType(exprType);
                             if (newReturnType != null) {
                                 // Preserve prefix whitespace from the original void return type
                                 newReturnType = newReturnType.withPrefix(m.getReturnTypeExpression().getPrefix());
@@ -160,7 +107,6 @@ public class RefasterTemplateReturn extends Recipe {
                                 // Convert expression statement to return statement if needed
                                 if (needsReturnStatement) {
                                     J.Return newReturn = new J.Return(
-
                                             Tree.randomId(),
                                             statement.getPrefix(),
                                             statement.getMarkers(),
@@ -173,6 +119,54 @@ public class RefasterTemplateReturn extends Recipe {
                         }
 
                         return m;
+                    }
+
+                    private @Nullable TypeTree createReturnType(JavaType exprType) {
+                        if (exprType instanceof JavaType.Primitive) {
+                            // For primitives, create a J.Primitive
+                            return new J.Primitive(
+                                    Tree.randomId(),
+                                    Space.EMPTY,
+                                    org.openrewrite.marker.Markers.EMPTY,
+                                    (JavaType.Primitive) exprType
+                            );
+                        }
+                        if (exprType instanceof JavaType.FullyQualified) {
+                            // For object types, use TypeTree.build()
+                            JavaType.FullyQualified fqType = (JavaType.FullyQualified) exprType;
+                            return TypeTree.build(fqType.getFullyQualifiedName())
+                                    .withType(exprType);
+                        }
+                        if (exprType instanceof JavaType.Array) {
+                            // For arrays, handle the element type and add array dimensions
+                            JavaType elemType = ((JavaType.Array) exprType).getElemType();
+                            if (elemType instanceof JavaType.Primitive) {
+                                // For primitive arrays, create the type name with brackets
+                                String primitiveKeyword = ((JavaType.Primitive) elemType).getKeyword();
+                                String arrayBrackets = "";
+                                JavaType currentType = exprType;
+                                while (currentType instanceof JavaType.Array) {
+                                    arrayBrackets += "[]";
+                                    currentType = ((JavaType.Array) currentType).getElemType();
+                                }
+
+                                // Build a type tree for primitive array (e.g., "int[]")
+                                return TypeTree.build(primitiveKeyword + arrayBrackets)
+                                        .withType(exprType);
+                            }
+                            if (elemType instanceof JavaType.FullyQualified) {
+                                // For object arrays, use the class name with brackets
+                                String arrayBrackets = "";
+                                JavaType currentType = exprType;
+                                while (currentType instanceof JavaType.Array) {
+                                    arrayBrackets += "[]";
+                                    currentType = ((JavaType.Array) currentType).getElemType();
+                                }
+                                return TypeTree.build(((JavaType.FullyQualified) elemType).getClassName() + arrayBrackets)
+                                        .withType(exprType);
+                            }
+                        }
+                        return null;
                     }
                 }
         );
