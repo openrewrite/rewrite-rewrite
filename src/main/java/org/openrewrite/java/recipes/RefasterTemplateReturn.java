@@ -15,10 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
@@ -113,7 +110,6 @@ public class RefasterTemplateReturn extends Recipe {
                             if (exprType instanceof JavaType.Primitive) {
                                 // For primitives, create a J.Primitive
                                 newReturnType = new J.Primitive(
-                                        
                                         Tree.randomId(),
                                         org.openrewrite.java.tree.Space.EMPTY,
                                         org.openrewrite.marker.Markers.EMPTY,
@@ -164,7 +160,7 @@ public class RefasterTemplateReturn extends Recipe {
                                 // Convert expression statement to return statement if needed
                                 if (needsReturnStatement) {
                                     J.Return newReturn = new J.Return(
-                                            
+
                                             Tree.randomId(),
                                             statement.getPrefix(),
                                             statement.getMarkers(),
