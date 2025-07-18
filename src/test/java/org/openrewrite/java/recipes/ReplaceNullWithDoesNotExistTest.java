@@ -31,8 +31,8 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
           .parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()));
     }
 
-    @Test
     @DocumentExample
+    @Test
     void replaceFirstNullArgument() {
         rewriteRun(
           java(
@@ -48,11 +48,11 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
             """
               import static org.openrewrite.java.Assertions.java;
 
-              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.RewriteTest.doesNotExist;
 
               class Test {
                   void test() {
-                      java(RewriteTest.doesNotExist(), "after content");
+                      java(doesNotExist(), "after content");
                   }
               }
               """
@@ -75,12 +75,11 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
               """,
             """
               import static org.openrewrite.java.Assertions.java;
-
-              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.RewriteTest.doesNotExist;
 
               class Test {
                   void test() {
-                      java("before content", RewriteTest.doesNotExist());
+                      java("before content", doesNotExist());
                   }
               }
               """
@@ -103,12 +102,11 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
               """,
             """
               import static org.openrewrite.java.Assertions.java;
-
-              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.RewriteTest.doesNotExist;
 
               class Test {
                   void test() {
-                      java(RewriteTest.doesNotExist(), null);
+                      java(doesNotExist(), null);
                   }
               }
               """
@@ -130,13 +128,12 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
               }
               """,
             """
+              import static org.openrewrite.test.RewriteTest.doesNotExist;
               import static org.openrewrite.yaml.Assertions.yaml;
-
-              import org.openrewrite.test.RewriteTest;
 
               class Test {
                   void test() {
-                      yaml(RewriteTest.doesNotExist(), "content: value");
+                      yaml(doesNotExist(), "content: value");
                   }
               }
               """
@@ -159,12 +156,11 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
               """,
             """
               import static org.openrewrite.java.Assertions.java;
-
-              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.RewriteTest.doesNotExist;
 
               class Test {
                   void test() {
-                      java(RewriteTest.doesNotExist(), "after", spec -> spec.path("Test.java"));
+                      java(doesNotExist(), "after", spec -> spec.path("Test.java"));
                   }
               }
               """
@@ -232,14 +228,13 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
             """
               import static org.openrewrite.java.Assertions.java;
               import static org.openrewrite.java.Assertions.srcMainJava;
-
-              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.RewriteTest.doesNotExist;
 
               class Test {
                   void test() {
                       rewriteRun(
-                          java(RewriteTest.doesNotExist(), "after"),
-                          srcMainJava(RewriteTest.doesNotExist(), "after")
+                          java(doesNotExist(), "after"),
+                          srcMainJava(doesNotExist(), "after")
                       );
                   }
 
@@ -272,13 +267,12 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
               """,
             """
               import static org.openrewrite.java.Assertions.java;
-
-              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.RewriteTest.doesNotExist;
 
               class Test {
                   void test() {
                       java(
-                          RewriteTest.doesNotExist(),
+                          doesNotExist(),
                           \"\"\"
                           public class Foo {
                           }
@@ -303,11 +297,11 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
               }
               """,
             """
-              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.RewriteTest.doesNotExist;
 
               class Test {
                   void test() {
-                      org.openrewrite.java.Assertions.java(RewriteTest.doesNotExist(), "after");
+                      org.openrewrite.java.Assertions.java(doesNotExist(), "after");
                   }
               }
               """
