@@ -48,8 +48,8 @@ class RefasterTemplateReturnTest implements RewriteTest {
                 ));
     }
 
-    @Test
     @DocumentExample
+    @Test
     void fixVoidReturnWithExpressionStatement() {
         rewriteRun(
             java(
