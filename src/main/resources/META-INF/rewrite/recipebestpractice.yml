@@ -17,7 +17,7 @@
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.recipes.rewrite.OpenRewriteRecipeBestPractices
-displayName: OpenRewrite Recipe best practices
+displayName: OpenRewrite recipe best practices
 description: Best practices for OpenRewrite recipe development.
 recipeList:
   - org.openrewrite.java.recipes.JavaRecipeBestPractices
