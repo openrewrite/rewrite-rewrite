@@ -28,178 +28,178 @@ class RefasterTemplateReturnTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec.recipe(new RefasterTemplateReturn())
-            .parser(JavaParser.fromJavaVersion()
-              //language=java
-                .dependsOn(
-                    """
-                    package com.google.errorprone.refaster.annotation;
-                    import java.lang.annotation.*;
-                    @Target(ElementType.METHOD)
-                    @Retention(RetentionPolicy.SOURCE)
-                    public @interface BeforeTemplate {}
-                    """,
-                    """
-                    package com.google.errorprone.refaster.annotation;
-                    import java.lang.annotation.*;
-                    @Target(ElementType.METHOD)
-                    @Retention(RetentionPolicy.SOURCE)
-                    public @interface AfterTemplate {}
-                    """
-                ));
+          .parser(JavaParser.fromJavaVersion()
+            //language=java
+            .dependsOn(
+              """
+                package com.google.errorprone.refaster.annotation;
+                import java.lang.annotation.*;
+                @Target(ElementType.METHOD)
+                @Retention(RetentionPolicy.SOURCE)
+                public @interface BeforeTemplate {}
+                """,
+              """
+                package com.google.errorprone.refaster.annotation;
+                import java.lang.annotation.*;
+                @Target(ElementType.METHOD)
+                @Retention(RetentionPolicy.SOURCE)
+                public @interface AfterTemplate {}
+                """
+            ));
     }
 
     @DocumentExample
     @Test
     void fixVoidReturnWithExpressionStatement() {
         rewriteRun(
-            java(
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-                class Example {
-                    @BeforeTemplate
-                    void before(String s) {
-                        s.isEmpty();
-                    }
-                }
-                """,
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
+              class Example {
+                  @BeforeTemplate
+                  void before(String s) {
+                      s.isEmpty();
+                  }
+              }
+              """,
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-                class Example {
-                    @BeforeTemplate
-                    boolean before(String s) {
-                        return s.isEmpty();
-                    }
-                }
-                """
-            )
+              class Example {
+                  @BeforeTemplate
+                  boolean before(String s) {
+                      return s.isEmpty();
+                  }
+              }
+              """
+          )
         );
     }
 
     @Test
     void fixVoidReturnWithPrimitiveTypes() {
         rewriteRun(
-            java(
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-                class Example {
-                    @BeforeTemplate
-                    void intExample() {
-                        return 42;
-                    }
-                }
-                """,
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
+              class Example {
+                  @BeforeTemplate
+                  void intExample() {
+                      return 42;
+                  }
+              }
+              """,
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-                class Example {
-                    @BeforeTemplate
-                    int intExample() {
-                        return 42;
-                    }
-                }
-                """
-            )
+              class Example {
+                  @BeforeTemplate
+                  int intExample() {
+                      return 42;
+                  }
+              }
+              """
+          )
         );
     }
 
     @Test
     void fixVoidReturnWithObjectType() {
         rewriteRun(
-            java(
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-                class Example {
-                    @BeforeTemplate
-                    void objectExample() {
-                        new Object();
-                    }
-                }
-                """,
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
+              class Example {
+                  @BeforeTemplate
+                  void objectExample() {
+                      new Object();
+                  }
+              }
+              """,
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-                class Example {
-                    @BeforeTemplate
-                    java.lang.Object objectExample() {
-                        return new Object();
-                    }
-                }
-                """
-            )
+              class Example {
+                  @BeforeTemplate
+                  java.lang.Object objectExample() {
+                      return new Object();
+                  }
+              }
+              """
+          )
         );
     }
 
     @Test
     void preserveExistingReturnStatement() {
         rewriteRun(
-            java(
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-                class Example {
-                    @BeforeTemplate
-                    void before(String s) {
-                        return s.isEmpty();
-                    }
-                }
-                """,
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
+              class Example {
+                  @BeforeTemplate
+                  void before(String s) {
+                      return s.isEmpty();
+                  }
+              }
+              """,
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-                class Example {
-                    @BeforeTemplate
-                    boolean before(String s) {
-                        return s.isEmpty();
-                    }
-                }
-                """
-            )
+              class Example {
+                  @BeforeTemplate
+                  boolean before(String s) {
+                      return s.isEmpty();
+                  }
+              }
+              """
+          )
         );
     }
 
     @Test
     void doNotChangeNonVoidReturnType() {
         rewriteRun(
-            java(
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-                class Example {
-                    @BeforeTemplate
-                    boolean before(String s) {
-                        return s.isEmpty();
-                    }
+              class Example {
+                  @BeforeTemplate
+                  boolean before(String s) {
+                      return s.isEmpty();
+                  }
 
-                    @BeforeTemplate
-                    String getString() {
-                        return "test";
-                    }
-                }
-                """
-            )
+                  @BeforeTemplate
+                  String getString() {
+                      return "test";
+                  }
+              }
+              """
+          )
         );
     }
 
     @Test
     void doNotChangeMethodsWithoutTemplateAnnotations() {
         rewriteRun(
-            java(
-                """
-                class Example {
-                    void notATemplate() {
-                        return;
-                    }
+          java(
+            """
+              class Example {
+                  void notATemplate() {
+                      return;
+                  }
 
-                    void regularMethod(String s) {
-                        s.isEmpty();
-                    }
-                }
-                """
-            )
+                  void regularMethod(String s) {
+                      s.isEmpty();
+                  }
+              }
+              """
+          )
         );
     }
 
@@ -208,16 +208,16 @@ class RefasterTemplateReturnTest implements RewriteTest {
         rewriteRun(
           java(
             """
-            import com.google.errorprone.refaster.annotation.BeforeTemplate;
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-            class Example {
-                @BeforeTemplate
-                void multipleStatements(String s) {
-                    System.out.println(s);
-                    s.isEmpty();
-                }
-            }
-            """
+              class Example {
+                  @BeforeTemplate
+                  void multipleStatements(String s) {
+                      System.out.println(s);
+                      s.isEmpty();
+                  }
+              }
+              """
           )
         );
     }
@@ -227,15 +227,15 @@ class RefasterTemplateReturnTest implements RewriteTest {
         rewriteRun(
           java(
             """
-            import com.google.errorprone.refaster.annotation.BeforeTemplate;
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-            class Example {
-                @BeforeTemplate
-                void multipleStatements(String s) {
-                    System.out.println(s);
-                }
-            }
-            """
+              class Example {
+                  @BeforeTemplate
+                  void multipleStatements(String s) {
+                      System.out.println(s);
+                  }
+              }
+              """
           )
         );
     }
@@ -243,49 +243,71 @@ class RefasterTemplateReturnTest implements RewriteTest {
     @Test
     void doNotChangeMethodsWithEmptyBody() {
         rewriteRun(
-            java(
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
 
-                class Example {
-                    @BeforeTemplate
-                    void emptyMethod() {
-                    }
-                }
-                """
-            )
+              class Example {
+                  @BeforeTemplate
+                  void emptyMethod() {
+                  }
+              }
+              """
+          )
         );
     }
 
     @Test
     void handleGenericReturnType() {
         rewriteRun(
-            java(
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
-                import java.util.List;
-                import java.util.ArrayList;
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+              import java.util.List;
+              import java.util.ArrayList;
 
-                class Example {
-                    @BeforeTemplate
-                    void listExample() {
-                        new ArrayList<String>();
-                    }
-                }
-                """,
-                """
-                import com.google.errorprone.refaster.annotation.BeforeTemplate;
-                import java.util.List;
-                import java.util.ArrayList;
+              class Example {
+                  @BeforeTemplate
+                  void listExample() {
+                      new ArrayList<String>();
+                  }
+              }
+              """,
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+              import java.util.List;
+              import java.util.ArrayList;
 
-                class Example {
-                    @BeforeTemplate
-                    java.util.ArrayList listExample() {
-                        return new ArrayList<String>();
-                    }
-                }
-                """
-            )
+              class Example {
+                  @BeforeTemplate
+                  java.util.ArrayList listExample() {
+                      return new ArrayList<String>();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeMethodReturningObject() {
+        rewriteRun(
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+
+              class Example {
+                  public static <V> V fail() {
+                      return null;
+                  }
+
+                  @BeforeTemplate
+                  void before() {
+                      fail();
+                  }
+              }
+              """
+          )
         );
     }
 }
