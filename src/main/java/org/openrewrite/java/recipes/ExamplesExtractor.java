@@ -292,20 +292,20 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                     .map(arg -> {
                         if (arg instanceof J.Empty) {
                             return null;
-                        } else if (arg instanceof J.Literal) {
+                        }
+                        if (arg instanceof J.Literal) {
                             J.Literal literal = (J.Literal) arg;
                             if (literal.getValue() != null) {
                                 return literal.getValue().toString();
-                            } else {
-                                return ((J.Literal) arg).getValueSource();
                             }
-                        } else if (arg instanceof J.NewArray) {
+                            return ((J.Literal) arg).getValueSource();
+                        }
+                        if (arg instanceof J.NewArray) {
                             List<Expression> initializer = ((J.NewArray) arg).getInitializer();
                             return null == initializer ? "null" : extractParameters(initializer).stream()
                                     .collect(joining(", ", "[ ", " ]"));
-                        } else {
-                            return arg.toString();
                         }
+                        return arg.toString();
                     })
                     .filter(Objects::nonNull)
                     .collect(toList());

@@ -66,8 +66,7 @@ public class FindRecipes extends Recipe {
                 stopAfterPreVisit();
                 tree = findImperativeRecipes.visit(tree, ctx);
                 tree = findRefasterRecipes.visit(tree, ctx);
-                tree = findYamlRecipes.visit(tree, ctx);
-                return tree;
+                return findYamlRecipes.visit(tree, ctx);
             }
         };
     }
@@ -208,11 +207,14 @@ public class FindRecipes extends Recipe {
             private ValueNode mapValue(@Nullable Object value) {
                 if (value instanceof String) {
                     return JsonNodeFactory.instance.textNode((String) value);
-                } else if (value instanceof Boolean) {
+                }
+                if (value instanceof Boolean) {
                     return JsonNodeFactory.instance.booleanNode((Boolean) value);
-                } else if (value instanceof Integer) {
+                }
+                if (value instanceof Integer) {
                     return JsonNodeFactory.instance.numberNode((Integer) value);
-                } else if (value == null) {
+                }
+                if (value == null) {
                     return JsonNodeFactory.instance.nullNode();
                 }
                 throw new IllegalArgumentException(String.valueOf(value));
