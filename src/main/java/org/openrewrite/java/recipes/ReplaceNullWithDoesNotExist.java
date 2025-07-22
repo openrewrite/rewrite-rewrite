@@ -17,17 +17,9 @@ package org.openrewrite.java.recipes;
 
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.JavaParser;
-import org.openrewrite.java.JavaTemplate;
-import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.*;
 import org.openrewrite.java.search.UsesMethod;
-import org.openrewrite.java.tree.Expression;
-import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-
-import java.util.List;
 
 public class ReplaceNullWithDoesNotExist extends Recipe {
 
@@ -54,37 +46,24 @@ public class ReplaceNullWithDoesNotExist extends Recipe {
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
 
-                        // Check if this is a call to an Assertions method
-                        if (!ASSERTIONS_MATCHER.matches(mi)) {
-                            return mi;
+                        if (ASSERTIONS_MATCHER.matches(mi)) {
+                            return mi.withArguments(ListUtils.map(method.getArguments(), (index, arg) -> {
+                                if (J.Literal.isLiteralValue(arg, null) && (index == 0 || index == 1)) {
+                                    J.MethodInvocation methodInvocation = JavaTemplate.builder("doesNotExist()")
+                                            .javaParser(JavaParser.fromJavaVersion().classpath("rewrite-core", "rewrite-test"))
+                                            .staticImports("org.openrewrite.test.RewriteTest.doesNotExist")
+                                            .build()
+                                            .apply(new Cursor(getCursor(), arg), arg.getCoordinates().replace());
+                                    return methodInvocation.withPrefix(arg.getPrefix());
+                                }
+                                return arg;
+                            }));
                         }
 
-                        // Check if the method is a static method from an Assertions class
-                        JavaType.Method methodType = mi.getMethodType();
-                        if (methodType == null ||
-                                !methodType.getFlags().contains(Flag.Static) ||
-                                !methodType.getDeclaringType().getFullyQualifiedName().matches("org\\.openrewrite\\.\\w+\\.Assertions")) {
-                            return mi;
-                        }
-
-                        List<Expression> oldArgs = method.getArguments();
-                        List<Expression> newArgs = ListUtils.map(oldArgs, (index, arg) ->
-                                J.Literal.isLiteralValue(arg, null) && (index == 0 || index == 1) ? replaceArgument(arg) : arg);
-                        if (oldArgs != newArgs) {
-                            maybeAddImport("org.openrewrite.test.RewriteTest", "doesNotExist", false);
-                            return mi.withArguments(newArgs);
-                        }
                         return mi;
+
                     }
 
-                    private J.MethodInvocation replaceArgument(Expression nullArg) {
-                        return JavaTemplate.builder("doesNotExist()")
-                                .javaParser(JavaParser.fromJavaVersion().classpath("rewrite-test"))
-                                .staticImports("org.openrewrite.test.RewriteTest.doesNotExist")
-                                .build()
-                                .apply(new Cursor(getCursor(), nullArg), nullArg.getCoordinates().replace())
-                                .withPrefix(nullArg.getPrefix());
-                    }
                 }
         );
     }
