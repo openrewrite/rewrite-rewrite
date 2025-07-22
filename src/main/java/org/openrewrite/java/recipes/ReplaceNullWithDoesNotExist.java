@@ -17,7 +17,10 @@ package org.openrewrite.java.recipes;
 
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.*;
+import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaParser;
+import org.openrewrite.java.JavaTemplate;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 
@@ -41,11 +44,9 @@ public class ReplaceNullWithDoesNotExist extends Recipe {
         return Preconditions.check(
                 new UsesMethod<>(ASSERTIONS_MATCHER),
                 new JavaIsoVisitor<ExecutionContext>() {
-
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-
                         if (ASSERTIONS_MATCHER.matches(mi)) {
                             return mi.withArguments(ListUtils.map(method.getArguments(), (index, arg) -> {
                                 if (J.Literal.isLiteralValue(arg, null) && (index == 0 || index == 1)) {
@@ -66,11 +67,8 @@ public class ReplaceNullWithDoesNotExist extends Recipe {
                                 return arg;
                             }));
                         }
-
                         return mi;
-
                     }
-
                 }
         );
     }
