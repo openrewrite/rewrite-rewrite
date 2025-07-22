@@ -66,8 +66,7 @@ public class FindRecipes extends Recipe {
                 stopAfterPreVisit();
                 tree = findImperativeRecipes.visit(tree, ctx);
                 tree = findRefasterRecipes.visit(tree, ctx);
-                tree = findYamlRecipes.visit(tree, ctx);
-                return tree;
+                return findYamlRecipes.visit(tree, ctx);
             }
         };
     }
