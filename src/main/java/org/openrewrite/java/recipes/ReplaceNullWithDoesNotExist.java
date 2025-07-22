@@ -50,7 +50,7 @@ public class ReplaceNullWithDoesNotExist extends Recipe {
                         if (ASSERTIONS_MATCHER.matches(mi)) {
                             return mi.withArguments(ListUtils.map(method.getArguments(), (index, arg) -> {
                                 if (J.Literal.isLiteralValue(arg, null) && (index == 0 || index == 1)) {
-                                    return JavaTemplate.builder("doesNotExist()")
+                                    J.MethodInvocation doesNotExist = JavaTemplate.builder("doesNotExist()")
                                             .contextSensitive()
                                             .javaParser(JavaParser.fromJavaVersion().dependsOn(
                                                     "package org.openrewrite.test;\n" +
@@ -61,8 +61,8 @@ public class ReplaceNullWithDoesNotExist extends Recipe {
                                                             "}"
                                             ))
                                             .build()
-                                            .apply(new Cursor(getCursor(), arg), arg.getCoordinates().replace())
-                                            .withPrefix(arg.getPrefix());
+                                            .apply(new Cursor(getCursor(), arg), arg.getCoordinates().replace());
+                                    return doesNotExist.withPrefix(arg.getPrefix());
                                 }
                                 return arg;
                             }));
