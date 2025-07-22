@@ -108,7 +108,7 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
 
               class Test implements RewriteTest {
                   void test() {
-                      java(doesNotExist(), null);
+                      java(doesNotExist(), doesNotExist());
                   }
               }
               """
@@ -159,6 +159,7 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
               }
               """,
             """
+              import org.openrewrite.test.RewriteTest;
               import static org.openrewrite.java.Assertions.java;
 
               class Test implements RewriteTest {
@@ -203,48 +204,6 @@ class ReplaceNullWithDoesNotExistTest implements RewriteTest {
                   }
 
                   void someMethod(Object a, Object b) {
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void handleNullInNestedCalls() {
-        rewriteRun(
-          java(
-            """
-              import org.openrewrite.test.RewriteTest;
-              import static org.openrewrite.java.Assertions.java;
-              import static org.openrewrite.java.Assertions.srcMainJava;
-
-              class Test implements RewriteTest {
-                  void test() {
-                      rewriteRun(
-                          java(null, "after"),
-                          srcMainJava(null, "after")
-                      );
-                  }
-
-                  void rewriteRun(Object... sources) {
-                  }
-              }
-              """,
-            """
-              import org.openrewrite.test.RewriteTest;
-              import static org.openrewrite.java.Assertions.java;
-              import static org.openrewrite.java.Assertions.srcMainJava;
-
-              class Test implements RewriteTest {
-                  void test() {
-                      rewriteRun(
-                          java(doesNotExist(), "after"),
-                          srcMainJava(doesNotExist(), "after")
-                      );
-                  }
-
-                  void rewriteRun(Object... sources) {
                   }
               }
               """

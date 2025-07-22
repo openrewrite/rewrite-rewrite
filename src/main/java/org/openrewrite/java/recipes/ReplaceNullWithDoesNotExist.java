@@ -49,12 +49,19 @@ public class ReplaceNullWithDoesNotExist extends Recipe {
                         if (ASSERTIONS_MATCHER.matches(mi)) {
                             return mi.withArguments(ListUtils.map(method.getArguments(), (index, arg) -> {
                                 if (J.Literal.isLiteralValue(arg, null) && (index == 0 || index == 1)) {
-                                    J.MethodInvocation methodInvocation = JavaTemplate.builder("doesNotExist()")
-                                            .javaParser(JavaParser.fromJavaVersion().classpath("rewrite-core", "rewrite-test"))
-                                            .staticImports("org.openrewrite.test.RewriteTest.doesNotExist")
+                                    return JavaTemplate.builder("doesNotExist()")
+                                            .contextSensitive()
+                                            .javaParser(JavaParser.fromJavaVersion().dependsOn(
+                                                    "package org.openrewrite.test;\n" +
+                                                            "public interface RewriteTest {\n" +
+                                                            "    default String doesNotExist() {\n" +
+                                                            "        return null;\n" +
+                                                            "    }\n" +
+                                                            "}"
+                                            ))
                                             .build()
-                                            .apply(new Cursor(getCursor(), arg), arg.getCoordinates().replace());
-                                    return methodInvocation.withPrefix(arg.getPrefix());
+                                            .apply(new Cursor(getCursor(), arg), arg.getCoordinates().replace())
+                                            .withPrefix(arg.getPrefix());
                                 }
                                 return arg;
                             }));
