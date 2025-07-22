@@ -40,6 +40,7 @@ recipeList:
   - org.openrewrite.staticanalysis.RemoveUnusedPrivateFields
   - org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods
   #- org.openrewrite.staticanalysis.UnnecessaryThrows
+  - org.openrewrite.staticanalysis.UnwrapElseAfterReturn
   - org.openrewrite.staticanalysis.UseDiamondOperator
 ---
 type: specs.openrewrite.org/v1beta/recipe
