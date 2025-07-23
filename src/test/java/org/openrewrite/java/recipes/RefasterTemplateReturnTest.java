@@ -106,7 +106,7 @@ class RefasterTemplateReturnTest implements RewriteTest {
     }
 
     @Test
-    void fixVoidReturnWithObjectType() {
+    void doNotReturnWithObjectType() {
         rewriteRun(
           java(
             """
@@ -116,16 +116,6 @@ class RefasterTemplateReturnTest implements RewriteTest {
                   @BeforeTemplate
                   void objectExample() {
                       new Object();
-                  }
-              }
-              """,
-            """
-              import com.google.errorprone.refaster.annotation.BeforeTemplate;
-
-              class Example {
-                  @BeforeTemplate
-                  java.lang.Object objectExample() {
-                      return new Object();
                   }
               }
               """

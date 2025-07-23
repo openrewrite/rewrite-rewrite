@@ -131,7 +131,7 @@ public class RefasterTemplateReturn extends Recipe {
                                     (JavaType.Primitive) exprType
                             );
                         }
-                        if (exprType instanceof JavaType.FullyQualified) {
+                        if (exprType instanceof JavaType.FullyQualified && !TypeUtils.isObject(exprType)) {
                             // For object types, use TypeTree.build()
                             JavaType.FullyQualified fqType = (JavaType.FullyQualified) exprType;
                             return TypeTree.build(fqType.getFullyQualifiedName())
