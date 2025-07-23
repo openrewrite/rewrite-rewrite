@@ -78,34 +78,6 @@ class RefasterTemplateReturnTest implements RewriteTest {
     }
 
     @Test
-    void fixVoidReturnWithPrimitiveTypes() {
-        rewriteRun(
-          java(
-            """
-              import com.google.errorprone.refaster.annotation.BeforeTemplate;
-
-              class Example {
-                  @BeforeTemplate
-                  void intExample() {
-                      return 42;
-                  }
-              }
-              """,
-            """
-              import com.google.errorprone.refaster.annotation.BeforeTemplate;
-
-              class Example {
-                  @BeforeTemplate
-                  int intExample() {
-                      return 42;
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void doNotReturnWithObjectType() {
         rewriteRun(
           java(
@@ -116,34 +88,6 @@ class RefasterTemplateReturnTest implements RewriteTest {
                   @BeforeTemplate
                   void objectExample() {
                       new Object();
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void preserveExistingReturnStatement() {
-        rewriteRun(
-          java(
-            """
-              import com.google.errorprone.refaster.annotation.BeforeTemplate;
-
-              class Example {
-                  @BeforeTemplate
-                  void before(String s) {
-                      return s.isEmpty();
-                  }
-              }
-              """,
-            """
-              import com.google.errorprone.refaster.annotation.BeforeTemplate;
-
-              class Example {
-                  @BeforeTemplate
-                  boolean before(String s) {
-                      return s.isEmpty();
                   }
               }
               """

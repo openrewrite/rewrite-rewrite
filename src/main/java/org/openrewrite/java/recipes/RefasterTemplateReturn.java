@@ -22,8 +22,6 @@ import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 
-import java.util.List;
-
 import static java.util.Collections.singletonList;
 
 public class RefasterTemplateReturn extends Recipe {
@@ -42,10 +40,7 @@ public class RefasterTemplateReturn extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
-                Preconditions.or(
-                        new UsesType<>("com.google.errorprone.refaster.annotation.BeforeTemplate", false),
-                        new UsesType<>("com.google.errorprone.refaster.annotation.AfterTemplate", false)
-                ),
+                new UsesType<>("com.google.errorprone.refaster.annotation.*", false),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
@@ -60,34 +55,25 @@ public class RefasterTemplateReturn extends Recipe {
                             return m;
                         }
 
-                        // Check if body has exactly one statement
-                        if (m.getBody() == null) {
+                        // Check if body has exactly one expression
+                        J.Block body = m.getBody();
+                        if (body == null ||
+                                body.getStatements().size() != 1 ||
+                                !(body.getStatements().get(0) instanceof Expression)) {
                             return m;
                         }
 
-                        List<Statement> statements = m.getBody().getStatements();
-                        if (statements.size() != 1) {
+                        Expression expression = (Expression) body.getStatements().get(0);
+
+                        // If the expression has no type, we can't convert it to a return statement
+                        JavaType expressionType = expression.getType();
+                        if (expressionType == null) {
                             return m;
                         }
 
-                        Statement statement = statements.get(0);
-                        Expression expressionToReturn = null;
-                        boolean needsReturnStatement = false;
-
-                        // Check if the statement is a return statement with an expression
-                        if (statement instanceof J.Return) {
-                            J.Return returnStatement = (J.Return) statement;
-                            expressionToReturn = returnStatement.getExpression();
-                        }
-                        // Check if the statement is an expression (method call, assignment, etc.)
-                        else if (statement instanceof Expression) {
-                            expressionToReturn = (Expression) statement;
-                            needsReturnStatement = true;
-                        }
-
-                        // Skip if it's a method call statement (like System.out.println)
-                        if (needsReturnStatement && expressionToReturn instanceof J.MethodInvocation) {
-                            J.MethodInvocation methodCall = (J.MethodInvocation) expressionToReturn;
+                        // Skip if it's a method call expression (like System.out.println)
+                        if (expression instanceof J.MethodInvocation) {
+                            J.MethodInvocation methodCall = (J.MethodInvocation) expression;
                             // If the method returns void, we shouldn't convert it to a return statement
                             if (methodCall.getMethodType() != null &&
                                     JavaType.Primitive.Void == methodCall.getMethodType().getReturnType()) {
@@ -96,29 +82,20 @@ public class RefasterTemplateReturn extends Recipe {
                         }
 
                         // Update return type if we have an expression
-                        if (expressionToReturn != null && expressionToReturn.getType() != null) {
-                            JavaType exprType = expressionToReturn.getType();
-                            TypeTree newReturnType = createReturnType(exprType);
-                            if (newReturnType != null) {
-                                // Preserve prefix whitespace from the original void return type
-                                newReturnType = newReturnType.withPrefix(m.getReturnTypeExpression().getPrefix());
-                                m = m.withReturnTypeExpression(newReturnType);
-
-                                // Convert expression statement to return statement if needed
-                                if (needsReturnStatement) {
-                                    J.Return newReturn = new J.Return(
-                                            Tree.randomId(),
-                                            statement.getPrefix(),
-                                            statement.getMarkers(),
-                                            expressionToReturn.withPrefix(org.openrewrite.java.tree.Space.SINGLE_SPACE)
-                                    );
-
-                                    m = m.withBody(m.getBody().withStatements(singletonList(newReturn)));
-                                }
-                            }
+                        TypeTree newReturnType = createReturnType(expressionType);
+                        if (newReturnType == null) {
+                            return m;
                         }
 
-                        return m;
+                        // Convert expression to return statement
+                        return m
+                                .withReturnTypeExpression(newReturnType.withPrefix(m.getReturnTypeExpression().getPrefix()))
+                                .withBody(body.withStatements(singletonList(new J.Return(
+                                        Tree.randomId(),
+                                        expression.getPrefix(),
+                                        expression.getMarkers(),
+                                        expression.withPrefix(Space.SINGLE_SPACE)
+                                ))));
                     }
 
                     private @Nullable TypeTree createReturnType(JavaType exprType) {
