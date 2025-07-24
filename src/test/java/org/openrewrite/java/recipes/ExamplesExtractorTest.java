@@ -121,7 +121,7 @@ class ExamplesExtractorTest implements RewriteTest {
             ),
             //language=yaml
             yaml(
-              null, // newly created
+              doesNotExist(), // newly created
               """
                 ---
                 type: specs.openrewrite.org/v1beta/example
@@ -310,7 +310,7 @@ class ExamplesExtractorTest implements RewriteTest {
             ),
             //language=yaml
             yaml(
-              null,
+              doesNotExist(),
               """
                 ---
                 type: specs.openrewrite.org/v1beta/example
@@ -400,7 +400,7 @@ class ExamplesExtractorTest implements RewriteTest {
             ),
             //language=yaml
             yaml(
-              null,
+              doesNotExist(),
               """
                 ---
                 type: specs.openrewrite.org/v1beta/example
@@ -581,7 +581,7 @@ class ExamplesExtractorTest implements RewriteTest {
             ),
             //language=yaml
             yaml(
-              null,
+              doesNotExist(),
               """
                 ---
                 type: specs.openrewrite.org/v1beta/example
@@ -708,7 +708,7 @@ class ExamplesExtractorTest implements RewriteTest {
             ),
             //language=yaml
             yaml(
-              null, """
+              doesNotExist(), """
                 ---
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.java.migrate.net.JavaNetAPIs
@@ -783,7 +783,7 @@ class ExamplesExtractorTest implements RewriteTest {
             ),
             //language=yaml
             yaml(
-              null, """
+              doesNotExist(), """
                 ---
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.java.migrate.net.JavaNetAPIs
@@ -868,7 +868,7 @@ class ExamplesExtractorTest implements RewriteTest {
             ),
             //language=yaml
             yaml(
-              null,
+              doesNotExist(),
               """
                 ---
                 type: specs.openrewrite.org/v1beta/example
@@ -921,7 +921,7 @@ class ExamplesExtractorTest implements RewriteTest {
             //language=yaml
             srcMainResources(
               yaml(
-                null, // newly created
+                doesNotExist(), // newly created
                 """
                   ---
                   type: specs.openrewrite.org/v1beta/example
@@ -1048,7 +1048,7 @@ class ExamplesExtractorTest implements RewriteTest {
             "project",
             srcMainResources(
               yaml(
-                null, // newly created
+                doesNotExist(), // newly created
                 """
                   ---
                   type: specs.openrewrite.org/v1beta/example
@@ -1142,7 +1142,7 @@ class ExamplesExtractorTest implements RewriteTest {
             "projectA",
             srcMainResources(
               yaml(
-                null, // newly created
+                doesNotExist(), // newly created
                 """
                   ---
                   type: specs.openrewrite.org/v1beta/example
@@ -1211,7 +1211,7 @@ class ExamplesExtractorTest implements RewriteTest {
             //language=yaml
             srcMainResources(
               yaml(
-                null, // newly created
+                doesNotExist(), // newly created
                 """
                   ---
                   type: specs.openrewrite.org/v1beta/example
