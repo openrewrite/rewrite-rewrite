@@ -28,7 +28,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 
-import java.util.Collections;
+import static java.util.Collections.emptyList;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -77,7 +77,7 @@ public class UseTreeRandomId extends Recipe {
                             return mi.withSelect(((J.Identifier) mi.getSelect()).withSimpleName("Tree").withType(classType));
                         }
                         return mi.withSelect(new J.Identifier(
-                                Tree.randomId(), mi.getPrefix(), mi.getMarkers(), Collections.emptyList(), "Tree", classType, null));
+                                Tree.randomId(), mi.getPrefix(), mi.getMarkers(), emptyList(), "Tree", classType, null));
                     }
                 });
     }

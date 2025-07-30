@@ -22,9 +22,10 @@ import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import static java.util.Collections.emptyList;
 
 public class SourceSpecTextBlockNewLine extends Recipe {
     @Override
@@ -77,7 +78,7 @@ public class SourceSpecTextBlockNewLine extends Recipe {
 
                         Expression argument = jrp.getElement();
                         if (isTextBlock(argument) && !jrp.getAfter().getWhitespace().startsWith("\n")) {
-                            return jrp.withAfter(method.getPrefix().withComments(Collections.emptyList()));
+                            return jrp.withAfter(method.getPrefix().withComments(emptyList()));
                         }
                         return jrp;
                     });
