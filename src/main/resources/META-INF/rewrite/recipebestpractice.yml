@@ -42,6 +42,10 @@ recipeList:
   #- org.openrewrite.staticanalysis.UnnecessaryThrows
   - org.openrewrite.staticanalysis.UnwrapElseAfterReturn
   - org.openrewrite.staticanalysis.UseDiamondOperator
+  - org.openrewrite.java.UseStaticImport:
+      methodPattern: java.util.stream.Collectors *(..)
+  - org.openrewrite.java.UseStaticImport:
+      methodPattern: java.util.Collections *(..)
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.java.recipes.JavaRecipeBestPractices
