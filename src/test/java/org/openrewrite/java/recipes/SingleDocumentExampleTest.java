@@ -116,4 +116,55 @@ class SingleDocumentExampleTest implements RewriteTest {
         );
     }
 
+    @Test
+    void removeFromParamterizedTest() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.DocumentExample;
+              import org.openrewrite.test.RewriteTest;
+
+              import static org.openrewrite.java.Assertions.java;
+
+              class UnnecessaryParenthesesTest implements RewriteTest {
+                  @DocumentExample
+                  void test1(String input) {
+                      rewriteRun(
+                        java(
+                          \"""
+                            BEFORE: %s
+                            \""".formatted(input),
+                          \"""
+                            AFTER: %s
+                            \""".formatted(input)
+                        )
+                      );
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.test.RewriteTest;
+
+              import static org.openrewrite.java.Assertions.java;
+
+              class UnnecessaryParenthesesTest implements RewriteTest {
+                  void test1(String input) {
+                      rewriteRun(
+                        java(
+                          \"""
+                            BEFORE: %s
+                            \""".formatted(input),
+                          \"""
+                            AFTER: %s
+                            \""".formatted(input)
+                        )
+                      );
+                  }
+              }
+              """
+          )
+        );
+    }
+
 }

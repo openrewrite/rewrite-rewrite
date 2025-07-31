@@ -40,8 +40,8 @@ public class SingleDocumentExample extends Recipe {
 
     @Override
     public String getDescription() {
-        return "Ensures that there is only one `@DocumentExample` annotation per test class, " +
-                "as that looks best in the documentation.";
+        return "Ensures there's only one `@DocumentExample` annotated `@Test` method per test class, " +
+                "as that looks best in our documentation. `@ParameterizedTest` methods are not supported.";
     }
 
     @Override
@@ -56,12 +56,22 @@ public class SingleDocumentExample extends Recipe {
                                     FindAnnotations.find(st, DOCUMENT_EXAMPLE).isEmpty()) {
                                 return st;
                             }
+                            J.MethodDeclaration method = (J.MethodDeclaration) st;
+
+                            // If the method is not a simple JUnit 5 test, remove the annotation
+                            if (FindAnnotations.find(method, "@org.junit.jupiter.api.Test").isEmpty()) {
+                                maybeRemoveImport(DOCUMENT_EXAMPLE);
+                                return new RemoveAnnotationVisitor(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER)
+                                        .visitMethodDeclaration(method, ctx);
+                            }
+
+                            // Retain the first `@DocumentExample`
                             if (!foundDocumentExample.get()) {
                                 foundDocumentExample.set(true);
                                 return st;
                             }
                             return new RemoveAnnotationVisitor(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER)
-                                    .visitMethodDeclaration((J.MethodDeclaration) st, ctx);
+                                    .visitMethodDeclaration(method, ctx);
                         }
                 )));
             }
