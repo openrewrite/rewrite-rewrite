@@ -479,6 +479,31 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.ReplaceNullWithDoesNotExist
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.test.RewriteTest;
+      import static org.openrewrite.java.Assertions.java;
+
+      class Test implements RewriteTest {
+          void test() {
+              java(null, "after content");
+          }
+      }
+    after: |
+      import org.openrewrite.test.RewriteTest;
+      import static org.openrewrite.java.Assertions.java;
+
+      class Test implements RewriteTest {
+          void test() {
+              java(doesNotExist(), "after content");
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.RewriteTestClassesShouldNotBePublic
 examples:
 - description: ''
