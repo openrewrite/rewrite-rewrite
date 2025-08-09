@@ -28,8 +28,6 @@ import org.openrewrite.java.tree.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.util.Collections.emptyList;
-
 public class UseRewriteTestDefaults extends Recipe {
 
     @Override
