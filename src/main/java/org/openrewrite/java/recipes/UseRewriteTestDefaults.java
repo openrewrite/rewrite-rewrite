@@ -49,18 +49,16 @@ public class UseRewriteTestDefaults extends Recipe {
 
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-                // Don't process the class with super to avoid duplication
-
-                if (!implementsRewriteTest(classDecl)) {
-                    // Process nested classes
-                    return super.visitClassDeclaration(classDecl, ctx);
+                J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
+                if (!TypeUtils.isAssignableTo("org.openrewrite.test.RewriteTest", classDecl.getType())) {
+                    return cd;
                 }
 
                 // Check if defaults method already exists
                 boolean hasDefaultsMethod = classDecl.getBody().getStatements().stream()
                         .filter(J.MethodDeclaration.class::isInstance)
                         .map(J.MethodDeclaration.class::cast)
-                        .anyMatch(md -> defaultsMatcher.matches(md, classDecl));
+                        .anyMatch(md -> "defaults".equals(md.getSimpleName()));
                 if (hasDefaultsMethod) {
                     return classDecl;
                 }
@@ -75,19 +73,8 @@ public class UseRewriteTestDefaults extends Recipe {
                     return classDecl;
                 }
 
-                J.ClassDeclaration cd = addDefaultsMethod(classDecl, commonSpec, ctx);
+                cd = addDefaultsMethod(classDecl, commonSpec, ctx);
                 return removeSpecsFromRewriteRuns(cd, ctx);
-            }
-
-            private boolean implementsRewriteTest(J.ClassDeclaration cd) {
-                if (cd.getImplements() == null) {
-                    return false;
-                }
-                return cd.getImplements().stream()
-                        .anyMatch(impl -> {
-                            JavaType.FullyQualified fq = TypeUtils.asFullyQualified(impl.getType());
-                            return fq != null && "org.openrewrite.test.RewriteTest".equals(fq.getFullyQualifiedName());
-                        });
             }
 
             private List<RecipeSpecInfo> collectRecipeSpecs(J.ClassDeclaration cd) {
@@ -126,9 +113,7 @@ public class UseRewriteTestDefaults extends Recipe {
                         }
                     } else if (stmt instanceof J.ClassDeclaration) {
                         J.ClassDeclaration nestedClass = (J.ClassDeclaration) stmt;
-                        if (nestedClass.getBody() != null) {
-                            collectRecipeSpecsFromBody(nestedClass.getBody(), specs);
-                        }
+                        collectRecipeSpecsFromBody(nestedClass.getBody(), specs);
                     }
                 }
             }
