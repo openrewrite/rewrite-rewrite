@@ -28,6 +28,8 @@ import org.openrewrite.java.tree.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Collections.emptyList;
+
 public class UseRewriteTestDefaults extends Recipe {
 
     @Override
@@ -45,7 +47,6 @@ public class UseRewriteTestDefaults extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(new UsesType<>("org.openrewrite.test.RewriteTest", false), new JavaIsoVisitor<ExecutionContext>() {
             private final MethodMatcher rewriteRunMatcher = new MethodMatcher("org.openrewrite.test.RewriteTest rewriteRun(..)");
-            private final MethodMatcher defaultsMatcher = new MethodMatcher("org.openrewrite.test.RewriteTest defaults(org.openrewrite.test.RecipeSpec)");
 
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
@@ -54,7 +55,6 @@ public class UseRewriteTestDefaults extends Recipe {
                     return cd;
                 }
 
-                // Check if defaults method already exists
                 boolean hasDefaultsMethod = classDecl.getBody().getStatements().stream()
                         .filter(J.MethodDeclaration.class::isInstance)
                         .map(J.MethodDeclaration.class::cast)
@@ -78,44 +78,38 @@ public class UseRewriteTestDefaults extends Recipe {
             }
 
             private List<RecipeSpecInfo> collectRecipeSpecs(J.ClassDeclaration cd) {
-                List<RecipeSpecInfo> specs = new ArrayList<>();
-                collectRecipeSpecsFromBody(cd.getBody(), specs);
-                return specs;
-            }
-
-            private void collectRecipeSpecsFromBody(J.Block body, List<RecipeSpecInfo> specs) {
-                for (Statement stmt : body.getStatements()) {
-                    if (stmt instanceof J.MethodDeclaration) {
-                        J.MethodDeclaration md = (J.MethodDeclaration) stmt;
-                        if (md.getBody() != null) {
-                            new JavaIsoVisitor<List<RecipeSpecInfo>>() {
-                                @Override
-                                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, List<RecipeSpecInfo> specs) {
-                                    if (rewriteRunMatcher.matches(method)) {
-                                        if (!method.getArguments().isEmpty()) {
-                                            Expression firstArg = method.getArguments().get(0);
-                                            if (firstArg instanceof J.Lambda) {
-                                                specs.add(new RecipeSpecInfo((J.Lambda) firstArg, null));
-                                            } else if (firstArg instanceof J.MemberReference) {
-                                                specs.add(new RecipeSpecInfo(null, (J.MemberReference) firstArg));
-                                            } else {
-                                                // This rewriteRun has no spec lambda/method ref as first arg
-                                                specs.add(new RecipeSpecInfo(null, null));
-                                            }
-                                        } else {
-                                            // This rewriteRun has no arguments at all
-                                            specs.add(new RecipeSpecInfo(null, null));
-                                        }
-                                    }
-                                    return super.visitMethodInvocation(method, specs);
-                                }
-                            }.visit(md.getBody(), specs);
-                        }
-                    } else if (stmt instanceof J.ClassDeclaration) {
-                        J.ClassDeclaration nestedClass = (J.ClassDeclaration) stmt;
-                        collectRecipeSpecsFromBody(nestedClass.getBody(), specs);
+                return new JavaIsoVisitor<List<RecipeSpecInfo>>() {
+                    @Override
+                    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, List<RecipeSpecInfo> recipeSpecInfos) {
+                        return classDecl; // Ignore nested classes
                     }
-                }
+
+                    @Override
+                    public J.NewClass visitNewClass(J.NewClass newClass, List<RecipeSpecInfo> recipeSpecInfos) {
+                        return newClass; // Ignore nested classes
+                    }
+
+                    @Override
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, List<RecipeSpecInfo> specs) {
+                        if (rewriteRunMatcher.matches(method)) {
+                            if (!method.getArguments().isEmpty()) {
+                                Expression firstArg = method.getArguments().get(0);
+                                if (firstArg instanceof J.Lambda) {
+                                    specs.add(new RecipeSpecInfo((J.Lambda) firstArg, null));
+                                } else if (firstArg instanceof J.MemberReference) {
+                                    specs.add(new RecipeSpecInfo(null, (J.MemberReference) firstArg));
+                                } else {
+                                    // This rewriteRun has no spec lambda/method ref as first arg
+                                    specs.add(new RecipeSpecInfo(null, null));
+                                }
+                            } else {
+                                // This rewriteRun has no arguments at all
+                                specs.add(new RecipeSpecInfo(null, null));
+                            }
+                        }
+                        return super.visitMethodInvocation(method, specs);
+                    }
+                }.reduce(cd.getBody(), new ArrayList<>());
             }
 
             private boolean allSpecsAreIdentical(List<RecipeSpecInfo> specs) {
