@@ -15,12 +15,9 @@
  */
 package org.openrewrite.java.recipes;
 
-import org.openrewrite.Cursor;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
-import org.openrewrite.internal.lang.Nullable;
+import lombok.Value;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
@@ -53,44 +50,33 @@ public class UseRewriteTestDefaults extends Recipe {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 // Don't process the class with super to avoid duplication
-                J.ClassDeclaration cd = classDecl;
 
-                if (!implementsRewriteTest(cd)) {
+                if (!implementsRewriteTest(classDecl)) {
                     // Process nested classes
-                    return super.visitClassDeclaration(cd, ctx);
+                    return super.visitClassDeclaration(classDecl, ctx);
                 }
 
                 // Check if defaults method already exists
-                boolean hasDefaultsMethod = cd.getBody().getStatements().stream()
+                boolean hasDefaultsMethod = classDecl.getBody().getStatements().stream()
                         .filter(J.MethodDeclaration.class::isInstance)
                         .map(J.MethodDeclaration.class::cast)
-                        .anyMatch(md -> "defaults".equals(md.getSimpleName()) &&
-                                        md.getParameters().size() == 1 &&
-                                        md.getParameters().get(0) instanceof J.VariableDeclarations);
-
+                        .anyMatch(md -> defaultsMatcher.matches(md, classDecl));
                 if (hasDefaultsMethod) {
-                    return cd;
+                    return classDecl;
                 }
 
-                // Collect all recipe specs
-                List<RecipeSpecInfo> specInfos = collectRecipeSpecs(cd);
-
+                List<RecipeSpecInfo> specInfos = collectRecipeSpecs(classDecl);
                 if (specInfos.isEmpty() || !allSpecsAreIdentical(specInfos)) {
-                    return cd;
+                    return classDecl;
                 }
 
                 RecipeSpecInfo commonSpec = specInfos.get(0);
                 if (commonSpec.lambda == null && commonSpec.methodRef == null) {
-                    return cd;
+                    return classDecl;
                 }
 
-                // Add defaults method
-                cd = addDefaultsMethod(cd, commonSpec, ctx);
-
-                // Remove specs from rewriteRun calls
-                cd = removeSpecsFromRewriteRuns(cd, ctx);
-
-                return cd;
+                J.ClassDeclaration cd = addDefaultsMethod(classDecl, commonSpec, ctx);
+                return removeSpecsFromRewriteRuns(cd, ctx);
             }
 
             private boolean implementsRewriteTest(J.ClassDeclaration cd) {
@@ -164,7 +150,7 @@ public class UseRewriteTestDefaults extends Recipe {
             private boolean areSpecsIdentical(RecipeSpecInfo spec1, RecipeSpecInfo spec2) {
                 // Both have no spec
                 if (spec1.lambda == null && spec1.methodRef == null &&
-                    spec2.lambda == null && spec2.methodRef == null) {
+                        spec2.lambda == null && spec2.methodRef == null) {
                     return true;
                 }
                 // Both have lambdas
@@ -200,7 +186,8 @@ public class UseRewriteTestDefaults extends Recipe {
                         }
                     }
                     return true;
-                } else if (lambda1.getBody() instanceof Expression && lambda2.getBody() instanceof Expression) {
+                }
+                if (lambda1.getBody() instanceof Expression && lambda2.getBody() instanceof Expression) {
                     String print1 = lambda1.getBody().print(getCursor()).trim();
                     String print2 = lambda2.getBody().print(getCursor()).trim();
                     return normalizeStatement(print1).equals(normalizeStatement(print2));
@@ -230,10 +217,10 @@ public class UseRewriteTestDefaults extends Recipe {
 
                 // Build a JavaTemplate for the defaults method
                 JavaTemplate template = JavaTemplate.builder(
-                        "@Override\n" +
-                        "public void defaults(RecipeSpec spec) {\n" +
-                        "    " + methodBody + "\n" +
-                        "}")
+                                "@Override\n" +
+                                        "public void defaults(RecipeSpec spec) {\n" +
+                                        "    " + methodBody + "\n" +
+                                        "}")
                         .contextSensitive()
                         .imports("org.openrewrite.test.RecipeSpec")
                         .javaParser(JavaParser.fromJavaVersion()
@@ -251,7 +238,7 @@ public class UseRewriteTestDefaults extends Recipe {
                     List<Statement> statements = new ArrayList<>();
                     for (Statement stmt : updated.getBody().getStatements()) {
                         if (stmt instanceof J.MethodDeclaration &&
-                            "defaults".equals(((J.MethodDeclaration) stmt).getSimpleName())) {
+                                "defaults".equals(((J.MethodDeclaration) stmt).getSimpleName())) {
                             // Ensure proper newline before @Override
                             statements.add(stmt.withPrefix(Space.format("\n    ")));
                         } else {
@@ -268,7 +255,7 @@ public class UseRewriteTestDefaults extends Recipe {
                 boolean foundDefaults = false;
                 for (Statement stmt : cd.getBody().getStatements()) {
                     if (!foundDefaults && stmt instanceof J.MethodDeclaration &&
-                        "defaults".equals(((J.MethodDeclaration) stmt).getSimpleName())) {
+                            "defaults".equals(((J.MethodDeclaration) stmt).getSimpleName())) {
                         foundDefaults = true;
                         statements.add(stmt);
                     } else if (foundDefaults && stmt instanceof J.MethodDeclaration) {
@@ -333,7 +320,8 @@ public class UseRewriteTestDefaults extends Recipe {
                         }
                     }
                     return sb.toString();
-                } else if (lambda.getBody() instanceof Expression) {
+                }
+                if (lambda.getBody() instanceof Expression) {
                     String bodyStr = lambda.getBody().print(getCursor()).trim();
                     if (!bodyStr.endsWith(";")) {
                         bodyStr += ";";
@@ -363,16 +351,10 @@ public class UseRewriteTestDefaults extends Recipe {
                 }.visitNonNull(cd, ctx);
             }
 
+            @Value
             class RecipeSpecInfo {
-                @Nullable
-                final J.Lambda lambda;
-                @Nullable
-                final J.MemberReference methodRef;
-
-                RecipeSpecInfo(@Nullable J.Lambda lambda, @Nullable J.MemberReference methodRef) {
-                    this.lambda = lambda;
-                    this.methodRef = methodRef;
-                }
+                J.@Nullable Lambda lambda;
+                J.@Nullable MemberReference methodRef;
             }
         });
     }
