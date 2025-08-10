@@ -91,6 +91,29 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     }
 
     @Test
+    void shouldNotRefactorWhenOnlyOneTest() {
+        rewriteRun(
+          java(
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyTest implements RewriteTest {
+                  @Test
+                  void test1() {
+                      rewriteRun(
+                          spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                          org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+                      );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void shouldNotRefactorWhenTestsUseDifferentRecipes() {
         rewriteRun(
           java(
@@ -302,12 +325,27 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
                       );
                   }
 
+                  @Test
+                  void test2() {
+                      rewriteRun(
+                          spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                          org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+                      );
+                  }
+
                   @Nested
                   class NestedTest {
                       @Test
-                      void test2() {
+                      void test3() {
                           rewriteRun(
-                              // Retained, as defaults might not apply to nested tests
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                              org.openrewrite.java.Assertions.java("class B {}", "class B {}")
+                          );
+                      }
+
+                      @Test
+                      void test4() {
+                          rewriteRun(
                               spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
                               org.openrewrite.java.Assertions.java("class B {}", "class B {}")
                           );
@@ -335,12 +373,26 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
                       );
                   }
 
+                  @Test
+                  void test2() {
+                      rewriteRun(
+                          org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+                      );
+                  }
+
                   @Nested
                   class NestedTest {
                       @Test
-                      void test2() {
+                      void test3() {
                           rewriteRun(
-                              // Retained, as defaults might not apply to nested tests
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                              org.openrewrite.java.Assertions.java("class B {}", "class B {}")
+                          );
+                      }
+
+                      @Test
+                      void test4() {
+                          rewriteRun(
                               spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
                               org.openrewrite.java.Assertions.java("class B {}", "class B {}")
                           );

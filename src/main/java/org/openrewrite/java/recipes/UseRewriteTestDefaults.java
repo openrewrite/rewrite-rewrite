@@ -111,7 +111,7 @@ public class UseRewriteTestDefaults extends Recipe {
 
             private boolean allSpecsAreIdentical(List<RecipeSpecInfo> specs) {
                 if (specs.size() < 2) {
-                    return specs.size() == 1;
+                    return false; // At least two specs are needed before we extract defaults
                 }
 
                 RecipeSpecInfo first = specs.get(0);
@@ -159,7 +159,7 @@ public class UseRewriteTestDefaults extends Recipe {
                     return JavaTemplate.builder(
                                     "@Override\n" +
                                             "public void defaults(RecipeSpec spec) {\n    " +
-                                            simpleName + "(spec)\n" +
+                                            simpleName + "(spec);\n" +
                                             "}")
                             .contextSensitive()
                             .imports("org.openrewrite.test.RecipeSpec")
