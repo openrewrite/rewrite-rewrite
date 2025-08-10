@@ -69,6 +69,7 @@ public class UseRewriteTestDefaults extends Recipe {
                 if (!allSpecsAreIdentical(specInfos)) {
                     return cd;
                 }
+                maybeAddImport("org.openrewrite.test.RecipeSpec");
                 cd = newlineBeforeFirstStatement(cd);
                 cd = addDefaultsMethod(cd, specInfos.get(0));
                 return removeSpecsFromRewriteRuns(cd, ctx);

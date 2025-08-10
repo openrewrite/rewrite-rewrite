@@ -38,7 +38,6 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
           java(
             """
               import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RecipeSpec;
               import org.openrewrite.test.RewriteTest;
 
               class MyTest implements RewriteTest {
@@ -96,7 +95,6 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
           java(
             """
               import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RecipeSpec;
               import org.openrewrite.test.RewriteTest;
 
               class MyTest implements RewriteTest {
@@ -119,7 +117,6 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
           java(
             """
               import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RecipeSpec;
               import org.openrewrite.test.RewriteTest;
 
               class MyTest implements RewriteTest {
@@ -150,7 +147,6 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
           java(
             """
               import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RecipeSpec;
               import org.openrewrite.test.RewriteTest;
               import org.openrewrite.java.JavaParser;
 
@@ -216,7 +212,6 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
           java(
             """
               import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RecipeSpec;
               import org.openrewrite.test.RewriteTest;
 
               class MyTest implements RewriteTest {
@@ -311,9 +306,8 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
         rewriteRun(
           java(
             """
-              import org.junit.jupiter.api.Test;
               import org.junit.jupiter.api.Nested;
-              import org.openrewrite.test.RecipeSpec;
+              import org.junit.jupiter.api.Test;
               import org.openrewrite.test.RewriteTest;
 
               class MyTest implements RewriteTest {
@@ -354,8 +348,8 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
               }
               """,
             """
-              import org.junit.jupiter.api.Test;
               import org.junit.jupiter.api.Nested;
+              import org.junit.jupiter.api.Test;
               import org.openrewrite.test.RecipeSpec;
               import org.openrewrite.test.RewriteTest;
 
@@ -410,7 +404,6 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
           java(
             """
               import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RecipeSpec;
               import org.openrewrite.test.RewriteTest;
 
               class MyTest implements RewriteTest {
