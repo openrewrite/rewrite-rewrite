@@ -18,13 +18,16 @@ package org.openrewrite.java.recipes;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesType;
-import org.openrewrite.java.tree.*;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,24 +53,24 @@ public class UseRewriteTestDefaults extends Recipe {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                if (!TypeUtils.isAssignableTo("org.openrewrite.test.RewriteTest", classDecl.getType())) {
+                if (!TypeUtils.isAssignableTo("org.openrewrite.test.RewriteTest", cd.getType())) {
                     return cd;
                 }
 
-                boolean hasDefaultsMethod = classDecl.getBody().getStatements().stream()
+                boolean hasDefaultsMethod = cd.getBody().getStatements().stream()
                         .filter(J.MethodDeclaration.class::isInstance)
                         .map(J.MethodDeclaration.class::cast)
                         .anyMatch(md -> "defaults".equals(md.getSimpleName()));
                 if (hasDefaultsMethod) {
-                    return classDecl;
+                    return cd;
                 }
 
-                List<RecipeSpecInfo> specInfos = collectRecipeSpecs(classDecl);
+                List<RecipeSpecInfo> specInfos = collectRecipeSpecs(cd);
                 if (!allSpecsAreIdentical(specInfos)) {
-                    return classDecl;
+                    return cd;
                 }
-
-                cd = addDefaultsMethod(classDecl, specInfos.get(0), ctx);
+                cd = newlineBeforeFirstStatement(cd);
+                cd = addDefaultsMethod(cd, specInfos.get(0));
                 return removeSpecsFromRewriteRuns(cd, ctx);
             }
 
@@ -130,150 +133,68 @@ public class UseRewriteTestDefaults extends Recipe {
                 return false;
             }
 
-            private J.ClassDeclaration addDefaultsMethod(J.ClassDeclaration cd, RecipeSpecInfo specInfo, ExecutionContext ctx) {
-                String methodBody;
-                if (specInfo.lambda != null) {
-                    methodBody = extractLambdaBody(specInfo.lambda);
-                } else if (specInfo.methodRef != null) {
-                    methodBody = specInfo.methodRef.getReference().getSimpleName() + "(spec);";
-                } else {
-                    return cd;
-                }
-
-                // Build a JavaTemplate for the defaults method
-                JavaTemplate template = JavaTemplate.builder(
-                                "@Override\n" +
-                                        "public void defaults(RecipeSpec spec) {\n" +
-                                        "    " + methodBody + "\n" +
-                                        "}")
-                        .contextSensitive()
-                        .imports("org.openrewrite.test.RecipeSpec")
-                        .javaParser(JavaParser.fromJavaVersion()
-                                .classpath(JavaParser.runtimeClasspath()))
-                        .build();
-
-                // Apply the template to add the defaults method
-                J.ClassDeclaration updated = template.apply(
-                        new Cursor(getCursor(), cd),
-                        cd.getBody().getCoordinates().firstStatement()
-                );
-
-                // Fix the formatting by adjusting the defaults method prefix
-                if (updated != cd) {
-                    List<Statement> statements = new ArrayList<>();
-                    for (Statement stmt : updated.getBody().getStatements()) {
-                        if (stmt instanceof J.MethodDeclaration &&
-                                "defaults".equals(((J.MethodDeclaration) stmt).getSimpleName())) {
-                            // Ensure proper newline before @Override
-                            statements.add(stmt.withPrefix(Space.format("\n    ")));
-                        } else {
-                            statements.add(stmt);
-                        }
-                    }
-                    cd = updated.withBody(updated.getBody().withStatements(statements));
-                } else {
-                    cd = updated;
-                }
-
-                // Ensure proper formatting of the first test method after defaults
-                List<Statement> statements = new ArrayList<>();
-                boolean foundDefaults = false;
-                for (Statement stmt : cd.getBody().getStatements()) {
-                    if (!foundDefaults && stmt instanceof J.MethodDeclaration &&
-                            "defaults".equals(((J.MethodDeclaration) stmt).getSimpleName())) {
-                        foundDefaults = true;
-                        statements.add(stmt);
-                    } else if (foundDefaults && stmt instanceof J.MethodDeclaration) {
-                        // Add blank line before first test method after defaults
-                        statements.add(stmt.withPrefix(Space.format("\n\n    ")));
-                        foundDefaults = false; // Reset flag so we don't modify other methods
-                    } else {
-                        statements.add(stmt);
-                    }
-                }
-
-                return cd.withBody(cd.getBody().withStatements(statements));
+            private J.ClassDeclaration newlineBeforeFirstStatement(J.ClassDeclaration cd) {
+                return cd.withBody(cd.getBody().withStatements(ListUtils.mapFirst(cd.getBody().getStatements(),
+                        first -> first.withPrefix(first.getPrefix().withWhitespace("\n" + first.getPrefix().getWhitespace())))));
             }
 
-            private String extractLambdaBody(J.Lambda lambda) {
-                if (lambda.getBody() instanceof J.Block) {
-                    J.Block block = (J.Block) lambda.getBody();
-                    StringBuilder sb = new StringBuilder();
-                    for (int i = 0; i < block.getStatements().size(); i++) {
-                        Statement stmt = block.getStatements().get(i);
-                        String stmtStr = stmt.print(getCursor());
-
-                        // Process each line to adjust indentation
-                        String[] lines = stmtStr.split("\n");
-                        for (int j = 0; j < lines.length; j++) {
-                            String line = lines[j];
-
-                            if (j == 0) {
-                                // First line - trim completely
-                                line = line.trim();
-
-                                if (stmt instanceof J.Return) {
-                                    // Remove "return" keyword for returns
-                                    if (line.startsWith("return ")) {
-                                        line = line.substring(7);
-                                    }
-                                    if (line.endsWith(";")) {
-                                        line = line.substring(0, line.length() - 1);
-                                    }
-                                }
-                            } else {
-                                // Continuation lines - align properly under the chained method calls
-                                line = line.trim();
-                                if (!line.isEmpty()) {
-                                    // Use alignment that matches the expected format
-                                    line = "        " + line;  // This will be placed inside method body, JavaTemplate adds 8 more
-                                }
-                            }
-
-                            sb.append(line);
-                            if (j < lines.length - 1) {
-                                sb.append("\n");
-                            }
-                        }
-
-                        if (!stmtStr.trim().endsWith(";")) {
-                            sb.append(";");
-                        }
-
-                        if (i < block.getStatements().size() - 1) {
-                            sb.append("\n        ");
-                        }
-                    }
-                    return sb.toString();
+            private J.ClassDeclaration addDefaultsMethod(J.ClassDeclaration cd, RecipeSpecInfo specInfo) {
+                if (specInfo.lambda != null) {
+                    return JavaTemplate.builder(
+                                    "@Override\n" +
+                                            "public void defaults(RecipeSpec spec) {\n" +
+                                            "    #{any()}\n" +
+                                            "}")
+                            .contextSensitive()
+                            .imports("org.openrewrite.test.RecipeSpec")
+                            .javaParser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()))
+                            .build()
+                            .apply(
+                                    new Cursor(getCursor(), cd),
+                                    cd.getBody().getCoordinates().firstStatement(),
+                                    specInfo.lambda.getBody());
                 }
-                if (lambda.getBody() instanceof Expression) {
-                    String bodyStr = lambda.getBody().print(getCursor()).trim();
-                    if (!bodyStr.endsWith(";")) {
-                        bodyStr += ";";
-                    }
-                    return bodyStr;
+                if (specInfo.methodRef != null) {
+                    String simpleName = specInfo.methodRef.getReference().getSimpleName();
+                    return JavaTemplate.builder(
+                                    "@Override\n" +
+                                            "public void defaults(RecipeSpec spec) {\n    " +
+                                            simpleName + "(spec)\n" +
+                                            "}")
+                            .contextSensitive()
+                            .imports("org.openrewrite.test.RecipeSpec")
+                            .javaParser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()))
+                            .build()
+                            .apply(
+                                    new Cursor(getCursor(), cd),
+                                    cd.getBody().getCoordinates().firstStatement());
                 }
-                return "";
+                return cd;
             }
 
             private J.ClassDeclaration removeSpecsFromRewriteRuns(J.ClassDeclaration cd, ExecutionContext ctx) {
-                return (J.ClassDeclaration) new JavaIsoVisitor<ExecutionContext>() {
+                J.Block body = (J.Block) new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                        return classDecl; // Ignore nested classes
+                    }
+
+                    @Override
+                    public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+                        return newClass; // Ignore nested classes
+                    }
+
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-
-                        if (rewriteRunMatcher.matches(mi) && !mi.getArguments().isEmpty()) {
-                            Expression firstArg = mi.getArguments().get(0);
-                            if (firstArg instanceof J.Lambda || firstArg instanceof J.MemberReference) {
-                                List<Expression> newArgs = new ArrayList<>(mi.getArguments());
-                                newArgs.remove(0);
-                                return mi.withArguments(newArgs);
-                            }
+                        if (rewriteRunMatcher.matches(mi)) {
+                            return mi.withArguments(ListUtils.mapFirst(mi.getArguments(),
+                                    firstArg -> firstArg instanceof J.Lambda || firstArg instanceof J.MemberReference ? null : firstArg));
                         }
-
                         return mi;
                     }
-                }.visitNonNull(cd, ctx);
+                }.visitNonNull(cd.getBody(), ctx);
+                return cd.withBody(body);
             }
 
             @Value

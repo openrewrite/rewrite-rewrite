@@ -65,6 +65,7 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
               import org.openrewrite.test.RewriteTest;
 
               class MyTest implements RewriteTest {
+
                   @Override
                   public void defaults(RecipeSpec spec) {
                       spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample());
@@ -159,6 +160,7 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
               import org.openrewrite.java.JavaParser;
 
               class MyTest implements RewriteTest {
+
                   @Override
                   public void defaults(RecipeSpec spec) {
                       spec
@@ -305,6 +307,7 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
                       @Test
                       void test2() {
                           rewriteRun(
+                              // Retained, as defaults might not apply to nested tests
                               spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
                               org.openrewrite.java.Assertions.java("class B {}", "class B {}")
                           );
@@ -319,6 +322,7 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
               import org.openrewrite.test.RewriteTest;
 
               class MyTest implements RewriteTest {
+
                   @Override
                   public void defaults(RecipeSpec spec) {
                       spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample());
@@ -336,6 +340,8 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
                       @Test
                       void test2() {
                           rewriteRun(
+                              // Retained, as defaults might not apply to nested tests
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
                               org.openrewrite.java.Assertions.java("class B {}", "class B {}")
                           );
                       }
@@ -388,6 +394,7 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
               import org.openrewrite.test.RewriteTest;
 
               class MyTest implements RewriteTest {
+
                   @Override
                   public void defaults(RecipeSpec spec) {
                       spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample());
@@ -457,6 +464,7 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
               import org.openrewrite.test.RewriteTest;
 
               class MyTest implements RewriteTest {
+
                   @Override
                   public void defaults(RecipeSpec spec) {
                       configureSpec(spec);
