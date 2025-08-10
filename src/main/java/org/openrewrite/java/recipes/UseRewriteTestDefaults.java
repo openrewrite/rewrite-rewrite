@@ -22,6 +22,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.*;
 
@@ -62,16 +63,11 @@ public class UseRewriteTestDefaults extends Recipe {
                 }
 
                 List<RecipeSpecInfo> specInfos = collectRecipeSpecs(classDecl);
-                if (specInfos.isEmpty() || !allSpecsAreIdentical(specInfos)) {
+                if (!allSpecsAreIdentical(specInfos)) {
                     return classDecl;
                 }
 
-                RecipeSpecInfo commonSpec = specInfos.get(0);
-                if (commonSpec.lambda == null && commonSpec.methodRef == null) {
-                    return classDecl;
-                }
-
-                cd = addDefaultsMethod(classDecl, commonSpec, ctx);
+                cd = addDefaultsMethod(classDecl, specInfos.get(0), ctx);
                 return removeSpecsFromRewriteRuns(cd, ctx);
             }
 
@@ -125,61 +121,13 @@ public class UseRewriteTestDefaults extends Recipe {
             }
 
             private boolean areSpecsIdentical(RecipeSpecInfo spec1, RecipeSpecInfo spec2) {
-                // Both have no spec
-                if (spec1.lambda == null && spec1.methodRef == null &&
-                        spec2.lambda == null && spec2.methodRef == null) {
-                    return true;
+                if (spec1.lambda == null && spec2.lambda == null) {
+                    return spec1.methodRef != null && SemanticallyEqual.areEqual(spec1.methodRef, spec2.methodRef);
                 }
-                // Both have lambdas
-                if (spec1.lambda != null && spec2.lambda != null) {
-                    return areLambdasIdentical(spec1.lambda, spec2.lambda);
-                }
-                // Both have method refs
-                if (spec1.methodRef != null && spec2.methodRef != null) {
-                    return areMethodRefsIdentical(spec1.methodRef, spec2.methodRef);
-                }
-                // One has spec, other doesn't, or different types
-                return false;
-            }
-
-            private boolean areLambdasIdentical(J.Lambda lambda1, J.Lambda lambda2) {
-                if (lambda1.getBody() instanceof J.Block && lambda2.getBody() instanceof J.Block) {
-                    J.Block block1 = (J.Block) lambda1.getBody();
-                    J.Block block2 = (J.Block) lambda2.getBody();
-
-                    if (block1.getStatements().size() != block2.getStatements().size()) {
-                        return false;
-                    }
-
-                    for (int i = 0; i < block1.getStatements().size(); i++) {
-                        Statement stmt1 = block1.getStatements().get(i);
-                        Statement stmt2 = block2.getStatements().get(i);
-
-                        String print1 = stmt1.print(getCursor()).trim();
-                        String print2 = stmt2.print(getCursor()).trim();
-
-                        if (!normalizeStatement(print1).equals(normalizeStatement(print2))) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-                if (lambda1.getBody() instanceof Expression && lambda2.getBody() instanceof Expression) {
-                    String print1 = lambda1.getBody().print(getCursor()).trim();
-                    String print2 = lambda2.getBody().print(getCursor()).trim();
-                    return normalizeStatement(print1).equals(normalizeStatement(print2));
+                if (spec1.methodRef == null && spec2.methodRef == null) {
+                    return spec1.lambda != null && SemanticallyEqual.areEqual(spec1.lambda, spec2.lambda);
                 }
                 return false;
-            }
-
-            private boolean areMethodRefsIdentical(J.MemberReference ref1, J.MemberReference ref2) {
-                String methodName1 = ref1.getReference().getSimpleName();
-                String methodName2 = ref2.getReference().getSimpleName();
-                return methodName1.equals(methodName2);
-            }
-
-            private String normalizeStatement(String stmt) {
-                return stmt.replaceAll("\\s+", " ").trim();
             }
 
             private J.ClassDeclaration addDefaultsMethod(J.ClassDeclaration cd, RecipeSpecInfo specInfo, ExecutionContext ctx) {
