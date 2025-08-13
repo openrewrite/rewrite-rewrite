@@ -750,6 +750,60 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.UseRewriteTestDefaults
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.junit.jupiter.api.Test;
+      import org.openrewrite.test.RewriteTest;
+
+      class MyTest implements RewriteTest {
+          @Test
+          void test1() {
+              rewriteRun(
+                  spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                  org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+              );
+          }
+
+          @Test
+          void test2() {
+              rewriteRun(
+                  spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                  org.openrewrite.java.Assertions.java("class B {}", "class B {}")
+              );
+          }
+      }
+    after: |
+      import org.junit.jupiter.api.Test;
+      import org.openrewrite.test.RecipeSpec;
+      import org.openrewrite.test.RewriteTest;
+
+      class MyTest implements RewriteTest {
+
+          @Override
+          public void defaults(RecipeSpec spec) {
+              spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample());
+          }
+
+          @Test
+          void test1() {
+              rewriteRun(
+                  org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+              );
+          }
+
+          @Test
+          void test2() {
+              rewriteRun(
+                  org.openrewrite.java.Assertions.java("class B {}", "class B {}")
+              );
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.UseTreeRandomId
 examples:
 - description: ''
