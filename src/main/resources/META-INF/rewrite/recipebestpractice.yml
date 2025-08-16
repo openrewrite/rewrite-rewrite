@@ -23,6 +23,7 @@ recipeList:
   - org.openrewrite.java.recipes.JavaRecipeBestPractices
   - org.openrewrite.java.recipes.RecipeTestingBestPractices
   - org.openrewrite.java.recipes.RecipeNullabilityBestPractices
+  - org.openrewrite.java.recipes.UpgradeTestsToJava21
   - org.openrewrite.java.recipes.ExamplesExtractor
   - org.openrewrite.java.OrderImports
   - org.openrewrite.java.RemoveUnusedImports
@@ -115,3 +116,12 @@ recipeList:
   - org.openrewrite.java.jspecify.MigrateToJSpecify
   - org.openrewrite.staticanalysis.AnnotateNullableMethods
   - org.openrewrite.staticanalysis.NullableOnMethodReturnType
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.java.recipes.UpgradeTestsToJava21
+displayName: Migrate tests to Java 21
+description: Use Java 21 features in tests.
+preconditions:
+  - org.openrewrite.java.search.IsLikelyTest
+recipeList:
+  - org.openrewrite.java.migrate.UpgradeToJava21
