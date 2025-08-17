@@ -30,8 +30,8 @@ class ExecutionContextParameterNameTest implements RewriteTest {
         spec
           .recipe(new ExecutionContextParameterName())
           .parser(JavaParser.fromJavaVersion()
+            //language=java
             .dependsOn(
-
               """
                 package org.openrewrite;
                 public class Recipe {}
@@ -72,7 +72,6 @@ class ExecutionContextParameterNameTest implements RewriteTest {
         );
     }
 
-
     @Test
     void visitor() {
         rewriteRun(
@@ -107,6 +106,25 @@ class ExecutionContextParameterNameTest implements RewriteTest {
               import org.openrewrite.*;
               class SampleTreeVisitor extends TreeVisitor {
                   public void test(ExecutionContext ctx) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void tolerateNumericalSuffixForNestedClasses() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.*;
+              class SampleRecipe extends TreeVisitor {
+                  void test(ExecutionContext ctx) {
+                      class TreeVisitor1 extends TreeVisitor {
+                          void test(ExecutionContext ctx1) {
+                          }
+                      }
+                  }
               }
               """
           )
