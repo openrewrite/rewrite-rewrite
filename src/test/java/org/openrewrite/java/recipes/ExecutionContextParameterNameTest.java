@@ -28,7 +28,7 @@ class ExecutionContextParameterNameTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
         spec
-          .recipe(new ExecutionContextParameterName())
+          .recipe(new ExecutionContextParameterName(null))
           .parser(JavaParser.fromJavaVersion()
             //language=java
             .dependsOn(
@@ -124,6 +124,29 @@ class ExecutionContextParameterNameTest implements RewriteTest {
                           void test(ExecutionContext ctx1) {
                           }
                       }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void overrideVariableNameForCheckstyle() {
+        rewriteRun(
+          spec -> spec.recipe(new ExecutionContextParameterName("executionContext")),
+          java(
+            """
+              import org.openrewrite.*;
+              class SampleRecipe extends TreeVisitor {
+                  void test(ExecutionContext ctx) {
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.*;
+              class SampleRecipe extends TreeVisitor {
+                  void test(ExecutionContext executionContext) {
                   }
               }
               """

@@ -15,10 +15,10 @@
  */
 package org.openrewrite.java.recipes;
 
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
+import org.jspecify.annotations.Nullable;
+import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.RenameVariable;
 import org.openrewrite.java.search.UsesType;
@@ -26,7 +26,18 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
+import static java.util.Optional.ofNullable;
+
+@Value
+@EqualsAndHashCode(callSuper = false)
 public class ExecutionContextParameterName extends Recipe {
+
+    @Option(displayName = "Parameter name",
+            description = "The name or prefix to use for the `ExecutionContext` parameter.",
+            example = "ctx",
+            required = false)
+    @Nullable
+    String parameterName;
 
     @Override
     public String getDisplayName() {
@@ -40,6 +51,7 @@ public class ExecutionContextParameterName extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
+        String prefix = ofNullable(parameterName).orElse("ctx");
         return Preconditions.check(Preconditions.or(
                         new UsesType<>("org.openrewrite.Recipe", false),
                         new UsesType<>("org.openrewrite.Visitor", false)),
@@ -51,8 +63,8 @@ public class ExecutionContextParameterName extends Recipe {
                             if (parameter instanceof J.VariableDeclarations) {
                                 J.VariableDeclarations param = (J.VariableDeclarations) parameter;
                                 if (TypeUtils.isOfClassType(param.getType(), "org.openrewrite.ExecutionContext") &&
-                                        !param.getVariables().get(0).getSimpleName().startsWith("ctx")) {
-                                    m = (J.MethodDeclaration) new RenameVariable<ExecutionContext>(param.getVariables().get(0), "ctx")
+                                        !param.getVariables().get(0).getSimpleName().startsWith(prefix)) {
+                                    m = (J.MethodDeclaration) new RenameVariable<ExecutionContext>(param.getVariables().get(0), prefix)
                                             .visitNonNull(m, ctx);
                                 }
                             }
