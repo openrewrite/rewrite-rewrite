@@ -7,6 +7,7 @@ group = "org.openrewrite.recipe"
 description = "A rewrite module automating best practices and major version migrations for OpenRewrite recipes"
 
 recipeDependencies {
+    parserClasspath("org.openrewrite:rewrite-core:latest.release")
     parserClasspath("org.openrewrite:rewrite-java:latest.release")
     parserClasspath("org.openrewrite:rewrite-maven:latest.release")
     parserClasspath("org.openrewrite:rewrite-gradle:latest.release")
@@ -23,7 +24,7 @@ dependencies {
     implementation("org.openrewrite.recipe:rewrite-static-analysis:$rewriteVersion")
     implementation("org.openrewrite.recipe:rewrite-testing-frameworks:$rewriteVersion")
 
-    annotationProcessor("org.openrewrite:rewrite-templating:latest.release")
+    annotationProcessor("org.openrewrite:rewrite-templating:$rewriteVersion")
     implementation("org.openrewrite:rewrite-templating:$rewriteVersion")
     compileOnly("com.google.errorprone:error_prone_core:latest.release") {
         exclude("com.google.auto.service", "auto-service-annotations")
