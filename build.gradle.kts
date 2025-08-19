@@ -6,6 +6,12 @@ plugins {
 group = "org.openrewrite.recipe"
 description = "A rewrite module automating best practices and major version migrations for OpenRewrite recipes"
 
+recipeDependencies {
+    parserClasspath("org.openrewrite:rewrite-java:latest.release")
+    parserClasspath("org.openrewrite:rewrite-maven:latest.release")
+    parserClasspath("org.openrewrite:rewrite-gradle:latest.release")
+}
+
 val rewriteVersion = rewriteRecipe.rewriteVersion.get()
 dependencies {
     implementation(platform("org.openrewrite:rewrite-bom:$rewriteVersion"))
@@ -32,4 +38,8 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.13.3")
     testImplementation("org.junit-pioneer:junit-pioneer:2.3.0")
+}
+
+tasks.withType<JavaCompile> {
+    options.compilerArgs.add("-Arewrite.javaParserClasspathFrom=resources")
 }
