@@ -156,6 +156,8 @@ type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.ExecutionContextParameterName
 examples:
 - description: ''
+  parameters:
+  - 'null'
   sources:
   - before: |
       import org.openrewrite.*;
