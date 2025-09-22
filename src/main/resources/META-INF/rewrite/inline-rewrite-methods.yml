@@ -125,3 +125,10 @@ recipeList:
         - 'org.openrewrite.java.Annotated'
       classpathFromResources:
         - 'rewrite-java-8.62.3'
+
+  # From org.openrewrite.recipe:rewrite-static-analysis:2.17.0
+  - org.openrewrite.java.InlineMethodCalls:
+      methodPattern: 'org.openrewrite.staticanalysis.RemoveUnusedLocalVariables RemoveUnusedLocalVariables(java.lang.String[], java.lang.Boolean)'
+      replacement: 'new RemoveUnusedLocalVariables(ignoreVariablesNamed, null, withSideEffects)'
+      classpathFromResources:
+        - 'rewrite-static-analysis-2.17.0'
