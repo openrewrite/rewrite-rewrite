@@ -20,7 +20,7 @@ name: org.openrewrite.recipes.rewrite.OpenRewriteRecipeBestPractices
 displayName: OpenRewrite recipe best practices
 description: Best practices for OpenRewrite recipe development.
 recipeList:
-  - org.openrewrite.java.InlineMethodCalls
+  - org.openrewrite.recipes.rewrite.InlineMethods
   - org.openrewrite.java.recipes.JavaRecipeBestPractices
   - org.openrewrite.java.recipes.RecipeTestingBestPractices
   - org.openrewrite.java.recipes.RecipeNullabilityBestPractices

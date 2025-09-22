@@ -17,7 +17,6 @@ package org.openrewrite.java.recipes.migrate;
 
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
-import org.openrewrite.java.InlineMethodCalls;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -27,7 +26,9 @@ class RemoveTraitsUsageTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipe(new InlineMethodCalls());
+        spec.recipeFromResource(
+          "/META-INF/rewrite/inline-rewrite-methods.yml",
+          "org.openrewrite.recipes.rewrite.InlineMethods");
     }
 
     @DocumentExample
