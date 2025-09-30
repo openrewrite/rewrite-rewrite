@@ -23,6 +23,22 @@ description: >-
   discovered in the type table.
 recipeList:
 
+  # From org.openrewrite:rewrite-core:8.62.3
+  - org.openrewrite.java.InlineMethodCalls:
+      methodPattern: org.openrewrite.SourceFile#getStyle(java.lang.Class)
+      replacement: Style.from(styleClass, this)
+      imports:
+        - org.openrewrite.style.Style
+      classpathFromResources:
+        - 'rewrite-core-8.62.3'
+  - org.openrewrite.java.InlineMethodCalls:
+      methodPattern: org.openrewrite.SourceFile#getStyle(java.lang.Class, ..)
+      replacement: Style.from(styleClass, this, () -> defaultStyle)
+      imports:
+        - org.openrewrite.style.Style
+      classpathFromResources:
+        - 'rewrite-core-8.62.3'
+
   # From org.openrewrite:rewrite-maven:8.62.3
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.maven.trait.Traits mavenDependency()'
