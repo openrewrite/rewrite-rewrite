@@ -13,32 +13,6 @@
 # limitations under the License.
 ---
 type: specs.openrewrite.org/v1beta/example
-recipeName: org.openrewrite.java.InlineMethodCalls
-examples:
-- description: ''
-  sources:
-  - before: |
-      import org.openrewrite.java.trait.Literal;
-      import org.openrewrite.java.trait.Traits;
-      import org.openrewrite.marker.SearchResult;
-
-      class Test {
-          void test() {
-              Literal.Matcher literal = Traits.literal();
-          }
-      }
-    after: |
-      import org.openrewrite.java.trait.Literal;
-      import org.openrewrite.marker.SearchResult;
-
-      class Test {
-          void test() {
-              Literal.Matcher literal = new Literal.Matcher();
-          }
-      }
-    language: java
----
-type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.BlankLinesAroundFieldsWithAnnotations
 examples:
 - description: ''
@@ -862,6 +836,32 @@ examples:
           void bar() {
               J.Literal literal1 = new J.Literal(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, null, null, JavaType.Primitive.Boolean);
               J.Literal literal2 = new J.Literal(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, null, null, JavaType.Primitive.Boolean);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.recipes.rewrite.InlineMethods
+examples:
+- description: ''
+  sources:
+  - before: |
+      import org.openrewrite.java.trait.Literal;
+      import org.openrewrite.java.trait.Traits;
+      import org.openrewrite.marker.SearchResult;
+
+      class Test {
+          void test() {
+              Literal.Matcher literal = Traits.literal();
+          }
+      }
+    after: |
+      import org.openrewrite.java.trait.Literal;
+      import org.openrewrite.marker.SearchResult;
+
+      class Test {
+          void test() {
+              Literal.Matcher literal = new Literal.Matcher();
           }
       }
     language: java
