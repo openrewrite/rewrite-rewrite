@@ -181,7 +181,10 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
             Optional<Annotated> annotated = new Annotated.Matcher(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER).lower(getCursor()).findAny();
             if (annotated.isPresent()) {
-                String exampleDescription = annotated.get().getDefaultAttribute("value").map(Literal::getString).orElse("");
+                String exampleDescription = annotated.get().getDefaultAttribute("value").map(Literal::getString)
+                        .orElseGet(() -> String.format("`%s#%s`",
+                                getCursor().firstEnclosing(J.ClassDeclaration.class).getSimpleName(),
+                                method.getSimpleName()));
                 getCursor().putMessageOnFirstEnclosing(J.MethodDeclaration.class, DESCRIPTION_KEY, exampleDescription);
                 return super.visitMethodDeclaration(method, ctx);
             }
