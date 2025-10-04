@@ -1622,4 +1622,99 @@ class ExamplesExtractorTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void extractExplicitPath() {
+        rewriteRun(
+          mavenProject(
+            "project",
+            srcMainJava(java(RECIPE_JAVA_FILE, SourceSpec::skip)),
+            //language=java
+            srcTestJava(
+              java(
+                """
+                  package org.openrewrite.staticanalysis;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class ChainStringBuilderAppendCallsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new ChainStringBuilderAppendCalls());
+                      }
+
+                      @DocumentExample(value = "Objects concatenation.")
+                      @Test
+                      void objectsConcatenation() {
+                          rewriteRun(
+                            java(
+                              \"""
+                                class A {
+                                    void method1() {
+                                        StringBuilder sb = new StringBuilder();
+                                        String op = "+";
+                                        sb.append("A" + op + "B");
+                                        sb.append(1 + op + 2);
+                                    }
+                                }
+                                \""",
+                              \"""
+                                class A {
+                                    void method1() {
+                                        StringBuilder sb = new StringBuilder();
+                                        String op = "+";
+                                        sb.append("A").append(op).append("B");
+                                        sb.append(1).append(op).append(2);
+                                    }
+                                }
+                                \""",
+                                spec -> spec.path("src/main/java/foo/A.java")
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
+            ),
+            //language=yaml
+            yaml(
+              doesNotExist(), // newly created
+              """
+                ---
+                type: specs.openrewrite.org/v1beta/example
+                recipeName: org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
+                examples:
+                - description: Objects concatenation.
+                  sources:
+                  - before: |
+                      class A {
+                          void method1() {
+                              StringBuilder sb = new StringBuilder();
+                              String op = "+";
+                              sb.append("A" + op + "B");
+                              sb.append(1 + op + 2);
+                          }
+                      }
+                    after: |
+                      class A {
+                          void method1() {
+                              StringBuilder sb = new StringBuilder();
+                              String op = "+";
+                              sb.append("A").append(op).append("B");
+                              sb.append(1).append(op).append(2);
+                          }
+                      }
+                    path: src/main/java/foo/A.java
+                    language: java
+                """,
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
+            )
+          )
+        );
+    }
 }
