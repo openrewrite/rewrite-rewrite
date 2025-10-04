@@ -15,7 +15,7 @@
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.BlankLinesAroundFieldsWithAnnotations
 examples:
-- description: ''
+- description: '`BlankLinesAroundFieldsWithAnnotationsTest#spaceBetweenFields`'
   sources:
   - before: |
       class Test {
@@ -43,7 +43,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.CorrectlySpacedDescriptions
 examples:
-- description: ''
+- description: '`CorrectlySpacedDescriptionsTest#document`'
   sources:
   - before: |
       import org.openrewrite.Recipe;
@@ -74,7 +74,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.ExamplesExtractor
 examples:
-- description: ''
+- description: '`ExamplesExtractorTest#extractJavaExampleWithDefault`'
   sources:
   - before: |
       package org.openrewrite.staticanalysis;
@@ -150,12 +150,13 @@ examples:
                 }
             }
           language: java
+    path: src/main/resources/META-INF/rewrite/examples.yml
     language: yaml
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.ExecutionContextParameterName
 examples:
-- description: ''
+- description: '`ExecutionContextParameterNameTest#recipe`'
   parameters:
   - 'null'
   sources:
@@ -174,7 +175,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.FindRecipes
 examples:
-- description: ''
+- description: '`FindRecipesTest#findRecipes`'
   sources:
   - before: |
       import org.openrewrite.Option;
@@ -241,7 +242,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.IsLiteralNullRecipe
 examples:
-- description: ''
+- description: '`IsLiteralNullTest#expressionArgument`'
   sources:
   - before: |
       import org.openrewrite.java.tree.Expression;
@@ -268,7 +269,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.MissingOptionExample
 examples:
-- description: ''
+- description: '`MissingOptionExampleTest#lacksExample`'
   sources:
   - before: |
       import org.openrewrite.Option;
@@ -309,7 +310,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.NoMutableStaticFieldsInRecipes
 examples:
-- description: ''
+- description: '`NoMutableStaticFieldsInRecipesTest#removeNonFinalStaticFields`'
   sources:
   - before: |
       import org.openrewrite.Recipe;
@@ -329,7 +330,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.RecipeEqualsAndHashCodeCallSuper
 examples:
-- description: ''
+- description: '`RecipeEqualsAndHashCodeCallSuperTest#recipeEqualsAndHashCodeCallSuper`'
   sources:
   - before: |
       import org.openrewrite.Recipe;
@@ -354,7 +355,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.ReorderTestMethods
 examples:
-- description: ''
+- description: '`ReorderTestMethodsTest#reorderTestMethods`'
   sources:
   - before: |
       package org.openrewrite.java.cleanup;
@@ -483,7 +484,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.ReplaceNullWithDoesNotExist
 examples:
-- description: ''
+- description: '`ReplaceNullWithDoesNotExistTest#replaceFirstNullArgument`'
   sources:
   - before: |
       import org.openrewrite.test.RewriteTest;
@@ -508,7 +509,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.RewriteTestClassesShouldNotBePublic
 examples:
-- description: ''
+- description: '`RewriteTestClassesShouldNotBePublicTest#rewriteTestThatOverridesDefaults`'
   sources:
   - before: |
       import org.openrewrite.test.RecipeSpec;
@@ -535,7 +536,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.SelectRecipeExamples
 examples:
-- description: ''
+- description: '`SelectRecipeExamplesTest#selectFirstExample`'
   sources:
   - before: |
       package org.openrewrite.java.cleanup;
@@ -634,7 +635,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.SingleDocumentExample
 examples:
-- description: ''
+- description: '`SingleDocumentExampleTest#onlyKeepFirstExample`'
   sources:
   - before: |
       import org.junit.jupiter.api.Test;
@@ -716,7 +717,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.SourceSpecTextBlockIndentation
 examples:
-- description: ''
+- description: '`SourceSpecTextBlockIndentationTest#minimalIndentation`'
   sources:
   - before: "import org.openrewrite.test.RewriteTest;\nimport static org.openrewrite.test.SourceSpecs.text;\n\
       \nclass MyRecipeTest implements RewriteTest {\n    void test() {\n      rewriteRun(\n\
@@ -735,7 +736,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.SourceSpecTextBlockNewLine
 examples:
-- description: ''
+- description: '`SourceSpecTextBlockNewLineTest#newlineAfterClosing`'
   sources:
   - before: "import org.openrewrite.test.RewriteTest;\nimport static org.openrewrite.test.SourceSpecs.text;\n\
       \nclass MyRecipeTest implements RewriteTest {\n    void test() {\n      rewriteRun(\n\
@@ -754,7 +755,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.UseRewriteTestDefaults
 examples:
-- description: ''
+- description: '`UseRewriteTestDefaultsTest#shouldRefactorWhenAllTestsUseSameRecipe`'
   sources:
   - before: |
       import org.junit.jupiter.api.Test;
@@ -808,7 +809,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.UseTreeRandomId
 examples:
-- description: ''
+- description: '`UseTreeRandomIdTest#replacesUUIDRandomId`'
   sources:
   - before: |
       import org.openrewrite.java.tree.J;
@@ -843,7 +844,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.recipes.rewrite.InlineMethods
 examples:
-- description: ''
+- description: '`RemoveTraitsUsageTest#javaLiteral`'
   sources:
   - before: |
       import org.openrewrite.java.trait.Literal;
