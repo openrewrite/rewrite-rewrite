@@ -207,7 +207,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.java.RemoveUnusedImports
                 examples:
-                - description: ''
+                - description: '`RemoveUnusedImportsTest#removeUnusedImports`'
                   sources:
                   - before: |
                       import java.util.List;
@@ -406,7 +406,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
                 examples:
-                - description: ''
+                - description: '`ChainStringBuilderAppendCallsTest#objectsConcatenation`'
                   sources:
                   - before: |
                       class A {
@@ -587,7 +587,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.staticanalysis.DeclarationSiteTypeVariance
                 examples:
-                - description: ''
+                - description: '`DeclarationSiteTypeVarianceTest#inOutVariance`'
                   parameters:
                   - List.of("java.util.function.Function<IN, OUT>")
                   - List.of("java.lang.*")
@@ -610,7 +610,7 @@ class ExamplesExtractorTest implements RewriteTest {
                       interface In {}
                       interface Out {}
                     language: java
-                - description: ''
+                - description: '`DeclarationSiteTypeVarianceTest#invariance`'
                   parameters:
                   - List.of("java.util.function.Function<INVARIANT, OUT>")
                   - List.of("java.lang.*")
@@ -713,7 +713,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.java.migrate.net.JavaNetAPIs
                 examples:
-                - description: ''
+                - description: '`JavaNetAPIsTest#multicastSocketGetTTLToGetTimeToLive`'
                   sources:
                   - before: |
                       package org.openrewrite.example;
@@ -788,7 +788,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.java.migrate.net.JavaNetAPIs
                 examples:
-                - description: ''
+                - description: '`JavaNetAPIsTest#multicastSocketGetTTLToGetTimeToLive`'
                   sources:
                   - before: class A {}
                     after: class B {}
@@ -874,7 +874,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.yaml.MergeYaml
                 examples:
-                - description: ''
+                - description: '`MergeYamlTest#nonExistentBlock`'
                   parameters:
                   - $.spec
                   - |
@@ -927,7 +927,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   type: specs.openrewrite.org/v1beta/example
                   recipeName: org.openrewrite.java.OrderImports
                   examples:
-                  - description: ''
+                  - description: '`OrderImportsTest#orderImports`'
                     parameters:
                     - 'null'
                     sources:
@@ -943,7 +943,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   type: specs.openrewrite.org/v1beta/example
                   recipeName: org.openrewrite.java.RemoveUnusedImports
                   examples:
-                  - description: ''
+                  - description: '`RemoveUnusedImportsTest#removeUnusedImports`'
                     sources:
                     - before: |
                         import java.util.List;
@@ -1054,7 +1054,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   type: specs.openrewrite.org/v1beta/example
                   recipeName: org.openrewrite.java.OrderImports
                   examples:
-                  - description: ''
+                  - description: '`OrderImportsTest#orderImports`'
                     parameters:
                     - 'null'
                     sources:
@@ -1148,7 +1148,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   type: specs.openrewrite.org/v1beta/example
                   recipeName: org.openrewrite.java.OrderImports
                   examples:
-                  - description: ''
+                  - description: '`OrderImportsTest#orderImports`'
                     parameters:
                     - 'null'
                     sources:
@@ -1217,7 +1217,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   type: specs.openrewrite.org/v1beta/example
                   recipeName: org.openrewrite.java.RemoveUnusedImports
                   examples:
-                  - description: ''
+                  - description: '`RemoveUnusedImportsTest#removeUnusedImports`'
                     sources:
                     - before: |
                         import java.util.List;
@@ -1290,7 +1290,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   type: specs.openrewrite.org/v1beta/example
                   recipeName: org.openrewrite.java.OrderImports
                   examples:
-                  - description: ''
+                  - description: '`OrderImportsTest#orderImports`'
                     parameters:
                     - 'null'
                     sources:
@@ -1354,7 +1354,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   type: specs.openrewrite.org/v1beta/example
                   recipeName: org.openrewrite.java.RemoveUnusedImports
                   examples:
-                  - description: ''
+                  - description: '`RemoveUnusedImportsTest#removeUnusedImports`'
                     sources:
                     - before: |
                         import java.util.List;
@@ -1468,7 +1468,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.java.RemoveUnusedImports
                 examples:
-                - description: ''
+                - description: '`RemoveUnusedImportsTest#removeUnusedImports`'
                   sources:
                   - before: |
                       import java.util.List;
@@ -1544,7 +1544,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.java.RemoveUnusedImports
                 examples:
-                - description: ''
+                - description: '`RemoveUnusedImportsTest#removeUnusedImports`'
                   sources:
                   - before: |
                       import java.util.List;
@@ -1608,7 +1608,7 @@ class ExamplesExtractorTest implements RewriteTest {
                 type: specs.openrewrite.org/v1beta/example
                 recipeName: org.openrewrite.java.RemoveUnusedImports
                 examples:
-                - description: ''
+                - description: '`RemoveUnusedImportsTest#removeUnusedImports`'
                   sources:
                   - before: |
                       import java.util.List;
