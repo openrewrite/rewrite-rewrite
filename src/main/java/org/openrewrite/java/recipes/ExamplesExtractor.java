@@ -327,11 +327,6 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                         language = "xml";
                     } else if (ASSERTIONS_METHOD_MATCHER.matches(method)) {
                         language = method.getSimpleName();
-                    } else if (PATH_METHOD_MATCHER.matches(method)) {
-                        if (method.getArguments().get(0) instanceof J.Literal) {
-                            source.setPath((String) ((J.Literal) method.getArguments().get(0)).getValue());
-                        }
-                        return method;
                     } else {
                         return method;
                     }
@@ -346,6 +341,18 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                     }
                     if (after != null) {
                         source.setAfter((String) after.getValue());
+                    }
+                    Expression sourceSpec = args.get(args.size() - 1);
+                    if (args.size() > 1 && TypeUtils.isAssignableTo("java.util.function.Consumer", sourceSpec.getType())) {
+                        new JavaIsoVisitor<RecipeExample.Source>() {
+                            @Override
+                            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, RecipeExample.Source source) {
+                                if (PATH_METHOD_MATCHER.matches(method) && method.getArguments().get(0) instanceof J.Literal) {
+                                    source.setPath((String) ((J.Literal) method.getArguments().get(0)).getValue());
+                                }
+                                return method;
+                            }
+                        }.visit(sourceSpec, source);
                     }
                     if (StringUtils.isNotEmpty(source.getBefore()) || StringUtils.isNotEmpty(source.getAfter())) {
                         sources.add(source);
