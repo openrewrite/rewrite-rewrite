@@ -98,38 +98,17 @@ public class SelectRecipeExamples extends Recipe {
                     return method;
                 }
 
-                // a good recipe example should have both before and after.
-                boolean isAGoodExample = new JavaIsoVisitor<AtomicBoolean>() {
+                // a good recipe example should have both a before and after changed within a rewriteRun spec
+                boolean rewriteRunWithAnyChangedSource = new JavaIsoVisitor<AtomicBoolean>() {
                     @Override
-                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method,
-                                                                    AtomicBoolean isGood) {
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean isGood) {
                         if (REWRITE_RUN_METHOD_MATCHER_ALL.matches(method)) {
-                            int argIndex = 0;
-                            if (REWRITE_RUN_METHOD_MATCHER_WITH_SPEC.matches(method)) {
-                                argIndex = 1;
-                            }
-
-                            Expression arg = method.getArguments().get(argIndex);
-
-                            if (arg instanceof J.MethodInvocation) {
-
-                                J.MethodInvocation methodInvocation = (J.MethodInvocation) arg;
-                                methodInvocation.getArguments();
-                                if (methodInvocation.getArguments().size() > 1) {
-                                    Expression arg0 = methodInvocation.getArguments().get(0);
-                                    Expression arg1 = methodInvocation.getArguments().get(1);
-
-                                    if (isStringLiteral(arg0) && isStringLiteral(arg1)) {
-                                        isGood.set(true);
-                                    }
-                                }
-                            }
+                            isGood.set(containsAnyChangedSource(method));
                         }
-                        return method;
+                        return super.visitMethodInvocation(method, isGood);
                     }
                 }.reduce(method, new AtomicBoolean()).get();
-
-                if (!isAGoodExample) {
+                if (!rewriteRunWithAnyChangedSource) {
                     return method;
                 }
 
@@ -139,10 +118,24 @@ public class SelectRecipeExamples extends Recipe {
                 return JavaTemplate.builder("@DocumentExample")
                         .contextSensitive()
                         .imports(DOCUMENT_EXAMPLE_ANNOTATION_FQN)
-                        .javaParser(JavaParser.fromJavaVersion()
-                                .classpath(JavaParser.runtimeClasspath()))
+                        .javaParser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()))
                         .build()
                         .apply(getCursor(), method.getCoordinates().addAnnotation(comparing(J.Annotation::getSimpleName)));
+            }
+
+            private boolean containsAnyChangedSource(J.MethodInvocation method) {
+                return new JavaIsoVisitor<AtomicBoolean>() {
+                    @Override
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean isGood) {
+                        if (!isGood.get() &&
+                                method.getArguments().size() > 1 &&
+                                isStringLiteral(method.getArguments().get(0)) &&
+                                isStringLiteral(method.getArguments().get(1))) {
+                            isGood.set(true);
+                        }
+                        return super.visitMethodInvocation(method, isGood);
+                    }
+                }.reduce(method.getArguments(), new AtomicBoolean()).get();
             }
         });
     }

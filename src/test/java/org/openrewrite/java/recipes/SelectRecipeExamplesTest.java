@@ -16,12 +16,16 @@
 package org.openrewrite.java.recipes;
 
 import org.junit.jupiter.api.Test;
+import org.junitpioneer.jupiter.ExpectedToFail;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpec;
 
-import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.java.Assertions.*;
+import static org.openrewrite.java.Assertions.srcTestJava;
+import static org.openrewrite.yaml.Assertions.yaml;
 
 class SelectRecipeExamplesTest implements RewriteTest {
 
@@ -440,6 +444,209 @@ class SelectRecipeExamplesTest implements RewriteTest {
                     rewriteRun(text("before", "after"));
                   }
                 }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void selectWithinDirectory() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.openrewrite.java.cleanup;
+
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              import static org.openrewrite.java.Assertions.java;
+              import static org.openrewrite.test.SourceSpecs.dir;
+
+              class UnnecessaryParenthesesTest implements RewriteTest {
+
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(Recipe.noop());
+                  }
+
+                  @Test
+                  void test1() {
+                      rewriteRun(
+                        dir(
+                          "src/",
+                          java(
+                            ""\"
+                              BEFORE
+                              ""\",
+                            ""\"
+                              AFTER
+                              ""\"
+                          )
+                        )
+                      );
+                  }
+              }
+              """,
+            """
+              package org.openrewrite.java.cleanup;
+
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.DocumentExample;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              import static org.openrewrite.java.Assertions.java;
+              import static org.openrewrite.test.SourceSpecs.dir;
+
+              class UnnecessaryParenthesesTest implements RewriteTest {
+
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(Recipe.noop());
+                  }
+
+                  @DocumentExample
+                  @Test
+                  void test1() {
+                      rewriteRun(
+                        dir(
+                          "src/",
+                          java(
+                            ""\"
+                              BEFORE
+                              ""\",
+                            ""\"
+                              AFTER
+                              ""\"
+                          )
+                        )
+                      );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void selectAtLeastOneChangedSourceSpec() {
+        rewriteRun(
+          java(
+            """
+              package org.openrewrite.staticanalysis;
+
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              import static org.openrewrite.java.Assertions.java;
+
+              class ChainStringBuilderAppendCallsTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(Recipe.noop());
+                  }
+
+                  @Test
+                  void test() {
+                      rewriteRun(
+                       java(
+                         ""\"
+                           class A {
+                               void method1() {
+                               }
+                           }
+                           ""\",
+                         ""\"
+                           class A {
+                               void method2() {
+                               }
+                           }
+                           ""\"
+                        ),
+                        // the following SourceSpec leads to "No changes were made" in the docs, regrettably
+                        java(
+                          \"""
+                            class B {
+                                void method1() {
+                                }
+                            }
+                            \""",
+                            spec -> spec.after(actual -> {
+                                String method2 = "method2";
+                                return ""\"
+                                   class B {
+                                       void %s() {
+                                       }
+                                   }
+                                   ""\".formatted(method2);
+                                })
+                        )
+                      );
+                  }
+              }
+              """,
+            """
+              package org.openrewrite.staticanalysis;
+
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.DocumentExample;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              import static org.openrewrite.java.Assertions.java;
+
+              class ChainStringBuilderAppendCallsTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(Recipe.noop());
+                  }
+
+                  @DocumentExample
+                  @Test
+                  void test() {
+                      rewriteRun(
+                       java(
+                         ""\"
+                           class A {
+                               void method1() {
+                               }
+                           }
+                           ""\",
+                         ""\"
+                           class A {
+                               void method2() {
+                               }
+                           }
+                           ""\"
+                        ),
+                        // the following SourceSpec leads to "No changes were made" in the docs, regrettably
+                        java(
+                          \"""
+                            class B {
+                                void method1() {
+                                }
+                            }
+                            \""",
+                            spec -> spec.after(actual -> {
+                                String method2 = "method2";
+                                return ""\"
+                                   class B {
+                                       void %s() {
+                                       }
+                                   }
+                                   ""\".formatted(method2);
+                                })
+                        )
+                      );
+                  }
               }
               """
           )
