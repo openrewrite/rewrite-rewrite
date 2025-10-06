@@ -44,9 +44,6 @@ public class SelectRecipeExamples extends Recipe {
     private static final MethodMatcher REWRITE_RUN_METHOD_MATCHER_ALL =
             new MethodMatcher("org.openrewrite.test.RewriteTest rewriteRun(..)");
 
-    private static final MethodMatcher REWRITE_RUN_METHOD_MATCHER_WITH_SPEC =
-            new MethodMatcher("org.openrewrite.test.RewriteTest rewriteRun(java.util.function.Consumer, org.openrewrite.test.SourceSpecs[])");
-
     private static final String REWRITE_TEST_FQN = "org.openrewrite.test.RewriteTest";
 
     @Override
