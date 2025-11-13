@@ -74,6 +74,48 @@ class RecipeClassesShouldBePublicTest implements RewriteTest {
     }
 
     @Test
+    void privateRecipeClassShouldBePublic() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.TreeVisitor;
+
+              private class MyRecipe extends Recipe {
+                  @Override
+                  public String getDisplayName() {
+                      return "My Recipe";
+                  }
+
+                  @Override
+                  public String getDescription() {
+                      return "My description";
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.TreeVisitor;
+
+              public class MyRecipe extends Recipe {
+                  @Override
+                  public String getDisplayName() {
+                      return "My Recipe";
+                  }
+
+                  @Override
+                  public String getDescription() {
+                      return "My description";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void finalRecipeClassShouldBePublic() {
         rewriteRun(
           java(
