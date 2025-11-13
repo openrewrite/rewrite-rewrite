@@ -19,14 +19,14 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 public class RecipeClassesShouldBePublic extends Recipe {
     @Override
@@ -50,25 +50,24 @@ public class RecipeClassesShouldBePublic extends Recipe {
 
                         // Check if this class extends Recipe and is not already public
                         if (TypeUtils.isAssignableTo("org.openrewrite.Recipe", cd.getType()) &&
-                            cd.getKind() != J.ClassDeclaration.Kind.Type.Interface &&
-                            cd.getModifiers().stream().noneMatch(mod -> mod.getType() == J.Modifier.Type.Public)) {
+                                cd.getKind() != J.ClassDeclaration.Kind.Type.Interface &&
+                                cd.getModifiers().stream().noneMatch(mod -> mod.getType() == J.Modifier.Type.Public)) {
 
                             // Create a new modifier list with public at the beginning
-                            List<J.Modifier> newModifiers = new ArrayList<>(cd.getModifiers());
-                            newModifiers.add(0, new J.Modifier(
+                            J.Modifier publicModifier = new J.Modifier(
                                     cd.getId(),
                                     cd.getPrefix(),
                                     cd.getMarkers(),
                                     null,
                                     J.Modifier.Type.Public,
                                     Collections.emptyList()
-                            ));
+                            );
 
                             // Update the class declaration
-                            J.ClassDeclaration updated = cd.withModifiers(newModifiers);
+                            J.ClassDeclaration updated = cd.withModifiers(ListUtils.concat(publicModifier, cd.getModifiers()));
 
                             // Clear the class prefix since the modifier now has it
-                            updated = updated.withPrefix(updated.getPrefix().withWhitespace(" "));
+                            updated = updated.withPrefix(Space.SINGLE_SPACE);
 
                             // Auto-format to ensure proper spacing
                             cd = maybeAutoFormat(cd, updated, updated.getName(), ctx, getCursor().getParentTreeCursor());

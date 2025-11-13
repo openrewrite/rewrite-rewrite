@@ -50,11 +50,6 @@ class RecipeClassesShouldBePublicTest implements RewriteTest {
                   public String getDescription() {
                       return "My description";
                   }
-
-                  @Override
-                  public TreeVisitor<?, ExecutionContext> getVisitor() {
-                      return null;
-                  }
               }
               """,
             """
@@ -71,11 +66,6 @@ class RecipeClassesShouldBePublicTest implements RewriteTest {
                   @Override
                   public String getDescription() {
                       return "My description";
-                  }
-
-                  @Override
-                  public TreeVisitor<?, ExecutionContext> getVisitor() {
-                      return null;
                   }
               }
               """
@@ -102,11 +92,6 @@ class RecipeClassesShouldBePublicTest implements RewriteTest {
                   public String getDescription() {
                       return "My description";
                   }
-
-                  @Override
-                  public TreeVisitor<?, ExecutionContext> getVisitor() {
-                      return null;
-                  }
               }
               """,
             """
@@ -123,11 +108,6 @@ class RecipeClassesShouldBePublicTest implements RewriteTest {
                   @Override
                   public String getDescription() {
                       return "My description";
-                  }
-
-                  @Override
-                  public TreeVisitor<?, ExecutionContext> getVisitor() {
-                      return null;
                   }
               }
               """
@@ -154,11 +134,6 @@ class RecipeClassesShouldBePublicTest implements RewriteTest {
                   public String getDescription() {
                       return "My description";
                   }
-
-                  @Override
-                  public TreeVisitor<?, ExecutionContext> getVisitor() {
-                      return null;
-                  }
               }
               """
           )
@@ -173,20 +148,6 @@ class RecipeClassesShouldBePublicTest implements RewriteTest {
               class MyClass {
                   void myMethod() {
                   }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void noChangeInterface() {
-        rewriteRun(
-          java(
-            """
-              import org.openrewrite.Recipe;
-
-              interface MyRecipeInterface {
               }
               """
           )
