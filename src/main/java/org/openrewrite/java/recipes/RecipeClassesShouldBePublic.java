@@ -26,7 +26,7 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.Collections;
+import static java.util.Collections.emptyList;
 
 public class RecipeClassesShouldBePublic extends Recipe {
     @Override
@@ -59,7 +59,7 @@ public class RecipeClassesShouldBePublic extends Recipe {
                                     cd.getMarkers(),
                                     null,
                                     J.Modifier.Type.Public,
-                                    Collections.emptyList()
+                                    emptyList()
                             );
 
                             // Update the class declaration
