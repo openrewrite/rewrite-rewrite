@@ -76,7 +76,7 @@ public class RecipeClassesShouldBePublic extends Recipe {
                                     .withModifiers(ListUtils.concat(publicModifier, cd.getModifiers()));
 
                             // Auto-format to ensure proper spacing
-                            cd = maybeAutoFormat(cd, updated, updated.getName(), ctx, getCursor().getParentTreeCursor());
+                            return maybeAutoFormat(cd, updated, updated.getName(), ctx, getCursor().getParentTreeCursor());
                         }
 
                         return cd;
