@@ -52,6 +52,7 @@ public class RecipeClassesShouldBePublic extends Recipe {
 
                         // Check if this class extends Recipe and is not already public
                         if (!cd.hasModifier(J.Modifier.Type.Public) &&
+                                !cd.hasModifier(J.Modifier.Type.Abstract) &&
                                 TypeUtils.isAssignableTo("org.openrewrite.Recipe", cd.getType())) {
 
                             // Change any existing protected or private modifier to public
