@@ -66,8 +66,8 @@ public class UseTreeRandomId extends Recipe {
                         if (!randomUUIDMatcher.matches(expression)) {
                             return expression;
                         }
-                        maybeAddImport("org.openrewrite.Tree");
                         maybeRemoveImport("java.util.UUID");
+                        maybeAddImport("org.openrewrite.Tree");
 
                         J.MethodInvocation mi = (J.MethodInvocation) expression;
                         JavaType.Class classType = JavaType.ShallowClass.build("org.openrewrite.Tree");
