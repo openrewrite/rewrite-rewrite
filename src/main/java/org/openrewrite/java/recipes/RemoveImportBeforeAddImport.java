@@ -21,7 +21,7 @@ import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
 
@@ -43,14 +43,14 @@ public class RemoveImportBeforeAddImport extends Recipe {
     @Override
     public String getDescription() {
         return "Reorders `maybeAddImport` and `maybeRemoveImport` calls so that imports are removed before new imports " +
-               "are added. This ordering prevents potential conflicts when the import being added and the import being " +
-               "removed resolve to the same simple class name.";
+                "are added. This ordering prevents potential conflicts when the import being added and the import being " +
+                "removed resolve to the same simple class name.";
     }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
-                new UsesType<>("org.openrewrite.Recipe", true),
+                Preconditions.and(new UsesMethod<>(MAYBE_ADD_IMPORT_MATCHER), new UsesMethod<>(MAYBE_REMOVE_IMPORT_MATCHER)),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.Block visitBlock(J.Block block, ExecutionContext ctx) {
@@ -68,7 +68,8 @@ public class RemoveImportBeforeAddImport extends Recipe {
                             Statement current = statements.get(i);
                             if (i + 1 < statements.size()) {
                                 Statement next = statements.get(i + 1);
-                                if (isMaybeAddImport(current) && isMaybeRemoveImport(next)) {
+                                if (matches(current, MAYBE_ADD_IMPORT_MATCHER) &&
+                                        matches(next, MAYBE_REMOVE_IMPORT_MATCHER)) {
                                     // Swap: put maybeRemoveImport before maybeAddImport
                                     reordered.add(next.withPrefix(current.getPrefix()));
                                     reordered.add(current.withPrefix(next.getPrefix()));
@@ -84,18 +85,8 @@ public class RemoveImportBeforeAddImport extends Recipe {
                         return changed ? b.withStatements(reordered) : b;
                     }
 
-                    private boolean isMaybeAddImport(Statement stmt) {
-                        if (stmt instanceof J.MethodInvocation) {
-                            return MAYBE_ADD_IMPORT_MATCHER.matches((J.MethodInvocation) stmt);
-                        }
-                        return false;
-                    }
-
-                    private boolean isMaybeRemoveImport(Statement stmt) {
-                        if (stmt instanceof J.MethodInvocation) {
-                            return MAYBE_REMOVE_IMPORT_MATCHER.matches((J.MethodInvocation) stmt);
-                        }
-                        return false;
+                    private boolean matches(Statement stmt, MethodMatcher matcher) {
+                        return stmt instanceof J.MethodInvocation && matcher.matches((J.MethodInvocation) stmt);
                     }
                 }
         );
