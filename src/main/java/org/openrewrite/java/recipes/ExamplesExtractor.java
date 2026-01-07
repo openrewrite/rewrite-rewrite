@@ -238,13 +238,13 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
 
         private @Nullable RecipeNameAndParameters findRecipe(J tree) {
-            return new JavaIsoVisitor<AtomicReference<RecipeNameAndParameters>>() {
+            return new JavaIsoVisitor<AtomicReference<@Nullable RecipeNameAndParameters>>() {
                 @Override
-                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicReference<RecipeNameAndParameters> recipe) {
+                public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicReference<@Nullable RecipeNameAndParameters> recipe) {
                     if (RECIPE_METHOD_MATCHER.matches(method)) {
-                        new JavaIsoVisitor<AtomicReference<RecipeNameAndParameters>>() {
+                        new JavaIsoVisitor<AtomicReference<@Nullable RecipeNameAndParameters>>() {
                             @Override
-                            public J.NewClass visitNewClass(J.NewClass newClass, AtomicReference<RecipeNameAndParameters> recipe) {
+                            public J.NewClass visitNewClass(J.NewClass newClass, AtomicReference<@Nullable RecipeNameAndParameters> recipe) {
                                 JavaType type = newClass.getClazz() != null ? newClass.getClazz().getType() : null;
                                 if (type == null) {
                                     type = newClass.getType();
@@ -262,9 +262,9 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
                             @Override
                             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method,
-                                                                            AtomicReference<RecipeNameAndParameters> recipe) {
+                                                                            AtomicReference<@Nullable RecipeNameAndParameters> recipe) {
                                 if (ACTIVE_RECIPES_METHOD_MATCHER.matches(method)) {
-                                    Expression arg = method.getArguments().get(0);
+                                    Expression arg = method.getArguments().get(method.getArguments().size() - 1);
                                     if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
                                         RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
                                         recipeNameAndParameters.name = ((J.Literal) arg).getValue().toString();
@@ -287,7 +287,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
                     }
                     return super.visitMethodInvocation(method, recipe);
                 }
-            }.reduce(tree, new AtomicReference<>()).get();
+            }.reduce(tree, new AtomicReference<@Nullable RecipeNameAndParameters>()).get();
         }
 
         private List<String> extractParameters(List<Expression> args) {
@@ -399,9 +399,9 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
             List<Map<String, Object>> examplesData = new ArrayList<>();
             yamlDoc.put("examples", examplesData);
 
+            examples.sort(comparing(RecipeExample::getDescription));
             for (RecipeExample example : examples) {
                 Map<String, Object> exampleData = new LinkedHashMap<>();
-                example.getDescription();
                 exampleData.put("description", example.getDescription());
 
                 List<String> params = example.getParameters();
