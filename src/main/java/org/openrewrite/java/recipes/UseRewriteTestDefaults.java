@@ -69,7 +69,6 @@ public class UseRewriteTestDefaults extends Recipe {
                 if (!allSpecsAreIdentical(specInfos)) {
                     return cd;
                 }
-                maybeAddImport("org.openrewrite.test.RecipeSpec");
                 cd = newlineBeforeFirstStatement(cd);
                 cd = addDefaultsMethod(cd, specInfos.get(0));
                 return removeSpecsFromRewriteRuns(cd, ctx);
@@ -141,6 +140,7 @@ public class UseRewriteTestDefaults extends Recipe {
 
             private J.ClassDeclaration addDefaultsMethod(J.ClassDeclaration cd, RecipeSpecInfo specInfo) {
                 if (specInfo.lambda != null) {
+                    maybeAddImport("org.openrewrite.test.RecipeSpec", false);
                     return JavaTemplate.builder(
                                     "@Override\n" +
                                             "public void defaults(RecipeSpec spec) {\n" +
@@ -156,6 +156,7 @@ public class UseRewriteTestDefaults extends Recipe {
                                     specInfo.lambda.getBody());
                 }
                 if (specInfo.methodRef != null) {
+                    maybeAddImport("org.openrewrite.test.RecipeSpec", false);
                     String simpleName = specInfo.methodRef.getReference().getSimpleName();
                     return JavaTemplate.builder(
                                     "@Override\n" +
