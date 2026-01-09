@@ -930,6 +930,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   - description: '`OrderImportsTest#orderImports`'
                     parameters:
                     - 'null'
+                    - 'null'
                     sources:
                     - before: |
                         import java.util.List;
@@ -974,7 +975,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   class OrderImportsTest implements RewriteTest {
                       @Override
                       public void defaults(RecipeSpec spec) {
-                          spec.recipe(new OrderImports(null));
+                          spec.recipe(new OrderImports(null, null));
                       }
 
                       @DocumentExample
@@ -1057,6 +1058,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   - description: '`OrderImportsTest#orderImports`'
                     parameters:
                     - 'null'
+                    - 'null'
                     sources:
                     - before: |
                         import java.util.List;
@@ -1095,7 +1097,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   class OrderImportsTest implements RewriteTest {
                       @Override
                       public void defaults(RecipeSpec spec) {
-                          spec.recipe(new OrderImports(null));
+                          spec.recipe(new OrderImports(null, null));
                       }
 
                       @DocumentExample
@@ -1151,6 +1153,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   - description: '`OrderImportsTest#orderImports`'
                     parameters:
                     - 'null'
+                    - 'null'
                     sources:
                     - before: |
                         import java.util.List;
@@ -1181,7 +1184,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   class OrderImportsTest implements RewriteTest {
                       @Override
                       public void defaults(RecipeSpec spec) {
-                          spec.recipe(new OrderImports(null));
+                          spec.recipe(new OrderImports(null, null));
                       }
 
                       @DocumentExample
@@ -1293,6 +1296,7 @@ class ExamplesExtractorTest implements RewriteTest {
                   - description: '`OrderImportsTest#orderImports`'
                     parameters:
                     - 'null'
+                    - 'null'
                     sources:
                     - before: |
                         import java.util.List;
@@ -1324,7 +1328,7 @@ class ExamplesExtractorTest implements RewriteTest {
                       @Test
                       void orderImports() {
                           rewriteRun(
-                            spec -> spec.recipe(new OrderImports(null)),
+                            spec -> spec.recipe(new OrderImports(null, null)),
                             java(
                               ""\"
                                 import java.util.List;
