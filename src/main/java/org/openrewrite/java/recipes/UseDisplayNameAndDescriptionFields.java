@@ -23,6 +23,7 @@ import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresType;
 import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.tree.*;
@@ -34,6 +35,10 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 public class UseDisplayNameAndDescriptionFields extends Recipe {
+    protected static final String RECIPE = "org.openrewrite.Recipe";
+    private static final MethodMatcher GET_DISPLAY_NAME_MATCHER = new MethodMatcher(RECIPE + " getDisplayName()", true);
+    private static final MethodMatcher GET_DESCRIPTION_MATCHER = new MethodMatcher(RECIPE + " getDescription()", true);
+
     @Override
     public String getDisplayName() {
         return "Replace `getDisplayName()` and `getDescription()` methods with fields";
@@ -48,12 +53,12 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
-                new DeclaresType<>("org.openrewrite.Recipe", true),
+                new DeclaresType<>(RECIPE, true),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                         J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                        if (!TypeUtils.isAssignableTo("org.openrewrite.Recipe", cd.getType()) ||
+                        if (!TypeUtils.isAssignableTo(RECIPE, cd.getType()) ||
                                 FindAnnotations.find(cd, "@lombok.Value").isEmpty()) {
                             return cd;
                         }
@@ -62,16 +67,12 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
                                 ListUtils.map(cd.getBody().getStatements(), stmt -> {
                                     if (stmt instanceof J.MethodDeclaration) {
                                         J.MethodDeclaration method = (J.MethodDeclaration) stmt;
-                                        if ("getDisplayName".equals(method.getSimpleName()) &&
-                                                (method.getParameters().isEmpty() ||
-                                                        (method.getParameters().size() == 1 && method.getParameters().get(0) instanceof J.Empty))) {
+                                        if (GET_DISPLAY_NAME_MATCHER.matches(method.getMethodType())) {
                                             Expression expr = extractStringLiteralExpression(method);
                                             if (expr != null) {
                                                 return createField("displayName", expr, method.getPrefix());
                                             }
-                                        } else if ("getDescription".equals(method.getSimpleName()) &&
-                                                (method.getParameters().isEmpty() ||
-                                                        (method.getParameters().size() == 1 && method.getParameters().get(0) instanceof J.Empty))) {
+                                        } else if (GET_DESCRIPTION_MATCHER.matches(method.getMethodType())) {
                                             Expression expr = extractStringLiteralExpression(method);
                                             if (expr != null) {
                                                 return createField("description", expr, method.getPrefix());
@@ -93,7 +94,6 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
                                 emptyList(),
                                 new J.Identifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "String", stringType, null),
                                 null,
-                                emptyList(),
                                 singletonList(new JRightPadded<>(
                                         new J.VariableDeclarations.NamedVariable(
                                                 Tree.randomId(),
@@ -131,20 +131,17 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
                     }
 
                     private boolean isStringLiteralOrConcatenation(Expression expr) {
+                        if (expr instanceof J.Parentheses) {
+                            expr = expr.unwrap();
+                        }
                         if (expr instanceof J.Literal) {
-                            J.Literal literal = (J.Literal) expr;
-                            return TypeUtils.isString(literal.getType());
+                            return TypeUtils.isString(((J.Literal) expr).getType());
                         }
                         if (expr instanceof J.Binary) {
                             J.Binary binary = (J.Binary) expr;
                             if (binary.getOperator() == J.Binary.Type.Addition) {
                                 return isStringLiteralOrConcatenation(binary.getLeft()) &&
                                         isStringLiteralOrConcatenation(binary.getRight());
-                            }
-                        } else if (expr instanceof J.Parentheses) {
-                            J.Parentheses<?> parens = (J.Parentheses<?>) expr;
-                            if (parens.getTree() instanceof Expression) {
-                                return isStringLiteralOrConcatenation((Expression) parens.getTree());
                             }
                         }
                         return false;
