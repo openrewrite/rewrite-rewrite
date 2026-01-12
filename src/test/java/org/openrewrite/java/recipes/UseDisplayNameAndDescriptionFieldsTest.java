@@ -96,7 +96,7 @@ class UseDisplayNameAndDescriptionFieldsTest implements RewriteTest {
               public class MyRecipe extends Recipe {
                   @Override
                   public String getDisplayName() {
-                      return "My" + " " + "Recipe";
+                      return "My" + (" ") + "Recipe";
                   }
 
                   @Override
@@ -119,7 +119,7 @@ class UseDisplayNameAndDescriptionFieldsTest implements RewriteTest {
 
               @Value
               public class MyRecipe extends Recipe {
-                  String displayName = "My" + " " + "Recipe";
+                  String displayName = "My" + (" ") + "Recipe";
 
                   String description = "First line. " +
                               "Second line.";
