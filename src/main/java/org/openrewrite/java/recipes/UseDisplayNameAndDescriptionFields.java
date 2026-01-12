@@ -134,7 +134,8 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
                         if (expr instanceof J.Literal) {
                             J.Literal literal = (J.Literal) expr;
                             return TypeUtils.isString(literal.getType());
-                        } else if (expr instanceof J.Binary) {
+                        }
+                        if (expr instanceof J.Binary) {
                             J.Binary binary = (J.Binary) expr;
                             if (binary.getOperator() == J.Binary.Type.Addition) {
                                 return isStringLiteralOrConcatenation(binary.getLeft()) &&
