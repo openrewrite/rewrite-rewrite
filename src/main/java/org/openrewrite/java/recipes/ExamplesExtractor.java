@@ -31,7 +31,9 @@ import org.openrewrite.tree.ParseError;
 import org.openrewrite.yaml.YamlIsoVisitor;
 import org.openrewrite.yaml.YamlParser;
 import org.openrewrite.yaml.tree.Yaml.Documents;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.io.StringWriter;
 import java.nio.file.Path;
@@ -371,7 +373,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
     static class YamlPrinter {
 
-        private final Yaml yaml = new Yaml();
+        private final Yaml yaml = new Yaml(new SafeConstructor(new LoaderOptions()));
 
         String print(@Nullable String licenseHeader, Map<String, List<RecipeExample>> recipeExamples) {
             StringWriter stringWriter = new StringWriter();
