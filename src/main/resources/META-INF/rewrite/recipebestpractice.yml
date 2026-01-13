@@ -96,6 +96,7 @@ recipeList:
   - org.openrewrite.java.recipes.SourceSpecTextBlockNewLine
   - org.openrewrite.java.recipes.SourceSpecTextBlockIndentation
   - org.openrewrite.java.recipes.UseRewriteTestDefaults
+  - org.openrewrite.java.migrate.lang.var.UseVarForTypeCast
   - org.openrewrite.java.testing.cleanup.RemoveTestPrefix
   - org.openrewrite.java.testing.cleanup.TestsShouldNotBePublic
   - org.openrewrite.staticanalysis.NeedBraces
