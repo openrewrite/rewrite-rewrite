@@ -24,6 +24,7 @@ import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresType;
 import org.openrewrite.java.search.FindAnnotations;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
@@ -52,7 +53,7 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                         J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
                         if (!TypeUtils.isAssignableTo(RECIPE, cd.getType()) ||
-                                FindAnnotations.find(cd, "@lombok.Value").isEmpty()) {
+                                !service(AnnotationService.class).isAnnotatedWith(cd, "lombok.Value")) {
                             return cd;
                         }
 
