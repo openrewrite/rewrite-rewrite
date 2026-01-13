@@ -39,15 +39,9 @@ public class ExecutionContextParameterName extends Recipe {
     @Nullable
     String parameterName;
 
-    @Override
-    public String getDisplayName() {
-        return "Use a standard name for `ExecutionContext`";
-    }
+    String displayName = "Use a standard name for `ExecutionContext`";
 
-    @Override
-    public String getDescription() {
-        return "Visitors that are parameterized with `ExecutionContext` should use the parameter name `ctx`.";
-    }
+    String description = "Visitors that are parameterized with `ExecutionContext` should use the parameter name `ctx`.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

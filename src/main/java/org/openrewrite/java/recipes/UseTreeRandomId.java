@@ -34,15 +34,9 @@ import static java.util.Collections.emptyList;
 @Value
 public class UseTreeRandomId extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Use `Tree.randomId()` in LST constructors";
-    }
+    String displayName = "Use `Tree.randomId()` in LST constructors";
 
-    @Override
-    public String getDescription() {
-        return "Replaces occurrences of `UUID.randomUUID()` with `Tree.randomId()` when passed as an argument to a constructor call for LST elements.";
-    }
+    String description = "Replaces occurrences of `UUID.randomUUID()` with `Tree.randomId()` when passed as an argument to a constructor call for LST elements.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
