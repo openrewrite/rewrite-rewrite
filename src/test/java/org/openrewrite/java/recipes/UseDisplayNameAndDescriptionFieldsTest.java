@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,7 @@ import static org.openrewrite.java.Assertions.java;
 class UseDisplayNameAndDescriptionFieldsTest implements RewriteTest {
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()))
-          .recipe(new UseDisplayNameAndDescriptionFields());
+        spec.recipe(new UseDisplayNameAndDescriptionFields());
     }
 
     @DocumentExample

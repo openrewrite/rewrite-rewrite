@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2026 the original author or authors.
  * <p>
  * Licensed under the Moderne Source Available License (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,10 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.jspecify.annotations.Nullable;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.Tree;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -34,21 +32,16 @@ import java.util.List;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
+@Value
+@EqualsAndHashCode(callSuper = false)
 public class UseDisplayNameAndDescriptionFields extends Recipe {
-    protected static final String RECIPE = "org.openrewrite.Recipe";
+    private static final String RECIPE = "org.openrewrite.Recipe";
     private static final MethodMatcher GET_DISPLAY_NAME_MATCHER = new MethodMatcher(RECIPE + " getDisplayName()", true);
     private static final MethodMatcher GET_DESCRIPTION_MATCHER = new MethodMatcher(RECIPE + " getDescription()", true);
 
-    @Override
-    public String getDisplayName() {
-        return "Replace `getDisplayName()` and `getDescription()` methods with fields";
-    }
-
-    @Override
-    public String getDescription() {
-        return "Recipe classes annotated with `@lombok.Value` that return a simple string literal " +
-                "(or concatenation of string literals) from `getDisplayName()` or `getDescription()` can use fields instead.";
-    }
+    String displayName = "Replace `getDisplayName()` and `getDescription()` methods with fields";
+    String description = "Recipe classes annotated with `@lombok.Value` that return a simple string literal " +
+            "(or concatenation of string literals) from `getDisplayName()` or `getDescription()` can use fields instead.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
