@@ -19,18 +19,15 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
-import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.MethodMatcher;
+import org.openrewrite.java.*;
 import org.openrewrite.java.search.DeclaresType;
 import org.openrewrite.java.service.AnnotationService;
-import org.openrewrite.java.tree.*;
-import org.openrewrite.marker.Markers;
+import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Statement;
+import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.List;
-
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -47,60 +44,55 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
                 new DeclaresType<>(RECIPE, true),
-                new JavaIsoVisitor<ExecutionContext>() {
+                new JavaVisitor<ExecutionContext>() {
                     @Override
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-                        J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                        if (!TypeUtils.isAssignableTo(RECIPE, cd.getType()) ||
-                                !service(AnnotationService.class).isAnnotatedWith(cd, "lombok.Value")) {
-                            return cd;
+                        if (!TypeUtils.isAssignableTo(RECIPE, classDecl.getType())) {
+                            return classDecl;
                         }
-
-                        return cd.withBody(cd.getBody().withStatements(
-                                ListUtils.map(cd.getBody().getStatements(), stmt -> {
-                                    if (stmt instanceof J.MethodDeclaration) {
-                                        J.MethodDeclaration method = (J.MethodDeclaration) stmt;
-                                        if (GET_DISPLAY_NAME_MATCHER.matches(method.getMethodType())) {
-                                            Expression expr = extractStringLiteralExpression(method);
-                                            if (expr != null) {
-                                                return createField("displayName", expr, method.getPrefix());
-                                            }
-                                        } else if (GET_DESCRIPTION_MATCHER.matches(method.getMethodType())) {
-                                            Expression expr = extractStringLiteralExpression(method);
-                                            if (expr != null) {
-                                                return createField("description", expr, method.getPrefix());
-                                            }
-                                        }
-                                    }
-                                    return stmt;
-                                })
-                        ));
+                        boolean addGetterAnnotation = !service(AnnotationService.class).isAnnotatedWith(classDecl, "lombok.Value");
+                        getCursor().putMessage("addGetterAnnotation", addGetterAnnotation);
+                        return (J.ClassDeclaration) super.visitClassDeclaration(classDecl, ctx);
                     }
 
-                    private J.VariableDeclarations createField(String fieldName, Expression initializer, Space prefix) {
-                        JavaType.Primitive stringType = JavaType.Primitive.String;
-                        return new J.VariableDeclarations(
-                                Tree.randomId(),
-                                prefix,
-                                Markers.EMPTY,
-                                emptyList(),
-                                emptyList(),
-                                new J.Identifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), "String", stringType, null),
-                                null,
-                                singletonList(new JRightPadded<>(
-                                        new J.VariableDeclarations.NamedVariable(
-                                                Tree.randomId(),
-                                                Space.SINGLE_SPACE,
-                                                Markers.EMPTY,
-                                                new J.Identifier(Tree.randomId(), Space.EMPTY, Markers.EMPTY, emptyList(), fieldName, stringType, null),
-                                                emptyList(),
-                                                new JLeftPadded<>(Space.SINGLE_SPACE, initializer.withPrefix(Space.SINGLE_SPACE), Markers.EMPTY),
-                                                null
-                                        ),
-                                        Space.EMPTY,
-                                        Markers.EMPTY
-                                ))
-                        );
+                    @Override
+                    public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                        if (GET_DISPLAY_NAME_MATCHER.matches(method.getMethodType())) {
+                            Expression expr = extractStringLiteralExpression(method);
+                            if (expr != null) {
+                                boolean addGetterAnnotation = getCursor().getNearestMessage("addGetterAnnotation", false);
+                                return createField("displayName", method, expr, addGetterAnnotation);
+                            }
+                        } else if (GET_DESCRIPTION_MATCHER.matches(method.getMethodType())) {
+                            Expression expr = extractStringLiteralExpression(method);
+                            if (expr != null) {
+                                boolean addGetterAnnotation = getCursor().getNearestMessage("addGetterAnnotation", false);
+                                return createField("description", method, expr, addGetterAnnotation);
+                            }
+                        }
+                        return method;
+                    }
+
+                    private J.VariableDeclarations createField(
+                            String fieldName,
+                            J.MethodDeclaration method,
+                            Expression initializer,
+                            boolean addGetterAnnotation) {
+                        if (addGetterAnnotation) {
+                            maybeAddImport("lombok.Getter");
+                            return JavaTemplate.builder("@Getter final String " + fieldName + " = #{any(String)}")
+                                    .javaParser(JavaParser.fromJavaVersion().classpath("lombok"))
+                                    .imports("lombok.Getter")
+                                    .build()
+                                    .apply(getCursor(),
+                                            method.getCoordinates().replace(),
+                                            initializer);
+                        }
+                        return JavaTemplate.apply(
+                                "String " + fieldName + " = #{any(String)})",
+                                getCursor(),
+                                method.getCoordinates().replace(),
+                                initializer);
                     }
 
                     private @Nullable Expression extractStringLiteralExpression(J.MethodDeclaration method) {

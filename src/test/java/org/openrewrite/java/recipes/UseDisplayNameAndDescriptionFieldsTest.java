@@ -120,7 +120,7 @@ class UseDisplayNameAndDescriptionFieldsTest implements RewriteTest {
                   String displayName = "My" + (" ") + "Recipe";
 
                   String description = "First line. " +
-                              "Second line.";
+                          "Second line.";
 
                   @Override
                   public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -304,6 +304,55 @@ class UseDisplayNameAndDescriptionFieldsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void notAnnotatedWithLombokValue() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.TreeVisitor;
+
+              public class MyRecipe extends Recipe {
+                  @Override
+                  public String getDisplayName() {
+                      return "My Recipe";
+                  }
+
+                  @Override
+                  public String getDescription() {
+                      return "My description.";
+                  }
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return TreeVisitor.noop();
+                  }
+              }
+              """,
+            """
+              import lombok.Getter;
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.TreeVisitor;
+
+              public class MyRecipe extends Recipe {
+                  @Getter
+                  final String displayName = "My Recipe";
+
+                  @Getter
+                  final String description = "My description.";
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return TreeVisitor.noop();
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class NoChange {
         @Test
@@ -380,36 +429,6 @@ class UseDisplayNameAndDescriptionFieldsTest implements RewriteTest {
                   public class MyRecipe extends Recipe {
                       String displayName = "My Recipe";
                       String description = "My description.";
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        void notAnnotatedWithLombokValue() {
-            rewriteRun(
-              java(
-                """
-                  import org.openrewrite.ExecutionContext;
-                  import org.openrewrite.Recipe;
-                  import org.openrewrite.TreeVisitor;
-
-                  public class MyRecipe extends Recipe {
-                      @Override
-                      public String getDisplayName() {
-                          return "My Recipe";
-                      }
-
-                      @Override
-                      public String getDescription() {
-                          return "My description.";
-                      }
-
-                      @Override
-                      public TreeVisitor<?, ExecutionContext> getVisitor() {
-                          return TreeVisitor.noop();
-                      }
                   }
                   """
               )
