@@ -859,6 +859,53 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.UseDisplayNameAndDescriptionFields
+examples:
+- description: '`UseDisplayNameAndDescriptionFieldsTest#replaceSimpleStringLiteralMethods`'
+  sources:
+  - before: |
+      import lombok.Value;
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+
+      @Value
+      public class MyRecipe extends Recipe {
+          @Override
+          public String getDisplayName() {
+              return "My Recipe";
+          }
+
+          @Override
+          public String getDescription() {
+              return "My description.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return TreeVisitor.noop();
+          }
+      }
+    after: |
+      import lombok.Value;
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+
+      @Value
+      public class MyRecipe extends Recipe {
+          String displayName = "My Recipe";
+
+          String description = "My description.";
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return TreeVisitor.noop();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.UseRewriteTestDefaults
 examples:
 - description: '`UseRewriteTestDefaultsTest#shouldRefactorWhenAllTestsUseSameRecipe`'
