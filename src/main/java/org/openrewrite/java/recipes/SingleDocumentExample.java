@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -33,16 +34,12 @@ public class SingleDocumentExample extends Recipe {
     private static final String DOCUMENT_EXAMPLE = "org.openrewrite.DocumentExample";
     private static final AnnotationMatcher DOCUMENT_EXAMPLE_ANNOTATION_MATCHER = new AnnotationMatcher("@" + DOCUMENT_EXAMPLE);
 
-    @Override
-    public String getDisplayName() {
-        return "Single `@DocumentExample` per test class";
-    }
+    @Getter
+    final String displayName = "Single `@DocumentExample` per test class";
 
-    @Override
-    public String getDescription() {
-        return "Ensures there's only one `@DocumentExample` annotated `@Test` method per test class, " +
-                "as that looks best in our documentation. `@ParameterizedTest` methods are not supported.";
-    }
+    @Getter
+    final String description = "Ensures there's only one `@DocumentExample` annotated `@Test` method per test class, " +
+            "as that looks best in our documentation. `@ParameterizedTest` methods are not supported.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

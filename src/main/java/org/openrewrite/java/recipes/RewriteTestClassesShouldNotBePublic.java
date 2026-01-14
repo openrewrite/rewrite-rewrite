@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -31,15 +32,11 @@ import java.util.List;
 
 // Not handled by org.openrewrite.java.testing.cleanup.TestsShouldNotBePublicTest for classes that @Override defaults()
 public class RewriteTestClassesShouldNotBePublic extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "RewriteTest classes should not be public";
-    }
+    @Getter
+    final String displayName = "RewriteTest classes should not be public";
 
-    @Override
-    public String getDescription() {
-        return "Remove the public modifier from classes that implement RewriteTest.";
-    }
+    @Getter
+    final String description = "Remove the public modifier from classes that implement RewriteTest.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

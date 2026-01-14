@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -27,15 +28,11 @@ import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.TypeUtils;
 
 public class NoMutableStaticFieldsInRecipes extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Recipe classes should not have mutable `static` fields";
-    }
+    @Getter
+    final String displayName = "Recipe classes should not have mutable `static` fields";
 
-    @Override
-    public String getDescription() {
-        return "Remove mutable static fields from Recipe classes to discourage their use.";
-    }
+    @Getter
+    final String description = "Remove mutable static fields from Recipe classes to discourage their use.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

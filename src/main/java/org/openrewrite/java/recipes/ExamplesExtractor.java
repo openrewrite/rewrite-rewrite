@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.config.RecipeExample;
@@ -63,16 +64,12 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
     private static final MethodMatcher PATH_METHOD_MATCHER = new MethodMatcher("org.openrewrite.test.SourceSpec path(java.lang.String)");
     private static final MethodMatcher RECIPE_METHOD_MATCHER = new MethodMatcher("org.openrewrite.test.RecipeSpec#recipe*(..)");
 
-    @Override
-    public String getDisplayName() {
-        return "Extract documentation examples from tests";
-    }
+    @Getter
+    final String displayName = "Extract documentation examples from tests";
 
-    @Override
-    public String getDescription() {
-        return "Extract the before/after sources from tests annotated with `@DocumentExample`, " +
-                "and generate a YAML file with those examples to be shown in the documentation to show usage.";
-    }
+    @Getter
+    final String description = "Extract the before/after sources from tests annotated with `@DocumentExample`, " +
+            "and generate a YAML file with those examples to be shown in the documentation to show usage.";
 
     @Override
     public Accumulator getInitialValue(ExecutionContext ctx) {

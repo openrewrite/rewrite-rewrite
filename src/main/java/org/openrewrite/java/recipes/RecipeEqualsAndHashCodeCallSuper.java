@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -26,18 +27,14 @@ import org.openrewrite.java.tree.TypeUtils;
 
 public class RecipeEqualsAndHashCodeCallSuper extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Use of `@EqualsAndHashCode` on `Recipe`";
-    }
+    @Getter
+    final String displayName = "Use of `@EqualsAndHashCode` on `Recipe`";
 
-    @Override
-    public String getDescription() {
-        return "Recipes are value objects, so should use `@EqualsAndHashCode(callSuper = false)`. " +
-               "While in most cases recipes do not extend other classes and so the option is moot, as " +
-               "a matter of stylistic consistency and to enforce the idea that recipes are value objects, " +
-               "this value should be set to `false`.";
-    }
+    @Getter
+    final String description = "Recipes are value objects, so should use `@EqualsAndHashCode(callSuper = false)`. " +
+            "While in most cases recipes do not extend other classes and so the option is moot, as " +
+            "a matter of stylistic consistency and to enforce the idea that recipes are value objects, " +
+            "this value should be set to `false`.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

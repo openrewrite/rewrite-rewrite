@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -35,17 +36,13 @@ public class RemoveImportBeforeAddImport extends Recipe {
     private static final MethodMatcher MAYBE_REMOVE_IMPORT_MATCHER =
             new MethodMatcher("org.openrewrite.java.JavaVisitor maybeRemoveImport(..)", true);
 
-    @Override
-    public String getDisplayName() {
-        return "Reorder `maybeRemoveImport` before `maybeAddImport`";
-    }
+    @Getter
+    final String displayName = "Reorder `maybeRemoveImport` before `maybeAddImport`";
 
-    @Override
-    public String getDescription() {
-        return "Reorders `maybeAddImport` and `maybeRemoveImport` calls so that imports are removed before new imports " +
-                "are added. This ordering prevents potential conflicts when the import being added and the import being " +
-                "removed resolve to the same simple class name.";
-    }
+    @Getter
+    final String description = "Reorders `maybeAddImport` and `maybeRemoveImport` calls so that imports are removed before new imports " +
+            "are added. This ordering prevents potential conflicts when the import being added and the import being " +
+            "removed resolve to the same simple class name.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

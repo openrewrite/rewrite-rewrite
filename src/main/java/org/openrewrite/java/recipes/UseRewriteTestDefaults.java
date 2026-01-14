@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -34,16 +35,12 @@ import java.util.List;
 
 public class UseRewriteTestDefaults extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Refactor RewriteTest to use defaults method";
-    }
+    @Getter
+    final String displayName = "Refactor RewriteTest to use defaults method";
 
-    @Override
-    public String getDescription() {
-        return "When all `rewriteRun` methods in a test class use the same RecipeSpec configuration, " +
-                "refactor to use the `defaults` method instead.";
-    }
+    @Getter
+    final String description = "When all `rewriteRun` methods in a test class use the same RecipeSpec configuration, " +
+            "refactor to use the `defaults` method instead.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

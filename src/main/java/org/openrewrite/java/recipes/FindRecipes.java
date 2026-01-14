@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
+import lombok.Getter;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
@@ -44,16 +45,12 @@ import static java.util.Objects.requireNonNull;
 public class FindRecipes extends Recipe {
     RewriteRecipeSource recipeSource = new RewriteRecipeSource(this);
 
-    @Override
-    public String getDisplayName() {
-        return "Find OpenRewrite recipes";
-    }
+    @Getter
+    final String displayName = "Find OpenRewrite recipes";
 
-    @Override
-    public String getDescription() {
-        return "This recipe finds all OpenRewrite recipes, primarily to produce a data table that is being used " +
-               "to experiment with fine-tuning a large language model to produce more recipes.";
-    }
+    @Getter
+    final String description = "This recipe finds all OpenRewrite recipes, primarily to produce a data table that is being used " +
+            "to experiment with fine-tuning a large language model to produce more recipes.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

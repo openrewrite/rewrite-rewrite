@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -28,15 +29,11 @@ import java.util.regex.Pattern;
 import static java.util.Collections.emptyList;
 
 public class SourceSpecTextBlockNewLine extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "New line at the end of `SourceSpecs` text blocks";
-    }
+    @Getter
+    final String displayName = "New line at the end of `SourceSpecs` text blocks";
 
-    @Override
-    public String getDescription() {
-        return "Text blocks that assert before and after source code should have a new line after it is closed.";
-    }
+    @Getter
+    final String description = "Text blocks that assert before and after source code should have a new line after it is closed.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

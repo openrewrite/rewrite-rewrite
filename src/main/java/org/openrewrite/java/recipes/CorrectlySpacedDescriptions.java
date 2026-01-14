@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -34,18 +35,14 @@ public class CorrectlySpacedDescriptions extends Recipe {
 
     private static final MethodMatcher GET_DESCRIPTION_MATCHER = new MethodMatcher("org.openrewrite.Recipe getDescription()", true);
 
-    @Override
-    public String getDisplayName() {
-        return "Correctly spaced descriptions";
-    }
+    @Getter
+    final String displayName = "Correctly spaced descriptions";
 
-    @Override
-    public String getDescription() {
-        return "Recipe descriptions should be cleanly formatted. This recipe forces correct spacing in multiline descriptions. " +
-              "In a multi line description the lines should not start with whitespace and end with a single space " +
-              "except for the last line which should end with a \".\" " +
-              "(e.g.\n```\n  return \"This is a correct \" + \n   \"multi line description\";\n```\n).";
-    }
+    @Getter
+    final String description = "Recipe descriptions should be cleanly formatted. This recipe forces correct spacing in multiline descriptions. " +
+            "In a multi line description the lines should not start with whitespace and end with a single space " +
+            "except for the last line which should end with a \".\" " +
+            "(e.g.\n```\n  return \"This is a correct \" + \n   \"multi line description\";\n```\n).";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

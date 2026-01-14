@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -46,16 +47,12 @@ public class SelectRecipeExamples extends Recipe {
 
     private static final String REWRITE_TEST_FQN = "org.openrewrite.test.RewriteTest";
 
-    @Override
-    public String getDisplayName() {
-        return "Automatically select recipe examples from the unit test cases of a recipe";
-    }
+    @Getter
+    final String displayName = "Automatically select recipe examples from the unit test cases of a recipe";
 
-    @Override
-    public String getDescription() {
-        return "Add `@DocumentExample` to the first non-issue and not a disabled unit test of a recipe as an example, " +
-                "if there are not any examples yet.";
-    }
+    @Getter
+    final String description = "Add `@DocumentExample` to the first non-issue and not a disabled unit test of a recipe as an example, " +
+            "if there are not any examples yet.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

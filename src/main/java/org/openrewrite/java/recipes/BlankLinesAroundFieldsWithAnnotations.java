@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -31,19 +32,15 @@ import static java.util.Objects.requireNonNull;
 
 public class BlankLinesAroundFieldsWithAnnotations extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Add a blank line around fields with annotations";
-    }
+    @Getter
+    final String displayName = "Add a blank line around fields with annotations";
 
-    @Override
-    public String getDescription() {
-        return "Fields with annotations should have a blank line " +
-               "before them to clearly separate them from the field above. " +
-               "If another field follows, it should also have a blank line after " +
-               "so that the field with the annotation has space on either side of it, " +
-               "visually distinguishing it from its neighbors.";
-    }
+    @Getter
+    final String description = "Fields with annotations should have a blank line " +
+            "before them to clearly separate them from the field above. " +
+            "If another field follows, it should also have a blank line after " +
+            "so that the field with the annotation has space on either side of it, " +
+            "visually distinguishing it from its neighbors.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

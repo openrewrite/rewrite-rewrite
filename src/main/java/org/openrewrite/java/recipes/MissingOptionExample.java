@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.java.AddOrUpdateAnnotationAttribute;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -28,15 +29,11 @@ public class MissingOptionExample extends Recipe {
 
     private static final String ORG_OPENREWRITE_OPTION = "org.openrewrite.Option";
 
-    @Override
-    public String getDisplayName() {
-        return "Find missing `@Option` `example` values";
-    }
+    @Getter
+    final String displayName = "Find missing `@Option` `example` values";
 
-    @Override
-    public String getDescription() {
-        return "Find `@Option` annotations that are missing `example` values for documentation.";
-    }
+    @Getter
+    final String description = "Find `@Option` annotations that are missing `example` values for documentation.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

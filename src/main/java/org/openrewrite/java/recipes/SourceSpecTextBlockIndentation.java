@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -28,15 +29,11 @@ import java.util.StringJoiner;
 import java.util.regex.Pattern;
 
 public class SourceSpecTextBlockIndentation extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Minimal indentation for `SourceSpecs` text blocks";
-    }
+    @Getter
+    final String displayName = "Minimal indentation for `SourceSpecs` text blocks";
 
-    @Override
-    public String getDescription() {
-        return "Text blocks that assert before and after source code should have minimal indentation.";
-    }
+    @Getter
+    final String description = "Text blocks that assert before and after source code should have minimal indentation.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

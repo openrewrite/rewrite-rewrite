@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -35,15 +36,11 @@ public class ReorderTestMethods extends Recipe {
     private static final AnnotationMatcher BEFORE_ANNOTATION_MATCHER = new AnnotationMatcher("@org.junit.jupiter.api.Before*");
     private static final AnnotationMatcher AFTER_ANNOTATION_MATCHER = new AnnotationMatcher("@org.junit.jupiter.api.After*");
 
-    @Override
-    public String getDisplayName() {
-        return "Show `@DocumentExample`s first";
-    }
+    @Getter
+    final String displayName = "Show `@DocumentExample`s first";
 
-    @Override
-    public String getDescription() {
-        return "Reorders `RewriteTest` methods to place `defaults` first, followed by any `@DocumentExample`s.";
-    }
+    @Getter
+    final String description = "Reorders `RewriteTest` methods to place `defaults` first, followed by any `@DocumentExample`s.";
 
     private static final Comparator<J.MethodDeclaration> methodDeclarationComparator = Comparator
             .<J.MethodDeclaration, Boolean>comparing(md -> md.getLeadingAnnotations().stream().anyMatch(BEFORE_ANNOTATION_MATCHER::matches))

@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -26,15 +27,11 @@ import org.openrewrite.java.tree.J;
 
 public class ReplaceNullWithDoesNotExist extends Recipe {
 
-    @Override
-    public String getDisplayName() {
-        return "Replace null with RewriteTest.doesNotExist()";
-    }
+    @Getter
+    final String displayName = "Replace null with RewriteTest.doesNotExist()";
 
-    @Override
-    public String getDescription() {
-        return "Replace the first or second `null` argument in OpenRewrite Assertions class methods with `RewriteTest.doesNotExist()`.";
-    }
+    @Getter
+    final String description = "Replace the first or second `null` argument in OpenRewrite Assertions class methods with `RewriteTest.doesNotExist()`.";
 
     // Match any static method from Assertions classes
     private static final MethodMatcher ASSERTIONS_MATCHER = new MethodMatcher("org.openrewrite.*.Assertions *(String, String, ..)");

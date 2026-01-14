@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -31,15 +32,11 @@ import java.util.List;
 import static java.util.Collections.emptyList;
 
 public class RecipeClassesShouldBePublic extends Recipe {
-    @Override
-    public String getDisplayName() {
-        return "Recipe classes should be public";
-    }
+    @Getter
+    final String displayName = "Recipe classes should be public";
 
-    @Override
-    public String getDescription() {
-        return "Ensures that classes extending Recipe are declared as public for proper visibility and accessibility.";
-    }
+    @Getter
+    final String description = "Ensures that classes extending Recipe are declared as public for proper visibility and accessibility.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
