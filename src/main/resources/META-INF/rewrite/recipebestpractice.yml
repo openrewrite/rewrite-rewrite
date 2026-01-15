@@ -108,6 +108,13 @@ recipeList:
       methodPattern: 'org.openrewrite.test.RewriteTest *(..)'
   - org.openrewrite.java.UseStaticImport:
       methodPattern: 'org.openrewrite.test.SourceSpecs *(..)'
+
+  - org.openrewrite.java.ChangeMethodTargetToStatic:
+      methodPattern: java.util.Arrays asList(..)
+      fullyQualifiedTargetTypeName: java.util.List
+  - org.openrewrite.java.ChangeMethodName:
+      methodPattern: java.util.List asList(..)
+      newMethodName: of
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.java.recipes.RecipeNullabilityBestPractices
