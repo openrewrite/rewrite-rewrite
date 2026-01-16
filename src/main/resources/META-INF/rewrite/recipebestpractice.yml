@@ -26,6 +26,7 @@ recipeList:
   - org.openrewrite.java.recipes.RecipeNullabilityBestPractices
   - org.openrewrite.java.recipes.UpgradeTestsToJava21
   - org.openrewrite.java.recipes.ExamplesExtractor
+  - org.openrewrite.java.recipes.UseStringUtilsRecipes
   - org.openrewrite.java.OrderImports
   - org.openrewrite.java.RemoveUnusedImports
   - org.openrewrite.java.SimplifySingleElementAnnotation
