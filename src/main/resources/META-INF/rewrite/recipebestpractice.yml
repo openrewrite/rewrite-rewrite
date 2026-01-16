@@ -26,7 +26,6 @@ recipeList:
   - org.openrewrite.java.recipes.RecipeNullabilityBestPractices
   - org.openrewrite.java.recipes.UpgradeTestsToJava21
   - org.openrewrite.java.recipes.ExamplesExtractor
-  - org.openrewrite.java.recipes.UseStringUtilsRecipes
   - org.openrewrite.java.OrderImports
   - org.openrewrite.java.RemoveUnusedImports
   - org.openrewrite.java.SimplifySingleElementAnnotation
@@ -70,6 +69,7 @@ recipeList:
   - org.openrewrite.java.recipes.RecipeClassesShouldBePublic
   - org.openrewrite.java.recipes.RemoveImportBeforeAddImport
   - org.openrewrite.java.recipes.UseDisplayNameAndDescriptionFields
+  - org.openrewrite.java.recipes.UseStringUtilsRecipes
   - org.openrewrite.java.recipes.UseTagsField
   - org.openrewrite.java.recipes.UseTreeRandomId
   - org.openrewrite.staticanalysis.NeedBraces
@@ -98,6 +98,7 @@ recipeList:
   - org.openrewrite.java.recipes.SourceSpecTextBlockNewLine
   - org.openrewrite.java.recipes.SourceSpecTextBlockIndentation
   - org.openrewrite.java.recipes.UseRewriteTestDefaults
+  - org.openrewrite.java.recipes.UseStringUtilsRecipes
   - org.openrewrite.java.migrate.lang.var.UseVarForTypeCast
   - org.openrewrite.java.testing.cleanup.RemoveTestPrefix
   - org.openrewrite.java.testing.cleanup.TestsShouldNotBePublic
