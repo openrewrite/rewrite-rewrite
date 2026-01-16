@@ -69,6 +69,7 @@ recipeList:
   - org.openrewrite.java.recipes.RecipeClassesShouldBePublic
   - org.openrewrite.java.recipes.RemoveImportBeforeAddImport
   - org.openrewrite.java.recipes.UseDisplayNameAndDescriptionFields
+  - org.openrewrite.java.recipes.UseEstimatedEffortPerOccurrenceField
   - org.openrewrite.java.recipes.UseStringUtilsRecipes
   - org.openrewrite.java.recipes.UseTagsField
   - org.openrewrite.java.recipes.UseTreeRandomId
