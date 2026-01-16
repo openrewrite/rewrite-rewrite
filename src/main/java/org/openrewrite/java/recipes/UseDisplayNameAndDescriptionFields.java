@@ -43,8 +43,8 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
     private static final MethodMatcher GET_DESCRIPTION_MATCHER = new MethodMatcher(RECIPE + " getDescription()", true);
 
     String displayName = "Replace `getDisplayName()` and `getDescription()` methods with fields";
-    String description = "Recipe classes annotated with `@lombok.Value` that return a simple string literal " +
-            "(or concatenation of string literals) from `getDisplayName()` or `getDescription()` can use fields instead.";
+    String description = "Recipe classes that return a simple string literal (or concatenation of string literals) " +
+            "from `getDisplayName()` or `getDescription()` can use Lombok annotated fields instead.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {

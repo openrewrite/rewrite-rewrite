@@ -42,8 +42,7 @@ public class UseTagsField extends Recipe {
     private static final MethodMatcher GET_TAGS_MATCHER = new MethodMatcher(RECIPE + " getTags()", true);
 
     String displayName = "Replace `getTags()` method with field";
-    String description = "Recipe classes annotated with `@lombok.Value` that return a simple expression " +
-            "from `getTags()` can use a field instead.";
+    String description = "Recipe classes that return a simple expression from `getTags()` can use a Lombok annotated field instead.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
