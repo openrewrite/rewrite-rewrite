@@ -37,14 +37,12 @@ import java.util.List;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
-public class UseDisplayNameAndDescriptionFields extends Recipe {
+public class UseTagsField extends Recipe {
     private static final String RECIPE = "org.openrewrite.Recipe";
-    private static final MethodMatcher GET_DISPLAY_NAME_MATCHER = new MethodMatcher(RECIPE + " getDisplayName()", true);
-    private static final MethodMatcher GET_DESCRIPTION_MATCHER = new MethodMatcher(RECIPE + " getDescription()", true);
+    private static final MethodMatcher GET_TAGS_MATCHER = new MethodMatcher(RECIPE + " getTags()", true);
 
-    String displayName = "Replace `getDisplayName()` and `getDescription()` methods with fields";
-    String description = "Recipe classes that return a simple string literal (or concatenation of string literals) " +
-            "from `getDisplayName()` or `getDescription()` can use Lombok annotated fields instead.";
+    String displayName = "Replace `getTags()` method with field";
+    String description = "Recipe classes that return a simple expression from `getTags()` can use a Lombok annotated field instead.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -63,45 +61,38 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
 
                     @Override
                     public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
-                        if (GET_DISPLAY_NAME_MATCHER.matches(method.getMethodType())) {
-                            Expression expr = extractStringLiteralExpression(method);
+                        if (GET_TAGS_MATCHER.matches(method.getMethodType())) {
+                            Expression expr = extractImmediateReturnExpression(method);
                             if (expr != null) {
                                 boolean addGetterAnnotation = getCursor().getNearestMessage("addGetterAnnotation", false);
-                                return createField("displayName", method, expr, addGetterAnnotation);
-                            }
-                        } else if (GET_DESCRIPTION_MATCHER.matches(method.getMethodType())) {
-                            Expression expr = extractStringLiteralExpression(method);
-                            if (expr != null) {
-                                boolean addGetterAnnotation = getCursor().getNearestMessage("addGetterAnnotation", false);
-                                return createField("description", method, expr, addGetterAnnotation);
+                                return createField(method, expr, addGetterAnnotation);
                             }
                         }
                         return method;
                     }
 
                     private J.VariableDeclarations createField(
-                            String fieldName,
                             J.MethodDeclaration method,
                             Expression initializer,
                             boolean addGetterAnnotation) {
                         if (addGetterAnnotation) {
                             maybeAddImport("lombok.Getter");
-                            return JavaTemplate.builder("@Getter final String " + fieldName + " = #{any(String)}")
+                            return JavaTemplate.builder("@Getter final Set<String> tags = #{any(java.util.Set)}")
                                     .javaParser(JavaParser.fromJavaVersion().classpath("lombok"))
-                                    .imports("lombok.Getter")
+                                    .imports("lombok.Getter", "java.util.Set")
                                     .build()
                                     .apply(getCursor(),
                                             method.getCoordinates().replace(),
                                             initializer);
                         }
                         return JavaTemplate.apply(
-                                "String " + fieldName + " = #{any(String)})",
+                                "Set<String> tags = #{any(java.util.Set)}",
                                 getCursor(),
                                 method.getCoordinates().replace(),
                                 initializer);
                     }
 
-                    private @Nullable Expression extractStringLiteralExpression(J.MethodDeclaration method) {
+                    private @Nullable Expression extractImmediateReturnExpression(J.MethodDeclaration method) {
                         if (method.getBody() == null) {
                             return null;
                         }
@@ -114,28 +105,7 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
                             return null;
                         }
                         J.Return returnStmt = (J.Return) stmt;
-                        Expression expr = returnStmt.getExpression();
-                        if (expr == null || !isStringLiteralOrConcatenation(expr)) {
-                            return null;
-                        }
-                        return expr;
-                    }
-
-                    private boolean isStringLiteralOrConcatenation(Expression expr) {
-                        if (expr instanceof J.Parentheses) {
-                            expr = expr.unwrap();
-                        }
-                        if (expr instanceof J.Literal) {
-                            return TypeUtils.isString(((J.Literal) expr).getType());
-                        }
-                        if (expr instanceof J.Binary) {
-                            J.Binary binary = (J.Binary) expr;
-                            if (binary.getOperator() == J.Binary.Type.Addition) {
-                                return isStringLiteralOrConcatenation(binary.getLeft()) &&
-                                        isStringLiteralOrConcatenation(binary.getRight());
-                            }
-                        }
-                        return false;
+                        return returnStmt.getExpression();
                     }
                 }
         );
