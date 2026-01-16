@@ -30,7 +30,7 @@ public class UseStringUtils {
 
     @RecipeDescriptor(
             name = "Use `StringUtils#isBlank(String)`",
-            description = "Replace `str == null || str.isBlank()` with `StringUtils.isBlank(str)`."
+            description = "Replace `str == null || str.trim().isEmpty()` with `StringUtils.isBlank(str)`."
     )
     public static class StringUtilsIsBlank {
         @BeforeTemplate
@@ -51,6 +51,27 @@ public class UseStringUtils {
         @AfterTemplate
         boolean after(String str) {
             return StringUtils.isBlank(str);
+        }
+    }
+
+    @RecipeDescriptor(
+            name = "Use `!StringUtils#isBlank(String)`",
+            description = "Replace `str != null && !str.trim().isEmpty()` with `!StringUtils.isBlank(str)`."
+    )
+    public static class StringUtilsIsNotBlank {
+        @BeforeTemplate
+        boolean before(String str) {
+            return str != null && !str.trim().isEmpty();
+        }
+
+        @BeforeTemplate
+        boolean before2(String str) {
+            return str != null && !StringUtils.isBlank(str);
+        }
+
+        @AfterTemplate
+        boolean after(String str) {
+            return !StringUtils.isBlank(str);
         }
     }
 
