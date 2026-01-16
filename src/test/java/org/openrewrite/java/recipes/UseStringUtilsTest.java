@@ -103,4 +103,211 @@ class UseStringUtilsTest implements RewriteTest {
             );
         }
     }
+
+    @Nested
+    class StringIsNullOrEmptyTests {
+        @Test
+        void replaceNullOrEmptyCheck() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      boolean test(String str) {
+                          return str == null || str.isEmpty();
+                      }
+                  }
+                  """,
+                """
+                  import org.openrewrite.internal.StringUtils;
+
+                  class Test {
+                      boolean test(String str) {
+                          return StringUtils.isNullOrEmpty(str);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void inIfCondition() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      void test(String name) {
+                          if (name == null || name.isEmpty()) {
+                              System.out.println("empty");
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import org.openrewrite.internal.StringUtils;
+
+                  class Test {
+                      void test(String name) {
+                          if (StringUtils.isNullOrEmpty(name)) {
+                              System.out.println("empty");
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void noChangeWhenDifferentVariables() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      boolean test(String a, String b) {
+                          return a == null || b.isEmpty();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
+
+    @Nested
+    class StringIsBlankTests {
+        @Test
+        void replaceTrimCheck() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      boolean test(String str) {
+                          return str.trim().isEmpty();
+                      }
+                  }
+                  """,
+                """
+                  import org.openrewrite.internal.StringUtils;
+
+                  class Test {
+                      boolean test(String str) {
+                          return StringUtils.isBlank(str);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void replaceNullOrBlankCheck() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      boolean test(String str) {
+                          return str == null || str.trim().isEmpty();
+                      }
+                  }
+                  """,
+                """
+                  import org.openrewrite.internal.StringUtils;
+
+                  class Test {
+                      boolean test(String str) {
+                          return StringUtils.isBlank(str);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void inIfCondition() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      void test(String name) {
+                          if (name == null || name.trim().isEmpty()) {
+                              System.out.println("blank");
+                          }
+                      }
+                  }
+                  """,
+                """
+                  import org.openrewrite.internal.StringUtils;
+
+                  class Test {
+                      void test(String name) {
+                          if (StringUtils.isBlank(name)) {
+                              System.out.println("blank");
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void partialChangeWhenDifferentVariables() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  class Test {
+                      boolean test(String a, String b) {
+                          return a == null || b.trim().isEmpty();
+                      }
+                  }
+                  """,
+                """
+                  import org.openrewrite.internal.StringUtils;
+
+                  class Test {
+                      boolean test(String a, String b) {
+                          return a == null || StringUtils.isBlank(b);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void completeChangeWhenPartialBefore() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import org.openrewrite.internal.StringUtils;
+
+                  class Test {
+                      boolean test(String str) {
+                          return str == null || StringUtils.isBlank(str);
+                      }
+                  }
+                  """,
+                """
+                  import org.openrewrite.internal.StringUtils;
+
+                  class Test {
+                      boolean test(String str) {
+                          return StringUtils.isBlank(str);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+    }
 }

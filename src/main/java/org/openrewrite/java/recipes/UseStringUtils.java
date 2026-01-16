@@ -21,6 +21,7 @@ import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.template.RecipeDescriptor;
 
 
+@SuppressWarnings({"ConstantValue", "PointlessNullCheck"})
 @RecipeDescriptor(
         name = "Use `StringUtils` utility methods",
         description = "Replaces common string null and empty checks with `org.openrewrite.internal.StringUtils` utility methods."
@@ -28,18 +29,70 @@ import org.openrewrite.java.template.RecipeDescriptor;
 public class UseStringUtils {
 
     @RecipeDescriptor(
+            name = "Use `StringUtils#isBlank(String)`",
+            description = "Replace `str == null || str.isBlank()` with `StringUtils.isBlank(str)`."
+    )
+    public static class StringUtilsIsBlank {
+        @BeforeTemplate
+        boolean before(String str) {
+            return str.trim().isEmpty();
+        }
+
+        @BeforeTemplate
+        boolean before2(String str) {
+            return str == null || str.trim().isEmpty();
+        }
+
+        @BeforeTemplate
+        boolean before3(String str) {
+            return str == null || StringUtils.isBlank(str);
+        }
+
+        @AfterTemplate
+        boolean after(String str) {
+            return StringUtils.isBlank(str);
+        }
+    }
+
+    @RecipeDescriptor(
             name = "Use `StringUtils#isNotEmpty(String)`",
             description = "Replace `str != null && !str.isEmpty()` with `StringUtils.isNotEmpty(str)`."
     )
-    public static class StringIsNotEmpty {
+    public static class StringUtilsIsNotEmpty {
         @BeforeTemplate
         boolean before(String str) {
             return str != null && !str.isEmpty();
         }
 
+        @BeforeTemplate
+        boolean before2(String str) {
+            return str != null && StringUtils.isNotEmpty(str);
+        }
+
         @AfterTemplate
         boolean after(String str) {
             return StringUtils.isNotEmpty(str);
+        }
+    }
+
+    @RecipeDescriptor(
+            name = "Use `StringUtils#isNullOrEmpty(String)`",
+            description = "Replace `str == null || str.isEmpty()` with `StringUtils.isNullOrEmpty(str)`."
+    )
+    public static class StringUtilsIsNullOrEmpty {
+        @BeforeTemplate
+        boolean before(String str) {
+            return str == null || str.isEmpty();
+        }
+
+        @BeforeTemplate
+        boolean before2(String str) {
+            return str == null || StringUtils.isNullOrEmpty(str);
+        }
+
+        @AfterTemplate
+        boolean after(String str) {
+            return StringUtils.isNullOrEmpty(str);
         }
     }
 }
