@@ -55,14 +55,14 @@ public class BlankLinesAroundFieldsWithAnnotations extends Recipe {
                         if (precedingFieldHadAnnotation.get()) {
                             precedingFieldHadAnnotation.set(false);
                             if (s instanceof J.VariableDeclarations) {
-                                s = s.withPrefix(s.getPrefix().withWhitespace(BlankLinesVisitor.minimumLines(s.getPrefix().getWhitespace(), 1)));
+                                s = ensureMinimumBlankLines(s);
                             }
                         }
                         if (s instanceof J.VariableDeclarations) {
                             J.VariableDeclarations mv = (J.VariableDeclarations) s;
                             if (!mv.getLeadingAnnotations().isEmpty()) {
                                 if (i > 0 && statements.get(i - 1) instanceof J.VariableDeclarations) {
-                                    mv = mv.withPrefix(mv.getPrefix().withWhitespace(BlankLinesVisitor.minimumLines(mv.getPrefix().getWhitespace(), 1)));
+                                    mv = ensureMinimumBlankLines(mv);
                                 }
                                 precedingFieldHadAnnotation.set(true);
                             }
@@ -74,5 +74,13 @@ public class BlankLinesAroundFieldsWithAnnotations extends Recipe {
                 return cd;
             }
         };
+    }
+
+    private static <S extends Statement> S ensureMinimumBlankLines(S s) {
+        if (s.getPrefix().getComments().isEmpty()) {
+            return s.withPrefix(s.getPrefix().withWhitespace(BlankLinesVisitor.minimumLines(s.getPrefix().getWhitespace(), 1)));
+        }
+        return s.withPrefix(s.getPrefix().withComments(ListUtils.mapLast(s.getPrefix().getComments(),
+                c -> c.withSuffix(BlankLinesVisitor.minimumLines(c.getSuffix(), 1)))));
     }
 }

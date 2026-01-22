@@ -60,4 +60,44 @@ class BlankLinesAroundFieldsWithAnnotationsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void skipModificationWhenTrailingCommentPresent() {
+        // When there's a trailing comment on the previous line but no blank line,
+        // we skip modification to avoid corrupting the comment placement.
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  private static final String VALUE = "LOGGER"; // comment
+                  @Deprecated
+                  String displayName = "Migrate from Plexus";
+              }
+              """,
+            """
+              class Test {
+                  private static final String VALUE = "LOGGER"; // comment
+                  @Deprecated
+                  String displayName = "Migrate from Plexus";
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void preserveExistingBlankLineWithTrailingComment() {
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  private static final String LOGGER_VARIABLE_NAME = "LOGGER"; // Checkstyle requires constants to be uppercase
+
+                  @Deprecated
+                  String displayName = "Migrate from Plexus";
+              }
+              """
+          )
+        );
+    }
 }
