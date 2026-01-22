@@ -62,21 +62,49 @@ class BlankLinesAroundFieldsWithAnnotationsTest implements RewriteTest {
     }
 
     @Test
-    void skipModificationWhenTrailingCommentPresent() {
+    void spaceAfterTrailingComment() {
         // When there's a trailing comment on the previous line but no blank line,
         // we skip modification to avoid corrupting the comment placement.
         rewriteRun(
           java(
             """
               class Test {
-                  private static final String VALUE = "LOGGER"; // comment
+                  private static final String VALUE = "LOGGER"; // trailing comment
                   @Deprecated
                   String displayName = "Migrate from Plexus";
               }
               """,
             """
               class Test {
-                  private static final String VALUE = "LOGGER"; // comment
+                  private static final String VALUE = "LOGGER"; // trailing comment
+
+                  @Deprecated
+                  String displayName = "Migrate from Plexus";
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void spaceBeforeLeadingComment() {
+        // When there's a trailing comment on the previous line but no blank line,
+        // we skip modification to avoid corrupting the comment placement.
+        rewriteRun(
+          java(
+            """
+              class Test {
+                  private static final String VALUE = "LOGGER";
+                  // leading comment
+                  @Deprecated
+                  String displayName = "Migrate from Plexus";
+              }
+              """,
+            """
+              class Test {
+                  private static final String VALUE = "LOGGER";
+
+                  // leading comment
                   @Deprecated
                   String displayName = "Migrate from Plexus";
               }
@@ -91,7 +119,7 @@ class BlankLinesAroundFieldsWithAnnotationsTest implements RewriteTest {
           java(
             """
               class Test {
-                  private static final String LOGGER_VARIABLE_NAME = "LOGGER"; // Checkstyle requires constants to be uppercase
+                  private static final String LOGGER_VARIABLE_NAME = "LOGGER"; // Already newline after comment
 
                   @Deprecated
                   String displayName = "Migrate from Plexus";

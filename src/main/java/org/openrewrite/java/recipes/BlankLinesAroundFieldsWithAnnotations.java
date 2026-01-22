@@ -77,7 +77,7 @@ public class BlankLinesAroundFieldsWithAnnotations extends Recipe {
     }
 
     private static <S extends Statement> S ensureMinimumBlankLines(S s) {
-        if (s.getPrefix().getComments().isEmpty()) {
+        if (s.getPrefix().getComments().isEmpty() || s.getPrefix().getWhitespace().contains("\n")) {
             return s.withPrefix(s.getPrefix().withWhitespace(BlankLinesVisitor.minimumLines(s.getPrefix().getWhitespace(), 1)));
         }
         return s.withPrefix(s.getPrefix().withComments(ListUtils.mapLast(s.getPrefix().getComments(),
