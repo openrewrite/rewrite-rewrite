@@ -16,6 +16,7 @@
 package org.openrewrite.java.recipes;
 
 import org.junit.jupiter.api.Test;
+import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -29,6 +30,7 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
         spec.recipe(new GenerateDeprecatedMethodRecipes());
     }
 
+    @DocumentExample
     @Test
     void constructorDelegation() {
         rewriteRun(
@@ -53,7 +55,7 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
               """
           ),
           yaml(
-            null,
+            doesNotExist(),
             //language=yaml
             """
               type: specs.openrewrite.org/v1beta/recipe
@@ -89,7 +91,7 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
               """
           ),
           yaml(
-            null,
+            doesNotExist(),
             //language=yaml
             """
               type: specs.openrewrite.org/v1beta/recipe
@@ -169,7 +171,7 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
               """
           ),
           yaml(
-            null,
+            doesNotExist(),
             //language=yaml
             """
               type: specs.openrewrite.org/v1beta/recipe
@@ -321,7 +323,7 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
               )
             ),
             yaml(
-              null,
+              doesNotExist(),
               //language=yaml
               """
                 type: specs.openrewrite.org/v1beta/recipe
@@ -355,7 +357,7 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
               )
             ),
             yaml(
-              null,
+              doesNotExist(),
               //language=yaml
               """
                 type: specs.openrewrite.org/v1beta/recipe

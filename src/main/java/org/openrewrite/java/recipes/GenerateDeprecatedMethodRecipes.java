@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import lombok.Getter;
 import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.java.AnnotationMatcher;
@@ -43,17 +44,12 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
     private static final AnnotationMatcher TO_BE_REMOVED_MATCHER = new AnnotationMatcher("@org.openrewrite.internal.ToBeRemoved");
     private static final Path OUTPUT_RELATIVE = Paths.get("src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml");
 
-    @Override
-    public String getDisplayName() {
-        return "Generate `InlineMethodCalls` recipes for deprecated delegating methods";
-    }
-
-    @Override
-    public String getDescription() {
-        return "Finds `@Deprecated` method declarations whose body is a single delegation call " +
-                "to another method in the same class, and generates a declarative YAML recipe file " +
-                "containing `InlineMethodCalls` entries for each.";
-    }
+    @Getter
+    final String displayName = "Generate `InlineMethodCalls` recipes for deprecated delegating methods";
+    @Getter
+    final String description = "Finds `@Deprecated` method declarations whose body is a single delegation call " +
+            "to another method in the same class, and generates a declarative YAML recipe file " +
+            "containing `InlineMethodCalls` entries for each.";
 
     @Override
     public Accumulator getInitialValue(ExecutionContext ctx) {
@@ -107,8 +103,7 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                             // Check the invoked method is in the same declaring type
                             JavaType.FullyQualified declaringType = md.getMethodType().getDeclaringType();
                             JavaType.FullyQualified invokedDeclaringType = invokedMethod.getDeclaringType();
-                            if (declaringType == null || invokedDeclaringType == null ||
-                                    !declaringType.getFullyQualifiedName().equals(invokedDeclaringType.getFullyQualifiedName())) {
+                            if (!declaringType.getFullyQualifiedName().equals(invokedDeclaringType.getFullyQualifiedName())) {
                                 return md;
                             }
 
