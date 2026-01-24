@@ -24,6 +24,7 @@ recipeList:
   - org.openrewrite.java.recipes.JavaRecipeBestPractices
   - org.openrewrite.java.recipes.RecipeTestingBestPractices
   - org.openrewrite.java.recipes.RecipeNullabilityBestPractices
+  - org.openrewrite.java.recipes.RemoveToBeRemoved
   - org.openrewrite.java.recipes.UpgradeTestsToJava21
   - org.openrewrite.java.recipes.ExamplesExtractor
   - org.openrewrite.java.OrderImports

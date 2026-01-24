@@ -17,12 +17,17 @@ package org.openrewrite.java.recipes;
 
 import com.google.errorprone.refaster.annotation.AfterTemplate;
 import com.google.errorprone.refaster.annotation.BeforeTemplate;
+import org.openrewrite.java.template.RecipeDescriptor;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
+@RecipeDescriptor(
+        name = "Use `J.Literal.isLiteralValue(expression, null)`",
+        description = "Replace `expression instanceof J.Literal && ((J.Literal) expression).getValue() == null` with `J.Literal.isLiteralValue(expression, null)`."
+)
 public class IsLiteralNull {
     @BeforeTemplate
-    boolean before(Expression expression){
+    boolean before(Expression expression) {
         return expression instanceof J.Literal && ((J.Literal) expression).getValue() == null;
     }
 
