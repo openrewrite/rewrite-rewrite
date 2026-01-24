@@ -241,8 +241,7 @@ class FindRecipesTest implements RewriteTest {
                     newVersion: 3.x
               """,
             spec -> spec.path("rewrite.yml").after(after -> {
-                assertThat(after).contains("~~>");
-                return after;
+                return assertThat(after).contains("~~>").actual();
             })
           )
         );
