@@ -31,9 +31,9 @@ import org.openrewrite.yaml.tree.Yaml;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.joining;
 
 public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDeprecatedMethodRecipes.Accumulator> {
 
@@ -43,6 +43,7 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
 
     @Getter
     final String displayName = "Generate `InlineMethodCalls` recipes for deprecated delegating methods";
+
     @Getter
     final String description = "Finds `@Deprecated` method declarations whose body is a single delegation call " +
             "to another method in the same class, and generates a declarative YAML recipe file " +
@@ -335,7 +336,7 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                 methodType.getName();
         String params = methodType.getParameterTypes().stream()
                 .map(GenerateDeprecatedMethodRecipes::typeToPattern)
-                .collect(Collectors.joining(", "));
+                .collect(joining(", "));
         return declaringType + " " + methodName + "(" + params + ")";
     }
 
@@ -351,7 +352,7 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
         }
         String args = invocation.getArguments().stream()
                 .map(arg -> arg.printTrimmed(cursor))
-                .collect(Collectors.joining(", "));
+                .collect(joining(", "));
         return name + "(" + args + ")";
     }
 
