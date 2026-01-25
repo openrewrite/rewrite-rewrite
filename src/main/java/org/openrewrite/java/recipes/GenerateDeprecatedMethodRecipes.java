@@ -22,6 +22,7 @@ import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.marker.JavaProject;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.yaml.YamlIsoVisitor;
@@ -105,7 +106,7 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                                 return md;
                             }
 
-                            String methodPattern = buildMethodPattern(md.getMethodType());
+                            String methodPattern = MethodMatcher.methodPattern(md.getMethodType());
                             String replacement = buildReplacement(invocation, getCursor());
 
                             acc.candidatesByProject
@@ -327,17 +328,6 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
             return groupId + ".recipes." + pascalCase + "DeprecatedMethods";
         }
         return "org.openrewrite.recipes.InlineDeprecatedMethods";
-    }
-
-    private static String buildMethodPattern(JavaType.Method methodType) {
-        String declaringType = methodType.getDeclaringType().getFullyQualifiedName();
-        String methodName = methodType.isConstructor() ?
-                methodType.getDeclaringType().getClassName() :
-                methodType.getName();
-        String params = methodType.getParameterTypes().stream()
-                .map(GenerateDeprecatedMethodRecipes::typeToPattern)
-                .collect(joining(", "));
-        return declaringType + " " + methodName + "(" + params + ")";
     }
 
     private static String buildReplacement(J.MethodInvocation invocation, Cursor cursor) {

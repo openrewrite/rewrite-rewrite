@@ -64,7 +64,7 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
               description: Automatically generated recipes to inline deprecated method calls that delegate to other methods in the same class.
               recipeList:
                 - org.openrewrite.java.InlineMethodCalls:
-                    methodPattern: 'com.example.Foo Foo(java.lang.String)'
+                    methodPattern: 'com.example.Foo <constructor>(java.lang.String)'
                     replacement: 'this(a, null)'
               """,
             spec -> spec.path("src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml")
@@ -247,7 +247,7 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
                     methodPattern: 'com.other.Bar doStuff(java.lang.String)'
                     replacement: 'doStuffNew(s)'
                 - org.openrewrite.java.InlineMethodCalls:
-                    methodPattern: 'com.example.Foo Foo(java.lang.String)'
+                    methodPattern: 'com.example.Foo <constructor>(java.lang.String)'
                     replacement: 'this(a, null)'
               """,
             spec -> spec.path("src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml")
@@ -282,7 +282,7 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
               description: Existing.
               recipeList:
                 - org.openrewrite.java.InlineMethodCalls:
-                    methodPattern: 'com.example.Foo Foo(java.lang.String)'
+                    methodPattern: 'com.example.Foo <constructor>(java.lang.String)'
                     replacement: 'this(a, "old")'
               """,
             //language=yaml
@@ -293,7 +293,7 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
               description: Existing.
               recipeList:
                 - org.openrewrite.java.InlineMethodCalls:
-                    methodPattern: 'com.example.Foo Foo(java.lang.String)'
+                    methodPattern: 'com.example.Foo <constructor>(java.lang.String)'
                     replacement: 'this(a, null)'
               """,
             spec -> spec.path("src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml")
@@ -332,7 +332,7 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
                 description: Automatically generated recipes to inline deprecated method calls that delegate to other methods in the same class.
                 recipeList:
                   - org.openrewrite.java.InlineMethodCalls:
-                      methodPattern: 'com.example.a.FooA FooA(java.lang.String)'
+                      methodPattern: 'com.example.a.FooA <constructor>(java.lang.String)'
                       replacement: 'this(a, null)'
                 """,
               spec -> spec.path("src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml")
