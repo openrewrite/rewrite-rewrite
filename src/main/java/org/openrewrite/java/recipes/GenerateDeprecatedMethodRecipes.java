@@ -87,24 +87,24 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                                 return md;
                             }
 
-                            // Check body has exactly one statement that is a method invocation
+                            // Check body has exactly one statement that is a method call
                             // (either direct or as return expression)
                             List<Statement> statements = md.getBody().getStatements();
                             if (statements.size() != 1) {
                                 return md;
                             }
 
-                            J.MethodInvocation invocation;
+                            MethodCall methodCall;
                             Statement stmt = statements.get(0);
-                            if (stmt instanceof J.MethodInvocation) {
-                                invocation = (J.MethodInvocation) stmt;
+                            if (stmt instanceof MethodCall) {
+                                methodCall = (MethodCall) stmt;
                             } else if (stmt instanceof J.Return &&
-                                    ((J.Return) stmt).getExpression() instanceof J.MethodInvocation) {
-                                invocation = (J.MethodInvocation) ((J.Return) stmt).getExpression();
+                                    ((J.Return) stmt).getExpression() instanceof MethodCall) {
+                                methodCall = (MethodCall) ((J.Return) stmt).getExpression();
                             } else {
                                 return md;
                             }
-                            JavaType.Method invokedMethod = invocation.getMethodType();
+                            JavaType.Method invokedMethod = methodCall.getMethodType();
                             if (invokedMethod == null) {
                                 return md;
                             }
@@ -117,7 +117,7 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                             }
 
                             String methodPattern = MethodMatcher.methodPattern(md.getMethodType());
-                            String replacement = buildReplacement(invocation, getCursor());
+                            String replacement = buildReplacement(methodCall, getCursor());
 
                             acc.candidatesByProject
                                     .computeIfAbsent(javaProject, k -> new ArrayList<>())
@@ -340,34 +340,28 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
         return "org.openrewrite.recipes.InlineDeprecatedMethods";
     }
 
-    private static String buildReplacement(J.MethodInvocation invocation, Cursor cursor) {
+    private static String buildReplacement(MethodCall methodCall, Cursor cursor) {
         String name;
-        if (invocation.getMethodType() != null && invocation.getMethodType().isConstructor()) {
-            name = "this";
+        if (methodCall instanceof J.NewClass) {
+            J.NewClass newClass = (J.NewClass) methodCall;
+            name = "new " + (newClass.getClazz() != null ? newClass.getClazz().printTrimmed(cursor) : "");
+        } else if (methodCall instanceof J.MethodInvocation) {
+            J.MethodInvocation invocation = (J.MethodInvocation) methodCall;
+            if (invocation.getMethodType() != null && invocation.getMethodType().isConstructor()) {
+                name = "this";
+            } else {
+                String select = invocation.getSelect() != null ?
+                        invocation.getSelect().printTrimmed(cursor) + "." :
+                        "";
+                name = select + invocation.getSimpleName();
+            }
         } else {
-            String select = invocation.getSelect() != null ?
-                    invocation.getSelect().printTrimmed(cursor) + "." :
-                    "";
-            name = select + invocation.getSimpleName();
+            throw new IllegalArgumentException("Unsupported MethodCall type: " + methodCall.getClass());
         }
-        String args = invocation.getArguments().stream()
+        String args = methodCall.getArguments().stream()
                 .map(arg -> arg.printTrimmed(cursor))
                 .collect(joining(", "));
         return name + "(" + args + ")";
-    }
-
-    static String typeToPattern(JavaType type) {
-        if (type instanceof JavaType.Primitive) {
-            return ((JavaType.Primitive) type).getKeyword();
-        }
-        if (type instanceof JavaType.Array) {
-            return typeToPattern(((JavaType.Array) type).getElemType()) + "[]";
-        }
-        JavaType.FullyQualified fq = TypeUtils.asFullyQualified(type);
-        if (fq != null) {
-            return fq.getFullyQualifiedName();
-        }
-        return type.toString();
     }
 
     private static Path projectBasePath(Path sourcePath) {
