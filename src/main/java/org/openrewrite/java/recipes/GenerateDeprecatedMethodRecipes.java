@@ -17,16 +17,12 @@ package org.openrewrite.java.recipes;
 
 import lombok.Getter;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.marker.JavaProject;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
-import org.openrewrite.java.tree.JavaSourceFile;
-import org.openrewrite.java.tree.Statement;
-import org.openrewrite.java.tree.TypeUtils;
-import org.openrewrite.yaml.MergeYaml;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.yaml.YamlIsoVisitor;
 import org.openrewrite.yaml.YamlParser;
 import org.openrewrite.yaml.tree.Yaml;
@@ -130,7 +126,7 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
         }
 
         List<SourceFile> generated = new ArrayList<>();
-        for (Map.Entry<JavaProject, List<MethodInlineCandidate>> entry : acc.candidatesByProject.entrySet()) {
+        for (Map.Entry<@Nullable JavaProject, List<MethodInlineCandidate>> entry : acc.candidatesByProject.entrySet()) {
             Path projectBase = acc.projectBasePaths.getOrDefault(entry.getKey(), Paths.get(""));
             Path outputPath = projectBase.resolve(OUTPUT_RELATIVE);
 
@@ -138,7 +134,6 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                 continue;
             }
 
-            List<MethodInlineCandidate> candidates = entry.getValue();
             String recipeName = deriveRecipeName(entry.getKey());
             StringBuilder yaml = new StringBuilder();
             yaml.append("type: specs.openrewrite.org/v1beta/recipe\n");
@@ -146,13 +141,11 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
             yaml.append("displayName: Inline deprecated delegating methods\n");
             yaml.append("description: Automatically generated recipes to inline deprecated method calls that delegate to other methods in the same class.\n");
             yaml.append("recipeList:\n");
-
-            for (MethodInlineCandidate candidate : candidates) {
+            for (MethodInlineCandidate candidate : entry.getValue()) {
                 yaml.append("  - org.openrewrite.java.InlineMethodCalls:\n");
                 yaml.append("      methodPattern: '").append(candidate.getMethodPattern()).append("'\n");
                 yaml.append("      replacement: '").append(candidate.getReplacement()).append("'\n");
             }
-
             YamlParser.builder().build()
                     .parse(yaml.toString())
                     .map(sf -> (SourceFile) sf.withSourcePath(outputPath))
@@ -178,7 +171,7 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                     return tree;
                 }
 
-                // Only merge into pre-existing files; newly generated ones already have entries
+                // Only process existing files, not newly generated ones
                 if (!acc.existingOutputFiles.contains(docs.getSourcePath())) {
                     return tree;
                 }
@@ -196,80 +189,144 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                     return tree;
                 }
 
-                // Check if all candidates already exist with matching replacements
-                Map<String, String> existingEntries = extractExistingEntries(docs);
-                boolean allMatch = candidates.stream().allMatch(c ->
-                        c.getReplacement().equals(existingEntries.get(c.getMethodPattern())));
-                if (allMatch) {
-                    return tree;
-                }
+                final List<MethodInlineCandidate> finalCandidates = candidates;
+                return new YamlIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public Yaml.Mapping.Entry visitMappingEntry(Yaml.Mapping.Entry entry, ExecutionContext ctx) {
+                        Yaml.Mapping.Entry e = super.visitMappingEntry(entry, ctx);
+                        if (!"recipeList".equals(e.getKey().getValue())) {
+                            return e;
+                        }
+                        if (!(e.getValue() instanceof Yaml.Sequence)) {
+                            return e;
+                        }
+                        Yaml.Sequence seq = (Yaml.Sequence) e.getValue();
+                        List<Yaml.Sequence.Entry> entries = new ArrayList<>(seq.getEntries());
+                        Set<String> existingPatterns = new HashSet<>();
+                        boolean changed = false;
 
-                // Remove existing entries with matching methodPatterns, then merge new ones
-                Set<String> newPatterns = new HashSet<>();
-                for (MethodInlineCandidate c : candidates) {
-                    newPatterns.add(c.getMethodPattern());
-                }
-                Tree pruned = new RemoveMatchingEntries(newPatterns).visitNonNull(tree, ctx, getCursor().getParentOrThrow());
-
-                String yamlSnippet = buildRecipeListSnippet(candidates);
-                MergeYaml mergeYaml = new MergeYaml(
-                        "$.recipeList", yamlSnippet, false,
-                        "methodPattern", null, null, null, null);
-                return mergeYaml.getVisitor().visitNonNull(pruned, ctx, getCursor().getParentOrThrow());
-            }
-        };
-    }
-
-    private static Map<String, String> extractExistingEntries(Yaml.Documents docs) {
-        Map<String, String> entries = new HashMap<>();
-        new YamlIsoVisitor<Integer>() {
-            @Override
-            public Yaml.Mapping.Entry visitMappingEntry(Yaml.Mapping.Entry entry, Integer p) {
-                if ("recipeList".equals(entry.getKey().getValue()) &&
-                        entry.getValue() instanceof Yaml.Sequence) {
-                    Yaml.Sequence seq = (Yaml.Sequence) entry.getValue();
-                    for (Yaml.Sequence.Entry seqEntry : seq.getEntries()) {
-                        if (seqEntry.getBlock() instanceof Yaml.Mapping) {
-                            Yaml.Mapping mapping = (Yaml.Mapping) seqEntry.getBlock();
-                            for (Yaml.Mapping.Entry me : mapping.getEntries()) {
-                                if (me.getValue() instanceof Yaml.Mapping) {
-                                    String methodPattern = null;
-                                    String replacement = null;
-                                    Yaml.Mapping inner = (Yaml.Mapping) me.getValue();
-                                    for (Yaml.Mapping.Entry ie : inner.getEntries()) {
-                                        if ("methodPattern".equals(ie.getKey().getValue()) &&
-                                                ie.getValue() instanceof Yaml.Scalar) {
-                                            methodPattern = ((Yaml.Scalar) ie.getValue()).getValue();
-                                        } else if ("replacement".equals(ie.getKey().getValue()) &&
-                                                ie.getValue() instanceof Yaml.Scalar) {
-                                            replacement = ((Yaml.Scalar) ie.getValue()).getValue();
+                        // First pass: update existing entries and collect their patterns
+                        for (int i = 0; i < entries.size(); i++) {
+                            Yaml.Sequence.Entry seqEntry = entries.get(i);
+                            String existingPattern = extractMethodPattern(seqEntry);
+                            if (existingPattern != null) {
+                                existingPatterns.add(existingPattern);
+                                // Check if this needs to be updated
+                                for (MethodInlineCandidate c : finalCandidates) {
+                                    if (c.getMethodPattern().equals(existingPattern)) {
+                                        Yaml.Sequence.Entry updated = updateEntry(seqEntry, c);
+                                        if (updated != seqEntry) {
+                                            entries.set(i, updated);
+                                            changed = true;
                                         }
-                                    }
-                                    if (methodPattern != null && replacement != null) {
-                                        entries.put(methodPattern, replacement);
+                                        break;
                                     }
                                 }
                             }
                         }
+
+                        // Second pass: add new entries for candidates that don't exist yet
+                        for (MethodInlineCandidate c : finalCandidates) {
+                            if (!existingPatterns.contains(c.getMethodPattern())) {
+                                entries.add(createNewEntry(c, seq));
+                                changed = true;
+                            }
+                        }
+
+                        return changed ? e.withValue(seq.withEntries(entries)) : e;
+                    }
+                }.visitNonNull(tree, ctx);
+            }
+        };
+    }
+
+    private static @Nullable String extractMethodPattern(Yaml.Sequence.Entry entry) {
+        if (!(entry.getBlock() instanceof Yaml.Mapping)) {
+            return null;
+        }
+        Yaml.Mapping mapping = (Yaml.Mapping) entry.getBlock();
+        for (Yaml.Mapping.Entry e : mapping.getEntries()) {
+            if ("org.openrewrite.java.InlineMethodCalls".equals(e.getKey().getValue())) {
+                if (e.getValue() instanceof Yaml.Mapping) {
+                    Yaml.Mapping inner = (Yaml.Mapping) e.getValue();
+                    for (Yaml.Mapping.Entry ie : inner.getEntries()) {
+                        if ("methodPattern".equals(ie.getKey().getValue())) {
+                            if (ie.getValue() instanceof Yaml.Scalar) {
+                                return ((Yaml.Scalar) ie.getValue()).getValue();
+                            }
+                        }
                     }
                 }
-                return entry;
             }
-        }.visit(docs, 0);
-        return entries;
-    }
-
-    private static String buildRecipeListSnippet(List<MethodInlineCandidate> candidates) {
-        StringBuilder yaml = new StringBuilder();
-        for (MethodInlineCandidate candidate : candidates) {
-            yaml.append("- org.openrewrite.java.InlineMethodCalls:\n");
-            yaml.append("    methodPattern: '").append(candidate.getMethodPattern()).append("'\n");
-            yaml.append("    replacement: '").append(candidate.getReplacement()).append("'\n");
         }
-        return yaml.toString();
+        return null;
     }
 
-    private static String deriveRecipeName(JavaProject javaProject) {
+    private static Yaml.Sequence.Entry updateEntry(Yaml.Sequence.Entry entry, MethodInlineCandidate candidate) {
+        if (!(entry.getBlock() instanceof Yaml.Mapping)) {
+            return entry;
+        }
+        Yaml.Mapping mapping = (Yaml.Mapping) entry.getBlock();
+        List<Yaml.Mapping.Entry> updatedEntries = new ArrayList<>();
+        boolean changed = false;
+
+        for (Yaml.Mapping.Entry e : mapping.getEntries()) {
+            if ("org.openrewrite.java.InlineMethodCalls".equals(e.getKey().getValue())) {
+                if (e.getValue() instanceof Yaml.Mapping) {
+                    Yaml.Mapping inner = (Yaml.Mapping) e.getValue();
+                    List<Yaml.Mapping.Entry> innerEntries = new ArrayList<>();
+                    boolean innerChanged = false;
+                    for (Yaml.Mapping.Entry ie : inner.getEntries()) {
+                        if ("replacement".equals(ie.getKey().getValue()) && ie.getValue() instanceof Yaml.Scalar) {
+                            Yaml.Scalar scalar = (Yaml.Scalar) ie.getValue();
+                            if (!candidate.getReplacement().equals(scalar.getValue())) {
+                                innerEntries.add(ie.withValue(scalar.withValue(candidate.getReplacement())));
+                                innerChanged = true;
+                            } else {
+                                innerEntries.add(ie);
+                            }
+                        } else {
+                            innerEntries.add(ie);
+                        }
+                    }
+                    if (innerChanged) {
+                        updatedEntries.add(e.withValue(inner.withEntries(innerEntries)));
+                        changed = true;
+                    } else {
+                        updatedEntries.add(e);
+                    }
+                } else {
+                    updatedEntries.add(e);
+                }
+            } else {
+                updatedEntries.add(e);
+            }
+        }
+        return changed ? entry.withBlock(mapping.withEntries(updatedEntries)) : entry;
+    }
+
+    private static Yaml.Sequence.Entry createNewEntry(MethodInlineCandidate candidate, Yaml.Sequence seq) {
+        // Use 6-space indentation to match the expected format in recipeList
+        String yaml = "- org.openrewrite.java.InlineMethodCalls:\n" +
+                "      methodPattern: '" + candidate.getMethodPattern() + "'\n" +
+                "      replacement: '" + candidate.getReplacement() + "'\n";
+        Yaml.Documents parsed = YamlParser.builder().build()
+                .parse(yaml)
+                .findFirst()
+                .map(Yaml.Documents.class::cast)
+                .orElseThrow(() -> new IllegalStateException("Failed to parse YAML entry"));
+        Yaml.Sequence parsedSeq = (Yaml.Sequence) parsed.getDocuments().get(0).getBlock();
+        Yaml.Sequence.Entry newEntry = parsedSeq.getEntries().get(0);
+
+        // Copy whitespace from existing entries if available
+        if (!seq.getEntries().isEmpty()) {
+            Yaml.Sequence.Entry existingEntry = seq.getEntries().get(0);
+            newEntry = newEntry.withPrefix(existingEntry.getPrefix());
+        }
+        return newEntry;
+    }
+
+    private static String deriveRecipeName(@Nullable JavaProject javaProject) {
         if (javaProject != null && javaProject.getPublication() != null) {
             JavaProject.Publication pub = javaProject.getPublication();
             String groupId = pub.getGroupId();
@@ -291,9 +348,9 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
 
     private static String buildMethodPattern(JavaType.Method methodType) {
         String declaringType = methodType.getDeclaringType().getFullyQualifiedName();
-        String methodName = methodType.isConstructor()
-                ? methodType.getDeclaringType().getClassName()
-                : methodType.getName();
+        String methodName = methodType.isConstructor() ?
+                methodType.getDeclaringType().getClassName() :
+                methodType.getName();
         String params = methodType.getParameterTypes().stream()
                 .map(GenerateDeprecatedMethodRecipes::typeToPattern)
                 .collect(Collectors.joining(", "));
@@ -305,9 +362,9 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
         if (invocation.getMethodType() != null && invocation.getMethodType().isConstructor()) {
             name = "this";
         } else {
-            String select = invocation.getSelect() != null
-                    ? invocation.getSelect().printTrimmed(cursor) + "."
-                    : "";
+            String select = invocation.getSelect() != null ?
+                    invocation.getSelect().printTrimmed(cursor) + "." :
+                    "";
             name = select + invocation.getSimpleName();
         }
         String args = invocation.getArguments().stream()
@@ -340,60 +397,6 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
             return Paths.get("");
         }
         return Paths.get(pathStr.substring(0, idx));
-    }
-
-    private static class RemoveMatchingEntries extends YamlIsoVisitor<ExecutionContext> {
-        private final Set<String> patternsToRemove;
-
-        RemoveMatchingEntries(Set<String> patternsToRemove) {
-            this.patternsToRemove = patternsToRemove;
-        }
-
-        @Override
-        public Yaml.Sequence visitSequence(Yaml.Sequence sequence, ExecutionContext ctx) {
-            Yaml.Sequence seq = super.visitSequence(sequence, ctx);
-
-            // Only process the recipeList sequence
-            Cursor parent = getCursor().getParentTreeCursor();
-            if (!(parent.getValue() instanceof Yaml.Mapping.Entry)) {
-                return seq;
-            }
-            Yaml.Mapping.Entry parentEntry = parent.getValue();
-            if (!"recipeList".equals(parentEntry.getKey().getValue())) {
-                return seq;
-            }
-
-            List<Yaml.Sequence.Entry> filtered = seq.getEntries().stream()
-                    .filter(entry -> {
-                        String methodPattern = extractMethodPattern(entry);
-                        return methodPattern == null || !patternsToRemove.contains(methodPattern);
-                    })
-                    .collect(Collectors.toList());
-
-            if (filtered.size() == seq.getEntries().size()) {
-                return seq;
-            }
-            return seq.withEntries(filtered);
-        }
-
-        private static String extractMethodPattern(Yaml.Sequence.Entry entry) {
-            if (!(entry.getBlock() instanceof Yaml.Mapping)) {
-                return null;
-            }
-            Yaml.Mapping mapping = (Yaml.Mapping) entry.getBlock();
-            for (Yaml.Mapping.Entry e : mapping.getEntries()) {
-                if (e.getValue() instanceof Yaml.Mapping) {
-                    Yaml.Mapping innerMapping = (Yaml.Mapping) e.getValue();
-                    for (Yaml.Mapping.Entry inner : innerMapping.getEntries()) {
-                        if ("methodPattern".equals(inner.getKey().getValue()) &&
-                                inner.getValue() instanceof Yaml.Scalar) {
-                            return ((Yaml.Scalar) inner.getValue()).getValue();
-                        }
-                    }
-                }
-            }
-            return null;
-        }
     }
 
     public static class Accumulator {
