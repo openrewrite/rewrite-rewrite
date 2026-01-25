@@ -87,13 +87,23 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                                 return md;
                             }
 
-                            // Check body has exactly one statement
+                            // Check body has exactly one statement that is a method invocation
+                            // (either direct or as return expression)
                             List<Statement> statements = md.getBody().getStatements();
-                            if (statements.size() != 1 || !(statements.get(0) instanceof J.MethodInvocation)) {
+                            if (statements.size() != 1) {
                                 return md;
                             }
 
-                            J.MethodInvocation invocation = (J.MethodInvocation) statements.get(0);
+                            J.MethodInvocation invocation;
+                            Statement stmt = statements.get(0);
+                            if (stmt instanceof J.MethodInvocation) {
+                                invocation = (J.MethodInvocation) stmt;
+                            } else if (stmt instanceof J.Return &&
+                                    ((J.Return) stmt).getExpression() instanceof J.MethodInvocation) {
+                                invocation = (J.MethodInvocation) ((J.Return) stmt).getExpression();
+                            } else {
+                                return md;
+                            }
                             JavaType.Method invokedMethod = invocation.getMethodType();
                             if (invokedMethod == null) {
                                 return md;
