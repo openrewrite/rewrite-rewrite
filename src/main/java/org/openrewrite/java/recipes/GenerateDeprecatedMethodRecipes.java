@@ -116,12 +116,11 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                                 return md;
                             }
 
-                            String methodPattern = MethodMatcher.methodPattern(md.getMethodType());
-                            String replacement = buildReplacement(methodCall, getCursor());
-
                             acc.candidatesByProject
                                     .computeIfAbsent(javaProject, k -> new ArrayList<>())
-                                    .add(new MethodInlineCandidate(methodPattern, replacement));
+                                    .add(new MethodInlineCandidate(
+                                            MethodMatcher.methodPattern(md.getMethodType()),
+                                            methodCall.printTrimmed(getCursor())));
                             acc.projectBasePaths.putIfAbsent(javaProject, projectBase);
                             return md;
                         }
@@ -338,30 +337,6 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
             return groupId + ".recipes." + pascalCase + "DeprecatedMethods";
         }
         return "org.openrewrite.recipes.InlineDeprecatedMethods";
-    }
-
-    private static String buildReplacement(MethodCall methodCall, Cursor cursor) {
-        String name;
-        if (methodCall instanceof J.NewClass) {
-            J.NewClass newClass = (J.NewClass) methodCall;
-            name = "new " + (newClass.getClazz() != null ? newClass.getClazz().printTrimmed(cursor) : "");
-        } else if (methodCall instanceof J.MethodInvocation) {
-            J.MethodInvocation invocation = (J.MethodInvocation) methodCall;
-            if (invocation.getMethodType() != null && invocation.getMethodType().isConstructor()) {
-                name = "this";
-            } else {
-                String select = invocation.getSelect() != null ?
-                        invocation.getSelect().printTrimmed(cursor) + "." :
-                        "";
-                name = select + invocation.getSimpleName();
-            }
-        } else {
-            throw new IllegalArgumentException("Unsupported MethodCall type: " + methodCall.getClass());
-        }
-        String args = methodCall.getArguments().stream()
-                .map(arg -> arg.printTrimmed(cursor))
-                .collect(joining(", "));
-        return name + "(" + args + ")";
     }
 
     private static Path projectBasePath(Path sourcePath) {
