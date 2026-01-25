@@ -19,6 +19,7 @@ import lombok.Getter;
 import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.marker.JavaProject;
@@ -267,42 +268,23 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
             return entry;
         }
         Yaml.Mapping mapping = (Yaml.Mapping) entry.getBlock();
-        List<Yaml.Mapping.Entry> updatedEntries = new ArrayList<>();
-        boolean changed = false;
-
-        for (Yaml.Mapping.Entry e : mapping.getEntries()) {
-            if ("org.openrewrite.java.InlineMethodCalls".equals(e.getKey().getValue())) {
-                if (e.getValue() instanceof Yaml.Mapping) {
-                    Yaml.Mapping inner = (Yaml.Mapping) e.getValue();
-                    List<Yaml.Mapping.Entry> innerEntries = new ArrayList<>();
-                    boolean innerChanged = false;
-                    for (Yaml.Mapping.Entry ie : inner.getEntries()) {
-                        if ("replacement".equals(ie.getKey().getValue()) && ie.getValue() instanceof Yaml.Scalar) {
-                            Yaml.Scalar scalar = (Yaml.Scalar) ie.getValue();
-                            if (!candidate.getReplacement().equals(scalar.getValue())) {
-                                innerEntries.add(ie.withValue(scalar.withValue(candidate.getReplacement())));
-                                innerChanged = true;
-                            } else {
-                                innerEntries.add(ie);
-                            }
-                        } else {
-                            innerEntries.add(ie);
-                        }
-                    }
-                    if (innerChanged) {
-                        updatedEntries.add(e.withValue(inner.withEntries(innerEntries)));
-                        changed = true;
-                    } else {
-                        updatedEntries.add(e);
-                    }
-                } else {
-                    updatedEntries.add(e);
-                }
-            } else {
-                updatedEntries.add(e);
+        return entry.withBlock(mapping.withEntries(ListUtils.map(mapping.getEntries(), e -> {
+            if (!"org.openrewrite.java.InlineMethodCalls".equals(e.getKey().getValue()) ||
+                    !(e.getValue() instanceof Yaml.Mapping)) {
+                return e;
             }
-        }
-        return changed ? entry.withBlock(mapping.withEntries(updatedEntries)) : entry;
+            Yaml.Mapping inner = (Yaml.Mapping) e.getValue();
+            return e.withValue(inner.withEntries(ListUtils.map(inner.getEntries(), ie -> {
+                if (!"replacement".equals(ie.getKey().getValue()) || !(ie.getValue() instanceof Yaml.Scalar)) {
+                    return ie;
+                }
+                Yaml.Scalar scalar = (Yaml.Scalar) ie.getValue();
+                if (candidate.getReplacement().equals(scalar.getValue())) {
+                    return ie;
+                }
+                return ie.withValue(scalar.withValue(candidate.getReplacement()));
+            })));
+        })));
     }
 
     private static Yaml.Sequence.Entry createNewEntry(MethodInlineCandidate candidate, Yaml.Sequence seq) {
