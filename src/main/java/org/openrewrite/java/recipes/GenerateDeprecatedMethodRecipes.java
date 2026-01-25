@@ -34,7 +34,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.joining;
 
 public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDeprecatedMethodRecipes.Accumulator> {
 
