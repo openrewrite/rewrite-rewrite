@@ -212,39 +212,33 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                             return e;
                         }
                         Yaml.Sequence seq = (Yaml.Sequence) e.getValue();
-                        List<Yaml.Sequence.Entry> entries = new ArrayList<>(seq.getEntries());
-                        Set<String> existingPatterns = new HashSet<>();
-                        boolean changed = false;
 
-                        // First pass: update existing entries and collect their patterns
-                        for (int i = 0; i < entries.size(); i++) {
-                            Yaml.Sequence.Entry seqEntry = entries.get(i);
+                        // Collect existing patterns
+                        Set<String> existingPatterns = new HashSet<>();
+
+                        // First pass: update existing entries
+                        List<Yaml.Sequence.Entry> entries = ListUtils.map(seq.getEntries(), seqEntry -> {
                             String existingPattern = extractMethodPattern(seqEntry);
-                            if (existingPattern != null) {
-                                existingPatterns.add(existingPattern);
-                                // Check if this needs to be updated
-                                for (MethodInlineCandidate c : finalCandidates) {
-                                    if (c.getMethodPattern().equals(existingPattern)) {
-                                        Yaml.Sequence.Entry updated = updateEntry(seqEntry, c);
-                                        if (updated != seqEntry) {
-                                            entries.set(i, updated);
-                                            changed = true;
-                                        }
-                                        break;
-                                    }
+                            if (existingPattern == null) {
+                                return seqEntry;
+                            }
+                            existingPatterns.add(existingPattern);
+                            for (MethodInlineCandidate c : finalCandidates) {
+                                if (c.getMethodPattern().equals(existingPattern)) {
+                                    return updateEntry(seqEntry, c);
                                 }
                             }
-                        }
+                            return seqEntry;
+                        });
 
                         // Second pass: add new entries for candidates that don't exist yet
                         for (MethodInlineCandidate c : finalCandidates) {
                             if (!existingPatterns.contains(c.getMethodPattern())) {
-                                entries.add(createNewEntry(c, seq));
-                                changed = true;
+                                entries = ListUtils.concat(entries, createNewEntry(c, seq));
                             }
                         }
 
-                        return changed ? e.withValue(seq.withEntries(entries)) : e;
+                        return e.withValue(seq.withEntries(entries));
                     }
                 }.visitNonNull(tree, ctx);
             }
