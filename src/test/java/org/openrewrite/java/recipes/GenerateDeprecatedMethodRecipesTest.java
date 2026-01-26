@@ -420,8 +420,8 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
         );
     }
 
-    @ParameterizedTest
     @MethodSource("deriveRecipeNameCases")
+    @ParameterizedTest
     void deriveRecipeName(JavaProject javaProject, String expected) {
         assertThat(GenerateDeprecatedMethodRecipes.deriveRecipeName(javaProject)).isEqualTo(expected);
     }
