@@ -439,17 +439,17 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
           Arguments.of(
             new JavaProject(UUID.randomUUID(), "rewrite-java",
               new JavaProject.Publication("org.openrewrite", "rewrite-java", "1.0.0")),
-            "org.openrewrite.java.recipes.RewriteJavaDeprecatedMethods"
+            "org.openrewrite.rewrite-java.InlineDeprecatedMethods"
           ),
           Arguments.of(
-            new JavaProject(UUID.randomUUID(), "rewrite-java-test",
-              new JavaProject.Publication("org.openrewrite", "rewrite-java-test", "1.0.0")),
-            "org.openrewrite.java.recipes.RewriteJavaTestDeprecatedMethods"
+            new JavaProject(UUID.randomUUID(), "rewrite-migrate-java",
+              new JavaProject.Publication("org.openrewrite.recipe", "rewrite-migrate-java", "1.0.0")),
+            "org.openrewrite.recipe.rewrite-migrate-java.InlineDeprecatedMethods"
           ),
           Arguments.of(
             new JavaProject(UUID.randomUUID(), "my-lib",
               new JavaProject.Publication("com.example", "my-lib", "2.0.0")),
-            "com.example.my.recipes.MyLibDeprecatedMethods"
+            "com.example.my-lib.InlineDeprecatedMethods"
           )
         );
     }

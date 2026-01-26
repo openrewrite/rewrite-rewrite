@@ -20,7 +20,6 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
@@ -33,10 +32,8 @@ import org.openrewrite.yaml.tree.Yaml;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.joining;
 
 public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDeprecatedMethodRecipes.Accumulator> {
 
@@ -318,14 +315,7 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
     static String deriveRecipeName(@Nullable JavaProject javaProject) {
         if (javaProject != null && javaProject.getPublication() != null) {
             JavaProject.Publication pub = javaProject.getPublication();
-            return String.format("%s.%s.recipes.%sDeprecatedMethods",
-                    pub.getGroupId(),
-                    pub.getArtifactId()
-                            .replaceFirst("rewrite-", "")
-                            .replaceAll("[.-].*", ""),
-                    Stream.of(pub.getArtifactId().split("[-.]"))
-                            .map(StringUtils::capitalize)
-                            .collect(joining("")));
+            return String.format("%s.%s.InlineDeprecatedMethods", pub.getGroupId(), pub.getArtifactId());
         }
         return "org.openrewrite.recipes.InlineDeprecatedMethods";
     }
