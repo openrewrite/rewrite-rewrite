@@ -459,6 +459,26 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.RemoveToBeRemoved
+examples:
+- description: '`RemoveToBeRemovedTest#removeMethodDeclarationPastDate`'
+  sources:
+  - before: |
+      import org.openrewrite.internal.ToBeRemoved;
+
+      class A {
+          void keep() {}
+
+          @ToBeRemoved(after = "2020-01-01")
+          void remove() {}
+      }
+    after: |
+      class A {
+          void keep() {}
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.ReorderTestMethods
 examples:
 - description: '`ReorderTestMethodsTest#reorderTestMethods`'
@@ -906,6 +926,70 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.UseEstimatedEffortPerOccurrenceField
+examples:
+- description: '`UseEstimatedEffortPerOccurrenceFieldTest#replaceDurationOfMinutes`'
+  sources:
+  - before: |
+      import lombok.Value;
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+
+      import java.time.Duration;
+
+      @Value
+      public class MyRecipe extends Recipe {
+          @Override
+          public String getDisplayName() {
+              return "My Recipe";
+          }
+
+          @Override
+          public String getDescription() {
+              return "My description.";
+          }
+
+          @Override
+          public Duration getEstimatedEffortPerOccurrence() {
+              return Duration.ofMinutes(5);
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return TreeVisitor.noop();
+          }
+      }
+    after: |
+      import lombok.Value;
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+
+      import java.time.Duration;
+
+      @Value
+      public class MyRecipe extends Recipe {
+          @Override
+          public String getDisplayName() {
+              return "My Recipe";
+          }
+
+          @Override
+          public String getDescription() {
+              return "My description.";
+          }
+
+          Duration estimatedEffortPerOccurrence = Duration.ofMinutes(5);
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return TreeVisitor.noop();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.UseRewriteTestDefaults
 examples:
 - description: '`UseRewriteTestDefaultsTest#shouldRefactorWhenAllTestsUseSameRecipe`'
@@ -955,6 +1039,91 @@ examples:
               rewriteRun(
                   org.openrewrite.java.Assertions.java("class B {}", "class B {}")
               );
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.UseStringUtilsRecipes
+examples:
+- description: '`UseStringUtilsTest#replaceNullAndEmptyCheck`'
+  sources:
+  - before: |
+      class Test {
+          boolean test(String str) {
+              return str != null && !str.isEmpty();
+          }
+      }
+    after: |
+      import org.openrewrite.internal.StringUtils;
+
+      class Test {
+          boolean test(String str) {
+              return StringUtils.isNotEmpty(str);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.UseTagsField
+examples:
+- description: '`UseTagsFieldTest#replaceSetOfCall`'
+  sources:
+  - before: |
+      import lombok.Value;
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+
+      import java.util.Set;
+
+      @Value
+      public class MyRecipe extends Recipe {
+          @Override
+          public String getDisplayName() {
+              return "My Recipe";
+          }
+
+          @Override
+          public String getDescription() {
+              return "My description.";
+          }
+
+          @Override
+          public Set<String> getTags() {
+              return Set.of("tag1", "tag2");
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return TreeVisitor.noop();
+          }
+      }
+    after: |
+      import lombok.Value;
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+
+      import java.util.Set;
+
+      @Value
+      public class MyRecipe extends Recipe {
+          @Override
+          public String getDisplayName() {
+              return "My Recipe";
+          }
+
+          @Override
+          public String getDescription() {
+              return "My description.";
+          }
+
+          Set<String> tags = Set.of("tag1", "tag2");
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return TreeVisitor.noop();
           }
       }
     language: java
