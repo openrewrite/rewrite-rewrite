@@ -16,10 +16,18 @@
 package org.openrewrite.java.recipes;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.marker.JavaProject;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
+import java.util.UUID;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.*;
 import static org.openrewrite.yaml.Assertions.yaml;
 
@@ -408,6 +416,40 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
                 """,
               spec -> spec.path("src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml")
             )
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("deriveRecipeNameCases")
+    void deriveRecipeName(JavaProject javaProject, String expected) {
+        assertThat(GenerateDeprecatedMethodRecipes.deriveRecipeName(javaProject)).isEqualTo(expected);
+    }
+
+    static Stream<Arguments> deriveRecipeNameCases() {
+        return Stream.of(
+          Arguments.of(
+            null,
+            "org.openrewrite.recipes.InlineDeprecatedMethods"
+          ),
+          Arguments.of(
+            new JavaProject(UUID.randomUUID(), "test-project", null),
+            "org.openrewrite.recipes.InlineDeprecatedMethods"
+          ),
+          Arguments.of(
+            new JavaProject(UUID.randomUUID(), "rewrite-java",
+              new JavaProject.Publication("org.openrewrite", "rewrite-java", "1.0.0")),
+            "org.openrewrite.java.recipes.RewriteJavaDeprecatedMethods"
+          ),
+          Arguments.of(
+            new JavaProject(UUID.randomUUID(), "rewrite-java-test",
+              new JavaProject.Publication("org.openrewrite", "rewrite-java-test", "1.0.0")),
+            "org.openrewrite.java.recipes.RewriteJavaTestDeprecatedMethods"
+          ),
+          Arguments.of(
+            new JavaProject(UUID.randomUUID(), "my-lib",
+              new JavaProject.Publication("com.example", "my-lib", "2.0.0")),
+            "com.example.my.recipes.MyLibDeprecatedMethods"
           )
         );
     }
