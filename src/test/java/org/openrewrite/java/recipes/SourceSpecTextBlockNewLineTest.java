@@ -119,14 +119,14 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                     rewriteRun(
                        text(
                             ""\"
-                           class Test {
-              \s
-                              \s
-                               void test() {
-                                   System.out.println("Hello, world!");
-                               }
-                           }
-                           \"""
+                              class Test {
+                             \s
+                                 \s
+                                  void test() {
+                                      System.out.println("Hello, world!");
+                                  }
+                              }
+                              \"""
                        )
                     );
                   }
@@ -189,14 +189,14 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
                            }
                            \""",
                             ""\"
-                           class Test {
-              \s
-                              \s
-                               void test() {
-                                   System.out.println("Hello, world!");
-                               }
-                           }
-                           ""\"
+                              class Test {
+                             \s
+                                 \s
+                                  void test() {
+                                      System.out.println("Hello, world!");
+                                  }
+                              }
+                              ""\"
                        )
                     );
                   }
