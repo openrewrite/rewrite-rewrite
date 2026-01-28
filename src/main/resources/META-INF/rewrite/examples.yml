@@ -240,6 +240,41 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.GenerateDeprecatedMethodRecipes
+examples:
+- description: '`GenerateDeprecatedMethodRecipesTest#constructorDelegation`'
+  sources:
+  - before: |
+      package com.example;
+
+      public class Foo {
+          private final String a;
+          private final String b;
+
+          public Foo(String a, String b) {
+              this.a = a;
+              this.b = b;
+          }
+
+          @Deprecated
+          public Foo(String a) {
+              this(a, null);
+          }
+      }
+    language: java
+  - after: |
+      type: specs.openrewrite.org/v1beta/recipe
+      name: org.openrewrite.recipes.InlineDeprecatedMethods
+      displayName: Inline deprecated delegating methods
+      description: Automatically generated recipes to inline deprecated method calls that delegate to other methods in the same class.
+      recipeList:
+        - org.openrewrite.java.InlineMethodCalls:
+            methodPattern: 'com.example.Foo <constructor>(java.lang.String)'
+            replacement: 'this(a, null)'
+    path: src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml
+    language: yaml
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.IsLiteralNullRecipe
 examples:
 - description: '`IsLiteralNullTest#expressionArgument`'
