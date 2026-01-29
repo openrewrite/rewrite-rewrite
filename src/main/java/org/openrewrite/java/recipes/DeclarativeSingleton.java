@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.openrewrite.recipes.rewrite;
+package org.openrewrite.java.recipes;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import org.intellij.lang.annotations.Language;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
@@ -30,6 +31,12 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false)
 public class DeclarativeSingleton extends Recipe {
 
+    String displayName = "Make declarative recipes singletons";
+
+    @Language("markdown")
+    String description = "Adds the `org.openrewrite.Singleton` precondition to declarative YAML recipes to ensure they only execute " +
+            "once, even when included multiple times.";
+
     @Option(displayName = "Whitelist",
             description = "List of recipe names to exclude from having the Singleton precondition added.",
             example = "org.openrewrite.java.cleanup.Cleanup",
@@ -37,17 +44,12 @@ public class DeclarativeSingleton extends Recipe {
     @Nullable
     List<String> whitelist;
 
-    String displayName = "Make declarative recipes singletons";
-    String description = "Adds the `org.openrewrite.Singleton` precondition to declarative YAML recipes to ensure they only execute " +
-            "once, even when included multiple times.";
-    }
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return new YamlIsoVisitor<ExecutionContext>() {
             @Override
             public Yaml.Documents visitDocuments(Yaml.Documents documents, ExecutionContext ctx) {
-                // Only process YAML files in META-INF/rewrite directory
                 if (!documents.getSourcePath().toString().contains("META-INF/rewrite")) {
                     return documents;
                 }
