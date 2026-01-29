@@ -37,15 +37,9 @@ public class DeclarativeSingleton extends Recipe {
     @Nullable
     List<String> whitelist;
 
-    @Override
-    public String getDisplayName() {
-        return "Make declarative recipes singletons";
-    }
-
-    @Override
-    public String getDescription() {
-        return "Adds the `org.openrewrite.Singleton` precondition to declarative YAML recipes to ensure they only execute " +
-                "once, even when included multiple times.";
+    String displayName = "Make declarative recipes singletons";
+    String description = "Adds the `org.openrewrite.Singleton` precondition to declarative YAML recipes to ensure they only execute " +
+            "once, even when included multiple times.";
     }
 
     @Override
