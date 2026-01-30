@@ -84,9 +84,9 @@ class DeclarativeSingletonTest implements RewriteTest {
               displayName: My Recipe
               description: Does something useful
               preconditions:
-                - org.openrewrite.Singleton
                 - org.openrewrite.java.search.FindTypes:
                     fullyQualifiedTypeName: org.openrewrite.Recipe
+                - org.openrewrite.Singleton
               recipeList:
                 - org.openrewrite.java.OrderImports
               """,
@@ -237,11 +237,11 @@ class DeclarativeSingletonTest implements RewriteTest {
                 which allows for the continued use of the `javax.xml.bind` namespace. Running a full javax to Jakarta migration
                 using `org.openrewrite.java.migrate.jakarta.JavaxMigrationToJakarta` will update to versions greater than 3.x which
                 necessitates the package change as well.
-              preconditions:
-                - org.openrewrite.Singleton
               tags:
                 - javax
                 - java11
+              preconditions:
+                - org.openrewrite.Singleton
               recipeList:
                 - org.openrewrite.java.dependencies.AddDependency:
                     groupId: jakarta.xml.bind
