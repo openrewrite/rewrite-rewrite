@@ -172,4 +172,82 @@ class DeclarativeSingletonTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void handlesBlockScalarDescriptionCorrectly() {
+        rewriteRun(
+          yaml(
+            """
+              type: specs.openrewrite.org/v1beta/recipe
+              name: com.google.guava.InlineGuavaMethods
+              displayName: Inline `guava` methods annotated with `@InlineMe`
+              description: >-
+                Automatically generated recipes to inline method calls based on `@InlineMe` annotations
+                discovered in the type table.
+              recipeList:
+                - org.openrewrite.java.InlineMethodCalls:
+                    methodPattern: com.google.common.base.Preconditions#checkNotNull(T)
+              """,
+            """
+              type: specs.openrewrite.org/v1beta/recipe
+              name: com.google.guava.InlineGuavaMethods
+              displayName: Inline `guava` methods annotated with `@InlineMe`
+              description: >-
+                Automatically generated recipes to inline method calls based on `@InlineMe` annotations
+                discovered in the type table.
+              preconditions:
+                - org.openrewrite.Singleton
+              recipeList:
+                - org.openrewrite.java.InlineMethodCalls:
+                    methodPattern: com.google.common.base.Preconditions#checkNotNull(T)
+              """,
+            spec -> spec.path("src/main/resources/META-INF/rewrite/test.yml")
+          )
+        );
+    }
+
+    @Test
+    void handlesMultiLineBlockScalarDescription() {
+        rewriteRun(
+          yaml(
+            """
+              type: specs.openrewrite.org/v1beta/recipe
+              name: org.openrewrite.java.migrate.javax.AddJaxbDependenciesWithRuntime
+              displayName: Add explicit JAXB API dependencies and runtime
+              description: >-
+                This recipe will add explicit dependencies for Jakarta EE 8 when a Java 8 application is using JAXB. Any existing
+                dependencies will be upgraded to the latest version of Jakarta EE 8. The artifacts are moved to Jakarta EE 8 version 2.x
+                which allows for the continued use of the `javax.xml.bind` namespace. Running a full javax to Jakarta migration
+                using `org.openrewrite.java.migrate.jakarta.JavaxMigrationToJakarta` will update to versions greater than 3.x which
+                necessitates the package change as well.
+              tags:
+                - javax
+                - java11
+              recipeList:
+                - org.openrewrite.java.dependencies.AddDependency:
+                    groupId: jakarta.xml.bind
+              """,
+            """
+              type: specs.openrewrite.org/v1beta/recipe
+              name: org.openrewrite.java.migrate.javax.AddJaxbDependenciesWithRuntime
+              displayName: Add explicit JAXB API dependencies and runtime
+              description: >-
+                This recipe will add explicit dependencies for Jakarta EE 8 when a Java 8 application is using JAXB. Any existing
+                dependencies will be upgraded to the latest version of Jakarta EE 8. The artifacts are moved to Jakarta EE 8 version 2.x
+                which allows for the continued use of the `javax.xml.bind` namespace. Running a full javax to Jakarta migration
+                using `org.openrewrite.java.migrate.jakarta.JavaxMigrationToJakarta` will update to versions greater than 3.x which
+                necessitates the package change as well.
+              preconditions:
+                - org.openrewrite.Singleton
+              tags:
+                - javax
+                - java11
+              recipeList:
+                - org.openrewrite.java.dependencies.AddDependency:
+                    groupId: jakarta.xml.bind
+              """,
+            spec -> spec.path("src/main/resources/META-INF/rewrite/test.yml")
+          )
+        );
+    }
 }

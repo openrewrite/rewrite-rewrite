@@ -172,20 +172,31 @@ public class DeclarativeSingleton extends Recipe {
                     insertPosition = mapping.getEntries().size();
                 }
 
-                // Parse a new preconditions entry
-                String yaml = "preconditions:\n  - org.openrewrite.Singleton\n";
+                // Parse a new preconditions entry as part of a multi-entry document
+                // to ensure it has the correct whitespace prefix for appearing after other entries
+                String yaml = "description: dummy\npreconditions:\n  - org.openrewrite.Singleton";
                 Yaml.Documents parsed = YamlParser.builder().build()
                         .parse(yaml)
                         .findFirst()
                         .map(Yaml.Documents.class::cast)
                         .orElseThrow(() -> new IllegalStateException("Failed to parse preconditions entry"));
                 Yaml.Mapping parsedMapping = (Yaml.Mapping) parsed.getDocuments().get(0).getBlock();
-                Yaml.Mapping.Entry newEntry = parsedMapping.getEntries().get(0);
+                // Get the preconditions entry (second entry), which should have correct prefix
+                Yaml.Mapping.Entry newEntry = parsedMapping.getEntries().get(1);
 
-                // Copy whitespace from existing entries if available
-                if (!mapping.getEntries().isEmpty()) {
-                    Yaml.Mapping.Entry existingEntry = mapping.getEntries().get(0);
-                    newEntry = newEntry.withPrefix(existingEntry.getPrefix());
+                // When inserting after a block scalar, use empty prefix to avoid adding
+                // an extra newline (the block scalar already provides one)
+                Yaml.Mapping.Entry previousEntry = insertPosition > 0 ?
+                    mapping.getEntries().get(insertPosition - 1) : null;
+                if (previousEntry != null && previousEntry.getValue() instanceof Yaml.Scalar) {
+                    Yaml.Scalar scalar = (Yaml.Scalar) previousEntry.getValue();
+                    // Check if it's a block scalar (not plain or quoted inline)
+                    if (scalar.getStyle() != Yaml.Scalar.Style.PLAIN &&
+                        scalar.getStyle() != Yaml.Scalar.Style.DOUBLE_QUOTED &&
+                        scalar.getStyle() != Yaml.Scalar.Style.SINGLE_QUOTED) {
+                        // This is a block scalar, use empty prefix
+                        newEntry = newEntry.withPrefix("");
+                    }
                 }
 
                 // Insert the preconditions entry and ensure the next entry has proper whitespace
