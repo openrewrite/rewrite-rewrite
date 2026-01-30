@@ -72,6 +72,34 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.DeclarativeSingleton
+examples:
+- description: '`DeclarativeSingletonTest#addsSingletonPreconditionToRecipeWithoutPreconditions`'
+  parameters:
+  - 'null'
+  sources:
+  - before: |
+      ---
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My Recipe
+      description: Does something useful
+      recipeList:
+        - org.openrewrite.java.OrderImports
+    after: |
+      ---
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My Recipe
+      description: Does something useful
+      preconditions:
+        - org.openrewrite.Singleton
+      recipeList:
+        - org.openrewrite.java.OrderImports
+    path: src/main/resources/META-INF/rewrite/test.yml
+    language: yaml
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.ExamplesExtractor
 examples:
 - description: '`ExamplesExtractorTest#extractJavaExampleWithDefault`'
