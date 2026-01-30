@@ -19,6 +19,8 @@ type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.recipes.rewrite.OpenRewriteRecipeBestPractices
 displayName: OpenRewrite recipe best practices
 description: Best practices for OpenRewrite recipe development.
+preconditions:
+  - org.openrewrite.Singleton
 recipeList:
   - org.openrewrite.recipes.rewrite.InlineMethods
   - org.openrewrite.java.recipes.GenerateDeprecatedMethodRecipes
@@ -57,6 +59,7 @@ name: org.openrewrite.java.recipes.JavaRecipeBestPractices
 displayName: Java Recipe best practices
 description: Best practices for Java recipe development.
 preconditions:
+  - org.openrewrite.Singleton
   - org.openrewrite.java.search.FindTypes:
       fullyQualifiedTypeName: org.openrewrite.Recipe
       checkAssignability: true
@@ -87,6 +90,7 @@ name: org.openrewrite.java.recipes.RecipeTestingBestPractices
 displayName: Recipe testing best practices
 description: Best practices for testing recipes.
 preconditions:
+  - org.openrewrite.Singleton
   - org.openrewrite.java.search.FindTypes:
       fullyQualifiedTypeName: org.openrewrite.test.RewriteTest
       checkAssignability: true
@@ -126,6 +130,8 @@ type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.java.recipes.RecipeNullabilityBestPractices
 displayName: Recipe nullability best practices
 description: Use JSpecify nullable annotations; drop Nonnull annotations; use `NullMarked` on `package-info.java` instead.
+preconditions:
+  - org.openrewrite.Singleton
 recipeList:
   - org.openrewrite.java.jspecify.MigrateFromOpenRewriteAnnotations
   - org.openrewrite.java.RemoveAnnotation:
@@ -143,6 +149,7 @@ name: org.openrewrite.java.recipes.UpgradeTestsToJava21
 displayName: Migrate tests to Java 21
 description: Use Java 21 features in tests.
 preconditions:
+  - org.openrewrite.Singleton
   - org.openrewrite.java.search.IsLikelyTest
 recipeList:
   - org.openrewrite.java.migrate.UpgradeToJava21
