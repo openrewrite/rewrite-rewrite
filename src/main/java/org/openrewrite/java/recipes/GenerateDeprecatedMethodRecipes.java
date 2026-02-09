@@ -20,11 +20,13 @@ import lombok.Value;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.marker.JavaProject;
 import org.openrewrite.java.tree.*;
+import org.openrewrite.text.PlainText;
 import org.openrewrite.yaml.YamlIsoVisitor;
 import org.openrewrite.yaml.YamlParser;
 import org.openrewrite.yaml.tree.Yaml;
@@ -65,6 +67,10 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                     if (sourceFile.getSourcePath().endsWith(OUTPUT_RELATIVE)) {
                         acc.existingOutputFiles.add(sourceFile.getSourcePath());
                     }
+                }
+                if (tree instanceof PlainText &&
+                        ((PlainText) tree).getSourcePath().endsWith("licenseHeader.txt")) {
+                    acc.licenseHeader = ((PlainText) tree).getText();
                 }
                 if (tree instanceof JavaSourceFile) {
                     SourceFile sourceFile = (SourceFile) tree;
@@ -147,6 +153,14 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
 
             String recipeName = deriveRecipeName(entry.getKey());
             StringBuilder yaml = new StringBuilder();
+            if (StringUtils.isNotEmpty(acc.licenseHeader)) {
+                String header = acc.licenseHeader.trim()
+                        .replace("${year}", "2026"); // Hardcoded year to avoid needless updates
+                boolean singleLine = !header.contains("\n");
+                yaml.append(singleLine ? "#\n# " : "# ")
+                        .append(header.replace("\n", "\n# ").trim())
+                        .append(singleLine ? "\n#\n\n" : "\n");
+            }
             yaml.append("type: specs.openrewrite.org/v1beta/recipe\n");
             yaml.append("name: ").append(recipeName).append("\n");
             yaml.append("displayName: Inline deprecated delegating methods\n");
@@ -333,6 +347,8 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
     }
 
     public static class Accumulator {
+        @Nullable
+        String licenseHeader;
         final Set<Path> existingOutputFiles = new HashSet<>();
         final Map<JavaProject, List<MethodInlineCandidate>> candidatesByProject = new LinkedHashMap<>();
         final Map<JavaProject, Path> projectBasePaths = new HashMap<>();
