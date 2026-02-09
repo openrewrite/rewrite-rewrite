@@ -77,7 +77,7 @@ public class DeclarativeSingleton extends Recipe {
                     }
                 }
 
-                d = (Yaml.Document) new MergeYaml(
+                return (Yaml.Document) new MergeYaml(
                         "$",
                         "preconditions:\n  - org.openrewrite.Singleton",
                         false,
@@ -88,8 +88,6 @@ public class DeclarativeSingleton extends Recipe {
                         true
                 ).getVisitor()
                         .visitNonNull(d, ctx, getCursor().getParentTreeCursor());
-
-                return d;
             }
 
             private @Nullable String getScalarValue(Yaml.Mapping mapping, String key) {
