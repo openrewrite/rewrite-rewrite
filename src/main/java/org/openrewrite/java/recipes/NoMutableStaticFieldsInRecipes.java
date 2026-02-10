@@ -16,23 +16,23 @@
 package org.openrewrite.java.recipes;
 
 import lombok.Getter;
-import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
-import org.openrewrite.Recipe;
-import org.openrewrite.TreeVisitor;
+import org.openrewrite.*;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
-import org.openrewrite.java.search.FindAnnotations;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.marker.Markers;
+
+import static java.util.Collections.emptyList;
 
 public class NoMutableStaticFieldsInRecipes extends Recipe {
     @Getter
     final String displayName = "Recipe classes should not have mutable `static` fields";
 
     @Getter
-    final String description = "Remove mutable static fields from Recipe classes to discourage their use.";
+    final String description = "Add the `final` keyword to mutable static fields in Recipe classes.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -41,25 +41,27 @@ public class NoMutableStaticFieldsInRecipes extends Recipe {
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-                        J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
-                        if (TypeUtils.isAssignableTo("org.openrewrite.Recipe", cd.getType())) {
-                            return cd.withBody(cd.getBody().withStatements(ListUtils.map(cd.getBody().getStatements(), stmt -> {
-                                        if (stmt instanceof J.VariableDeclarations) {
-                                            J.VariableDeclarations field = (J.VariableDeclarations) stmt;
-                                            if (field.hasModifier(J.Modifier.Type.Static) &&
-                                                !field.hasModifier(J.Modifier.Type.Final) &&
-                                                FindAnnotations.find(field, "@java.lang.SuppressWarnings").isEmpty()) {
-                                                // We want to discourage the use of mutable static fields in recipes,
-                                                // so rather than make them immutable, we'll just remove the field.
-                                                // Any fields that were intended as constants should be made final.
-                                                return null;
-                                            }
-                                        }
-                                        return stmt;
-                                    })
-                            ));
+                        if (TypeUtils.isAssignableTo("org.openrewrite.Recipe", classDecl.getType())) {
+                            return super.visitClassDeclaration(classDecl, ctx);
                         }
-                        return cd;
+                        return classDecl;
+                    }
+
+                    @Override
+                    public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                        J.VariableDeclarations vd = super.visitVariableDeclarations(multiVariable, ctx);
+                        if (vd.hasModifier(J.Modifier.Type.Static) &&
+                                !vd.hasModifier(J.Modifier.Type.Final)) {
+                            return vd.withModifiers(ListUtils.concat(vd.getModifiers(), new J.Modifier(
+                                    Tree.randomId(),
+                                    Space.SINGLE_SPACE,
+                                    Markers.EMPTY,
+                                    null,
+                                    J.Modifier.Type.Final,
+                                    emptyList()
+                            )));
+                        }
+                        return vd;
                     }
                 }
         );

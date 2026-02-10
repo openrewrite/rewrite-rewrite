@@ -34,7 +34,7 @@ class NoMutableStaticFieldsInRecipesTest implements RewriteTest {
 
     @DocumentExample
     @Test
-    void removeNonFinalStaticFields() {
+    void addFinalToStaticFields() {
         rewriteRun(
           java(
             """
@@ -50,6 +50,7 @@ class NoMutableStaticFieldsInRecipesTest implements RewriteTest {
 
               public class A extends Recipe {
                   static final int immutable = 0;
+                  static final int mutable = 0;
               }
               """
           )
@@ -73,7 +74,7 @@ class NoMutableStaticFieldsInRecipesTest implements RewriteTest {
     }
 
     @Test
-    void retainWhenWarningsSuppressed() {
+    void addFinalEvenWhenWarningsSuppressed() {
         rewriteRun(
           java(
             """
@@ -83,6 +84,15 @@ class NoMutableStaticFieldsInRecipesTest implements RewriteTest {
                   static final int immutable = 0;
                   @SuppressWarnings("unused")
                   static int mutable = 0;
+              }
+              """,
+            """
+              import org.openrewrite.Recipe;
+
+              public class A extends Recipe {
+                  static final int immutable = 0;
+                  @SuppressWarnings("unused")
+                  static final int mutable = 0;
               }
               """
           )
