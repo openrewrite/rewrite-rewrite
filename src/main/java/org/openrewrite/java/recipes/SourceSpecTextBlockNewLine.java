@@ -16,6 +16,7 @@
 package org.openrewrite.java.recipes;
 
 import lombok.Getter;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
@@ -61,7 +62,7 @@ public class SourceSpecTextBlockNewLine extends Recipe {
                                 !argument.getPrefix().getWhitespace().startsWith("\n")
                         ) {
                             Expression formatted = argument.withPrefix(Space.format("\n"));
-                            formatted = maybeAutoFormat(argument, formatted, ctx);
+                            formatted = maybeAutoFormat(argument, formatted, ctx, new Cursor(new Cursor(getCursor(), arguments), jrp));
                             return jrp.withElement(formatted);
                         }
                         return jrp;
