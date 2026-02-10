@@ -349,6 +349,7 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
     public static class Accumulator {
         @Nullable
         String licenseHeader;
+
         final Set<Path> existingOutputFiles = new HashSet<>();
         final Map<JavaProject, List<MethodInlineCandidate>> candidatesByProject = new LinkedHashMap<>();
         final Map<JavaProject, Path> projectBasePaths = new HashMap<>();
