@@ -373,7 +373,7 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.NoMutableStaticFieldsInRecipes
 examples:
-- description: '`NoMutableStaticFieldsInRecipesTest#removeNonFinalStaticFields`'
+- description: '`NoMutableStaticFieldsInRecipesTest#addFinalToStaticFields`'
   sources:
   - before: |
       import org.openrewrite.Recipe;
@@ -387,6 +387,7 @@ examples:
 
       public class A extends Recipe {
           static final int immutable = 0;
+          static final int mutable = 0;
       }
     language: java
 ---
