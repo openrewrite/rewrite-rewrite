@@ -234,6 +234,43 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
     }
 
     @Test
+    void multiLineReplacementEscapedInYaml() {
+        rewriteRun(
+          java(
+            """
+              package com.example;
+
+              public class Multi {
+                  public void newMethod(String a, String b) {
+                  }
+
+                  @Deprecated
+                  public void oldMethod(String a, String b) {
+                      newMethod(a,
+                              b);
+                  }
+              }
+              """
+          ),
+          yaml(
+            doesNotExist(),
+            //language=yaml
+            """
+              type: specs.openrewrite.org/v1beta/recipe
+              name: org.openrewrite.recipes.InlineDeprecatedMethods
+              displayName: Inline deprecated delegating methods
+              description: Automatically generated recipes to inline deprecated method calls that delegate to other methods in the same class.
+              recipeList:
+                - org.openrewrite.java.InlineMethodCalls:
+                    methodPattern: 'com.example.Multi oldMethod(java.lang.String, java.lang.String)'
+                    replacement: 'newMethod(a, b)'
+              """,
+            spec -> spec.path("src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml")
+          )
+        );
+    }
+
+    @Test
     void externalCallIgnored() {
         rewriteRun(
           java(
