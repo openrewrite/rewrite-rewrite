@@ -224,6 +224,9 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
                 String testSourcePath = getCursor().firstEnclosingOrThrow(J.CompilationUnit.class).getSourcePath().toString();
                 String root = testSourcePath.substring(0, testSourcePath.indexOf("src/"));
+                if (root.endsWith("rewrite-java-test/")) {
+                    root = root.substring(0, root.length() - "rewrite-java-test/".length()) + "rewrite-java/";
+                }
                 Path targetPath = Paths.get(root).resolve("src/main/resources/META-INF/rewrite/examples.yml");
                 acc.projectRecipeExamples
                         .computeIfAbsent(targetPath, key -> new TreeMap<>())
