@@ -51,11 +51,10 @@ public class UseEstimatedEffortPerOccurrenceField extends Recipe {
                 new JavaVisitor<ExecutionContext>() {
                     @Override
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-                        if (!TypeUtils.isAssignableTo(RECIPE, classDecl.getType())) {
-                            return classDecl;
+                        if (TypeUtils.isAssignableTo(RECIPE, classDecl.getType())) {
+                            boolean addGetterAnnotation = !service(AnnotationService.class).isAnnotatedWith(classDecl, "lombok.Value");
+                            getCursor().putMessage("addGetterAnnotation", addGetterAnnotation);
                         }
-                        boolean addGetterAnnotation = !service(AnnotationService.class).isAnnotatedWith(classDecl, "lombok.Value");
-                        getCursor().putMessage("addGetterAnnotation", addGetterAnnotation);
                         return (J.ClassDeclaration) super.visitClassDeclaration(classDecl, ctx);
                     }
 
