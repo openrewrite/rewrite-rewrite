@@ -15,6 +15,7 @@
  */
 package org.openrewrite.rewrite;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.Cursor;
@@ -31,16 +32,13 @@ import org.openrewrite.yaml.tree.Yaml;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+@AllArgsConstructor
 @Getter
 public class Recipe implements Trait<Tree> {
   private static final MethodMatcher getDisplayName = new MethodMatcher("org.openrewrite.Recipe getDisplayName()", true);
   private static final MethodMatcher getDescription = new MethodMatcher("org.openrewrite.Recipe getDescription()", true);
 
   private Cursor cursor;
-
-  public Recipe(Cursor cursor) {
-    this.cursor = cursor;
-  }
 
   public String getDisplayName() {
     if (getTree() instanceof J.ClassDeclaration) {
