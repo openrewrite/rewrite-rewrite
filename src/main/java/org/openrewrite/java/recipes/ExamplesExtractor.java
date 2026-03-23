@@ -16,6 +16,7 @@
 package org.openrewrite.java.recipes;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.config.RecipeExample;
@@ -159,15 +160,12 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         final Map<Path, Map<String, List<RecipeExample>>> projectRecipeExamples = new HashMap<>();
     }
 
+    @RequiredArgsConstructor
     static class ExamplesExtractorVisitor extends JavaIsoVisitor<ExecutionContext> {
         private static final String RECIPE_KEY = "recipeName";
         private static final String DESCRIPTION_KEY = "description";
 
         private final Accumulator acc;
-
-        public ExamplesExtractorVisitor(Accumulator acc) {
-            this.acc = acc;
-        }
 
         @Override
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
@@ -224,6 +222,9 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
                 String testSourcePath = getCursor().firstEnclosingOrThrow(J.CompilationUnit.class).getSourcePath().toString();
                 String root = testSourcePath.substring(0, testSourcePath.indexOf("src/"));
+                if (root.endsWith("rewrite-java-test/")) {
+                    root = root.substring(0, root.length() - "rewrite-java-test/".length()) + "rewrite-java/";
+                }
                 Path targetPath = Paths.get(root).resolve("src/main/resources/META-INF/rewrite/examples.yml");
                 acc.projectRecipeExamples
                         .computeIfAbsent(targetPath, key -> new TreeMap<>())

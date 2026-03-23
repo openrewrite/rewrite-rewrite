@@ -121,11 +121,13 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                                 return md;
                             }
 
+                            String replacement = methodCall.printTrimmed(getCursor())
+                                    .replaceAll("\\n\\s+", " ");
                             acc.candidatesByProject
                                     .computeIfAbsent(javaProject, k -> new ArrayList<>())
                                     .add(new MethodInlineCandidate(
                                             MethodMatcher.methodPattern(md.getMethodType()),
-                                            methodCall.printTrimmed(getCursor())));
+                                            replacement));
                             acc.projectBasePaths.putIfAbsent(javaProject, projectBase);
                             return md;
                         }
