@@ -89,6 +89,13 @@ public class UseVisitWithParentCursor extends Recipe {
                             return mi;
                         }
 
+                        // First parameter must be a Tree subtype (excludes visitLeftPadded,
+                        // visitRightPadded, visitContainer, visitSpace, visitType, etc.)
+                        JavaType firstParamType = mi.getMethodType().getParameterTypes().get(0);
+                        if (!TypeUtils.isAssignableTo("org.openrewrite.Tree", firstParamType)) {
+                            return mi;
+                        }
+
                         // Exclude super.visitXxx() and this.visitXxx() - normal delegation
                         Expression select = mi.getSelect();
                         if (select == null) {

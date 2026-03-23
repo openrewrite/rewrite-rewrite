@@ -268,4 +268,5 @@ class UseVisitWithParentCursorTest implements RewriteTest {
           )
         );
     }
+
 }
