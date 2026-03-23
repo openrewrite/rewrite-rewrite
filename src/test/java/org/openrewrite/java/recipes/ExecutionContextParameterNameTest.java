@@ -132,6 +132,20 @@ class ExecutionContextParameterNameTest implements RewriteTest {
     }
 
     @Test
+    void doNotRenameDelegateParameter() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.*;
+              class SampleRecipe extends Recipe {
+                  public void test(ExecutionContext delegate) {}
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void overrideVariableNameForCheckstyle() {
         rewriteRun(
           spec -> spec.recipe(new ExecutionContextParameterName("executionContext")),

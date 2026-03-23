@@ -183,6 +183,43 @@ class RecipeClassesShouldBePublicTest implements RewriteTest {
     }
 
     @Test
+    void noChangeNestedRecipeClass() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.TreeVisitor;
+
+              public class MyRecipe extends Recipe {
+                  @Override
+                  public String getDisplayName() {
+                      return "My Recipe";
+                  }
+
+                  @Override
+                  public String getDescription() {
+                      return "My description";
+                  }
+
+                  static class InnerRecipe extends Recipe {
+                      @Override
+                      public String getDisplayName() {
+                          return "Inner Recipe";
+                      }
+
+                      @Override
+                      public String getDescription() {
+                          return "Inner description";
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void noChangeNotRecipe() {
         rewriteRun(
           java(

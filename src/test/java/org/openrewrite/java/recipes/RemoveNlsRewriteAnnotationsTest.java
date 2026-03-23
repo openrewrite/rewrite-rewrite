@@ -83,6 +83,34 @@ class RemoveNlsRewriteAnnotationsTest implements RewriteTest {
     }
 
     @Test
+    void doesNotRemoveFromRewriteCorePackage() {
+        rewriteRun(
+          java(
+            """
+              package org.openrewrite;
+
+              public class SomeRecipe extends Recipe {
+                  @Override
+                  public @NlsRewrite.DisplayName String getDisplayName() {
+                      return "Some Recipe";
+                  }
+
+                  @Override
+                  public @NlsRewrite.Description String getDescription() {
+                      return "Some description.";
+                  }
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return TreeVisitor.noop();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doesNotRemoveFromNonRecipeClass() {
         rewriteRun(
           java(

@@ -47,10 +47,11 @@ public class RecipeClassesShouldBePublic extends Recipe {
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                         J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
 
-                        // Check if this class extends Recipe and is not already public
+                        // Check if this class extends Recipe, is not already public, and is not nested
                         if (!cd.hasModifier(J.Modifier.Type.Public) &&
                                 !cd.hasModifier(J.Modifier.Type.Abstract) &&
-                                TypeUtils.isAssignableTo("org.openrewrite.Recipe", cd.getType())) {
+                                TypeUtils.isAssignableTo("org.openrewrite.Recipe", cd.getType()) &&
+                                getCursor().getParentTreeCursor().getValue() instanceof J.CompilationUnit) {
 
                             // Change any existing protected or private modifier to public
                             List<J.Modifier> mapped = ListUtils.map(cd.getModifiers(), mod ->
