@@ -57,6 +57,7 @@ public class ExecutionContextParameterName extends Recipe {
                             if (parameter instanceof J.VariableDeclarations) {
                                 J.VariableDeclarations param = (J.VariableDeclarations) parameter;
                                 if (TypeUtils.isOfClassType(param.getType(), "org.openrewrite.ExecutionContext") &&
+                                        !"delegate".equals(param.getVariables().get(0).getSimpleName()) &&
                                         !param.getVariables().get(0).getSimpleName().startsWith(prefix)) {
                                     m = (J.MethodDeclaration) new RenameVariable<ExecutionContext>(param.getVariables().get(0), prefix)
                                             .visitNonNull(m, ctx);

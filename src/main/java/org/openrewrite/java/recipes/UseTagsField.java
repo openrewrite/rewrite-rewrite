@@ -52,7 +52,9 @@ public class UseTagsField extends Recipe {
                     @Override
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                         if (TypeUtils.isAssignableTo(RECIPE, classDecl.getType())) {
-                            boolean addGetterAnnotation = !service(AnnotationService.class).isAnnotatedWith(classDecl, "lombok.Value");
+                            AnnotationService annotationService = service(AnnotationService.class);
+                            boolean addGetterAnnotation = !annotationService.isAnnotatedWith(classDecl, "lombok.Value") &&
+                                    !annotationService.isAnnotatedWith(classDecl, "lombok.Data");
                             getCursor().putMessage("addGetterAnnotation", addGetterAnnotation);
                         }
                         return (J.ClassDeclaration) super.visitClassDeclaration(classDecl, ctx);

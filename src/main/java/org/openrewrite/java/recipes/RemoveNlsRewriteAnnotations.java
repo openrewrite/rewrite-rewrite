@@ -46,7 +46,8 @@ public class RemoveNlsRewriteAnnotations extends Recipe {
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
-                        if (!TypeUtils.isAssignableTo(RECIPE, classDecl.getType())) {
+                        if (!TypeUtils.isAssignableTo(RECIPE, classDecl.getType()) ||
+                                classDecl.getType() != null && "org.openrewrite".equals(classDecl.getType().getPackageName())) {
                             return classDecl;
                         }
                         maybeRemoveImport("org.openrewrite.NlsRewrite");
