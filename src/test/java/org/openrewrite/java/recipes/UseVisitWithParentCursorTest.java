@@ -269,4 +269,41 @@ class UseVisitWithParentCursorTest implements RewriteTest {
         );
     }
 
+    @Test
+    void doNotChangeVisitSpaceCall() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.java.JavaVisitor;
+              import org.openrewrite.java.tree.Space;
+
+              class SomeJavaVisitor extends JavaVisitor<ExecutionContext> {
+                  void doSomething(JavaVisitor<ExecutionContext> delegate, Space space, ExecutionContext ctx) {
+                      delegate.visitSpace(space, Space.Location.ANY, ctx);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeVisitMarkerCall() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.java.JavaVisitor;
+              import org.openrewrite.marker.Marker;
+
+              class SomeJavaVisitor extends JavaVisitor<ExecutionContext> {
+                  <M extends Marker> M doSomething(JavaVisitor<ExecutionContext> delegate, Marker marker, ExecutionContext ctx) {
+                      return delegate.visitMarker(marker, ctx);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
