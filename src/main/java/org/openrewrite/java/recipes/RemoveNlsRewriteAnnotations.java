@@ -49,14 +49,12 @@ public class RemoveNlsRewriteAnnotations extends Recipe {
                         if (!TypeUtils.isAssignableTo(RECIPE, classDecl.getType())) {
                             return classDecl;
                         }
+                        maybeRemoveImport("org.openrewrite.NlsRewrite");
                         J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
                         cd = (J.ClassDeclaration) new RemoveAnnotationVisitor(DISPLAY_NAME_MATCHER)
                                 .visit(cd, ctx, getCursor().getParentOrThrow());
                         cd = (J.ClassDeclaration) new RemoveAnnotationVisitor(DESCRIPTION_MATCHER)
                                 .visit(cd, ctx, getCursor().getParentOrThrow());
-                        if (cd != classDecl) {
-                            maybeRemoveImport("org.openrewrite.NlsRewrite");
-                        }
                         return cd;
                     }
                 }
