@@ -77,10 +77,7 @@ recipeList:
   - org.openrewrite.java.recipes.UseTreeRandomId
   - org.openrewrite.staticanalysis.NeedBraces
   - org.openrewrite.staticanalysis.RemoveSystemOutPrintln
-  - org.openrewrite.java.RemoveAnnotation:
-      annotationPattern: '@org.openrewrite.NlsRewrite.DisplayName'
-  - org.openrewrite.java.RemoveAnnotation:
-      annotationPattern: '@org.openrewrite.NlsRewrite.Description'
+  - org.openrewrite.java.recipes.RemoveNlsRewriteAnnotations
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.java.recipes.RecipeTestingBestPractices
