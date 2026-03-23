@@ -27,6 +27,7 @@ import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.marker.SearchResult;
 
 public class UseVisitWithParentCursor extends Recipe {
 
@@ -113,28 +114,40 @@ public class UseVisitWithParentCursor extends Recipe {
                             return mi;
                         }
 
-                        // Replace visitXxx(tree, ctx) with visit(tree, ctx, getCursor().getParentTreeCursor())
-                        J.MethodInvocation result = JavaTemplate.builder(
-                                        "#{any()}.visit(#{any()}, #{any()}, getCursor().getParentTreeCursor())")
-                                .contextSensitive()
-                                .javaParser(JavaParser.fromJavaVersion().classpath("rewrite-core", "rewrite-java"))
-                                .build()
-                                .apply(getCursor(), mi.getCoordinates().replace(),
-                                        mi.getSelect(), mi.getArguments().get(0), mi.getArguments().get(1));
-
-                        // Fix up method type when the template can't resolve it
-                        // (e.g. when the select is a locally-defined visitor class)
-                        JavaType.Method originalMt = mi.getMethodType();
-                        if (originalMt != null) {
-                            JavaType.FullyQualified cursorType = JavaType.ShallowClass.build("org.openrewrite.Cursor");
-                            JavaType.Method visitMt = originalMt
-                                    .withName("visit")
-                                    .withParameterNames(ListUtils.concat(originalMt.getParameterNames(), "parent"))
-                                    .withParameterTypes(ListUtils.concat(originalMt.getParameterTypes(), cursorType));
-                            result = result.withMethodType(visitMt)
-                                    .withName(result.getName().withType(visitMt));
+                        // When the method invocation is the direct expression of a return
+                        // statement, the template engine can't replace it. Mark it as a
+                        // search result instead so it surfaces for manual fixing.
+                        Object parentValue = getCursor().getParentTreeCursor().getValue();
+                        if (parentValue instanceof J.Return) {
+                            return SearchResult.found(mi, "Use `visit(tree, ctx, getCursor().getParentTreeCursor())` instead of `" + methodName + "`");
                         }
-                        return result;
+
+                        // Replace visitXxx(tree, ctx) with visit(tree, ctx, getCursor().getParentTreeCursor())
+                        try {
+                            J.MethodInvocation result = JavaTemplate.builder(
+                                            "#{any()}.visit(#{any()}, #{any()}, getCursor().getParentTreeCursor())")
+                                    .contextSensitive()
+                                    .javaParser(JavaParser.fromJavaVersion().classpath("rewrite-core", "rewrite-java"))
+                                    .build()
+                                    .apply(getCursor(), mi.getCoordinates().replace(),
+                                            mi.getSelect(), mi.getArguments().get(0), mi.getArguments().get(1));
+
+                            // Fix up method type when the template can't resolve it
+                            // (e.g. when the select is a locally-defined visitor class)
+                            JavaType.Method originalMt = mi.getMethodType();
+                            if (originalMt != null) {
+                                JavaType.FullyQualified cursorType = JavaType.ShallowClass.build("org.openrewrite.Cursor");
+                                JavaType.Method visitMt = originalMt
+                                        .withName("visit")
+                                        .withParameterNames(ListUtils.concat(originalMt.getParameterNames(), "parent"))
+                                        .withParameterTypes(ListUtils.concat(originalMt.getParameterTypes(), cursorType));
+                                result = result.withMethodType(visitMt)
+                                        .withName(result.getName().withType(visitMt));
+                            }
+                            return result;
+                        } catch (Exception e) {
+                            return SearchResult.found(mi, "Use `visit(tree, ctx, getCursor().getParentTreeCursor())` instead of `" + methodName + "`");
+                        }
                     }
                 }
         );
