@@ -53,9 +53,8 @@ public class RemoveNlsRewriteAnnotations extends Recipe {
                         J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
                         cd = (J.ClassDeclaration) new RemoveAnnotationVisitor(DISPLAY_NAME_MATCHER)
                                 .visit(cd, ctx, getCursor().getParentOrThrow());
-                        cd = (J.ClassDeclaration) new RemoveAnnotationVisitor(DESCRIPTION_MATCHER)
+                        return (J.ClassDeclaration) new RemoveAnnotationVisitor(DESCRIPTION_MATCHER)
                                 .visit(cd, ctx, getCursor().getParentOrThrow());
-                        return cd;
                     }
                 }
         );
