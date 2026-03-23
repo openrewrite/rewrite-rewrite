@@ -100,6 +100,7 @@ recipeList:
   - org.openrewrite.java.recipes.UseRewriteTestDefaults
   - org.openrewrite.java.recipes.UseStringUtilsRecipes
   - org.openrewrite.java.migrate.lang.var.UseVarForConstructors
+  - org.openrewrite.java.migrate.lang.var.UseVarForPrimitive
   - org.openrewrite.java.migrate.lang.var.UseVarForTypeCast
   - org.openrewrite.java.testing.cleanup.RemoveTestPrefix
   - org.openrewrite.java.testing.cleanup.TestsShouldNotBePublic
