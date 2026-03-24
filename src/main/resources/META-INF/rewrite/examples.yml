@@ -523,6 +523,56 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.RemoveNlsRewriteAnnotations
+examples:
+- description: '`RemoveNlsRewriteAnnotationsTest#removeFromRecipeClass`'
+  sources:
+  - before: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.NlsRewrite;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+
+      public class MyRecipe extends Recipe {
+          @Override
+          public @NlsRewrite.DisplayName String getDisplayName() {
+              return "My Recipe";
+          }
+
+          @Override
+          public @NlsRewrite.Description String getDescription() {
+              return "My description.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return TreeVisitor.noop();
+          }
+      }
+    after: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+
+      public class MyRecipe extends Recipe {
+          @Override
+          public String getDisplayName() {
+              return "My Recipe";
+          }
+
+          @Override
+          public String getDescription() {
+              return "My description.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return TreeVisitor.noop();
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.RemoveToBeRemoved
 examples:
 - description: '`RemoveToBeRemovedTest#removeMethodDeclarationPastDate`'
@@ -1223,6 +1273,45 @@ examples:
           void bar() {
               J.Literal literal1 = new J.Literal(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, null, null, JavaType.Primitive.Boolean);
               J.Literal literal2 = new J.Literal(Tree.randomId(), Space.EMPTY, Markers.EMPTY, null, null, null, JavaType.Primitive.Boolean);
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.UseVisitWithParentCursor
+examples:
+- description: '`UseVisitWithParentCursorTest#replaceDirectVisitMethodCallWithVisit`'
+  sources:
+  - before: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.java.JavaVisitor;
+      import org.openrewrite.java.tree.J;
+
+      class OtherJavaVisitor extends JavaVisitor<ExecutionContext> {
+      }
+
+      class SomeJavaVisitor extends JavaVisitor<ExecutionContext> {
+          @Override
+          public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+              J m = super.visitMethodInvocation(method, ctx);
+              m = new OtherJavaVisitor().visitMethodInvocation(method, ctx);
+              return m;
+          }
+      }
+    after: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.java.JavaVisitor;
+      import org.openrewrite.java.tree.J;
+
+      class OtherJavaVisitor extends JavaVisitor<ExecutionContext> {
+      }
+
+      class SomeJavaVisitor extends JavaVisitor<ExecutionContext> {
+          @Override
+          public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+              J m = super.visitMethodInvocation(method, ctx);
+              m = new OtherJavaVisitor().visit(method, ctx, getCursor().getParentTreeCursor());
+              return m;
           }
       }
     language: java
