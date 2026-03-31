@@ -18,6 +18,7 @@ package org.openrewrite.java.recipes;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.*;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
@@ -26,7 +27,6 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -78,9 +78,7 @@ public class UseJavaTemplateStaticApply extends Recipe {
                         }
 
                         // Collect all arguments: template string from builder + original apply args
-                        List<Expression> allArgs = new ArrayList<>();
-                        allArgs.add(builderCall.getArguments().get(0));
-                        allArgs.addAll(mi.getArguments());
+                        List<Expression> allArgs = ListUtils.concat(builderCall.getArguments().get(0), mi.getArguments());
 
                         // Build template: JavaTemplate.apply(#{any()}, #{any()}, ...)
                         String args = String.join(", ", Collections.nCopies(allArgs.size(), "#{any()}"));
