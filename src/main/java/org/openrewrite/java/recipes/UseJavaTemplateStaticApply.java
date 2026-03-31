@@ -84,9 +84,8 @@ public class UseJavaTemplateStaticApply extends Recipe {
 
                         // Build template: JavaTemplate.apply(#{any()}, #{any()}, ...)
                         String args = String.join(", ", Collections.nCopies(allArgs.size(), "#{any()}"));
-                        String template = "JavaTemplate.apply(" + args + ")";
 
-                        return JavaTemplate.builder(template)
+                        return JavaTemplate.builder("JavaTemplate.apply(" + args + ")")
                                 .contextSensitive()
                                 .javaParser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()))
                                 .imports("org.openrewrite.java.JavaTemplate")
