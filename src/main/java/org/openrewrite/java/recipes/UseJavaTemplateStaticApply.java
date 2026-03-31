@@ -90,8 +90,7 @@ public class UseJavaTemplateStaticApply extends Recipe {
                                 .javaParser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()))
                                 .imports("org.openrewrite.java.JavaTemplate")
                                 .build()
-                                .apply(getCursor(), mi.getCoordinates().replace(),
-                                        allArgs.toArray());
+                                .apply(getCursor(), mi.getCoordinates().replace(), allArgs.toArray());
                     }
                 });
     }
