@@ -19,12 +19,12 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -86,34 +86,13 @@ public class UseJavaTemplateStaticApply extends Recipe {
                         String args = String.join(", ", Collections.nCopies(allArgs.size(), "#{any()}"));
                         String template = "JavaTemplate.apply(" + args + ")";
 
-                        J.MethodInvocation result = JavaTemplate.apply(template,
-                                getCursor(), mi.getCoordinates().replace(),
-                                allArgs.toArray());
-
-                        // Copy type information from the original apply invocation
-                        JavaType.Class javaTemplateType = (JavaType.Class) builderCall.getSelect().getType();
-                        if (result.getSelect() instanceof J.Identifier) {
-                            result = result.withSelect(
-                                    ((J.Identifier) result.getSelect()).withType(javaTemplateType));
-                        }
-                        JavaType.Method originalMethodType = mi.getMethodType();
-                        if (originalMethodType != null) {
-                            List<String> paramNames = new ArrayList<>();
-                            paramNames.add("template");
-                            paramNames.addAll(originalMethodType.getParameterNames());
-
-                            List<JavaType> paramTypes = new ArrayList<>();
-                            paramTypes.add(JavaType.Primitive.String);
-                            paramTypes.addAll(originalMethodType.getParameterTypes());
-
-                            result = result.withMethodType(originalMethodType
-                                    .withDeclaringType(javaTemplateType)
-                                    .withParameterNames(paramNames)
-                                    .withParameterTypes(paramTypes));
-                            result = result.withName(result.getName()
-                                    .withType(result.getMethodType()));
-                        }
-                        return result;
+                        return JavaTemplate.builder(template)
+                                .contextSensitive()
+                                .javaParser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()))
+                                .imports("org.openrewrite.java.JavaTemplate")
+                                .build()
+                                .apply(getCursor(), mi.getCoordinates().replace(),
+                                        allArgs.toArray());
                     }
                 });
     }
