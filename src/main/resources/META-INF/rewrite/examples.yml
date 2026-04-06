@@ -1104,6 +1104,39 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.UseJavaTemplateStaticApply
+examples:
+- description: '`UseJavaTemplateStaticApplyTest#replacesBuilderBuildApply`'
+  sources:
+  - before: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.JavaTemplate;
+      import org.openrewrite.java.tree.J;
+
+      class MyRecipe extends JavaIsoVisitor<ExecutionContext> {
+          @Override
+          public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+              return JavaTemplate.builder("#{any()}")
+                      .build()
+                      .apply(getCursor(), method.getCoordinates().replace());
+          }
+      }
+    after: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.JavaTemplate;
+      import org.openrewrite.java.tree.J;
+
+      class MyRecipe extends JavaIsoVisitor<ExecutionContext> {
+          @Override
+          public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+              return JavaTemplate.apply("#{any()}", getCursor(), method.getCoordinates().replace());
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.UseRewriteTestDefaults
 examples:
 - description: '`UseRewriteTestDefaultsTest#shouldRefactorWhenAllTestsUseSameRecipe`'

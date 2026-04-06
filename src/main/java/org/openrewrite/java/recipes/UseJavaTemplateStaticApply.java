@@ -17,7 +17,10 @@ package org.openrewrite.java.recipes;
 
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import org.openrewrite.*;
+import org.openrewrite.ExecutionContext;
+import org.openrewrite.Preconditions;
+import org.openrewrite.Recipe;
+import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
@@ -27,8 +30,9 @@ import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 
-import java.util.Collections;
 import java.util.List;
+
+import static java.util.Collections.nCopies;
 
 @EqualsAndHashCode(callSuper = false)
 @Value
@@ -81,7 +85,7 @@ public class UseJavaTemplateStaticApply extends Recipe {
                         List<Expression> allArgs = ListUtils.concat(builderCall.getArguments().get(0), mi.getArguments());
 
                         // Build template: JavaTemplate.apply(#{any()}, #{any()}, ...)
-                        String args = String.join(", ", Collections.nCopies(allArgs.size(), "#{any()}"));
+                        String args = String.join(", ", nCopies(allArgs.size(), "#{any()}"));
 
                         return JavaTemplate.builder("JavaTemplate.apply(" + args + ")")
                                 .contextSensitive()

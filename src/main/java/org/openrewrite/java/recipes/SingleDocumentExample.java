@@ -58,8 +58,7 @@ public class SingleDocumentExample extends Recipe {
                             // If the method is not a simple JUnit 5 test, remove the annotation
                             if (FindAnnotations.find(method, "@org.junit.jupiter.api.Test").isEmpty()) {
                                 maybeRemoveImport(DOCUMENT_EXAMPLE);
-                                return new RemoveAnnotationVisitor(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER)
-                                        .visitMethodDeclaration(method, ctx);
+                                return new RemoveAnnotationVisitor(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER).visit(method, ctx, getCursor().getParentTreeCursor());
                             }
 
                             // Retain the first `@DocumentExample`
@@ -67,8 +66,7 @@ public class SingleDocumentExample extends Recipe {
                                 foundDocumentExample.set(true);
                                 return st;
                             }
-                            return new RemoveAnnotationVisitor(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER)
-                                    .visitMethodDeclaration(method, ctx);
+                            return new RemoveAnnotationVisitor(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER).visit(method, ctx, getCursor().getParentTreeCursor());
                         }
                 )));
             }
