@@ -172,6 +172,63 @@ class UseVisitWithParentCursorTest implements RewriteTest {
     }
 
     @Test
+    void addCastWhenCalledOnIsoVisitor() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.*;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              class MyRecipe extends Recipe {
+                  @Override
+                  public String getDisplayName() { return ""; }
+                  @Override
+                  public String getDescription() { return ""; }
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return new JavaIsoVisitor<ExecutionContext>() {
+                          @Override
+                          public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                              J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
+                              mi = new JavaIsoVisitor<ExecutionContext>() {}.visitMethodInvocation(mi, ctx);
+                              return mi;
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.*;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              class MyRecipe extends Recipe {
+                  @Override
+                  public String getDisplayName() { return ""; }
+                  @Override
+                  public String getDescription() { return ""; }
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return new JavaIsoVisitor<ExecutionContext>() {
+                          @Override
+                          public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                              J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
+                              mi = (J.MethodInvocation) new JavaIsoVisitor<ExecutionContext>() {
+                              }.visit(mi, ctx, getCursor().getParentTreeCursor());
+                              return mi;
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeSuperCall() {
         rewriteRun(
           java(
