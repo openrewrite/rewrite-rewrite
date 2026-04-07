@@ -39,6 +39,8 @@ import static java.util.Collections.emptyList;
 
 public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDeprecatedMethodRecipes.Accumulator> {
 
+    transient DeprecatedMethodDelegations dataTable = new DeprecatedMethodDelegations(this);
+
     private static final AnnotationMatcher DEPRECATED_MATCHER = new AnnotationMatcher("@java.lang.Deprecated");
     private static final AnnotationMatcher TO_BE_REMOVED_MATCHER = new AnnotationMatcher("@org.openrewrite.internal.ToBeRemoved");
     private static final Path OUTPUT_RELATIVE = Paths.get("src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml");
@@ -123,12 +125,16 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
 
                             String replacement = methodCall.printTrimmed(getCursor())
                                     .replaceAll("\\n\\s+", " ");
+                            String methodPattern = MethodMatcher.methodPattern(md.getMethodType());
                             acc.candidatesByProject
                                     .computeIfAbsent(javaProject, k -> new ArrayList<>())
-                                    .add(new MethodInlineCandidate(
-                                            MethodMatcher.methodPattern(md.getMethodType()),
-                                            replacement));
+                                    .add(new MethodInlineCandidate(methodPattern, replacement));
                             acc.projectBasePaths.putIfAbsent(javaProject, projectBase);
+                            dataTable.insertRow(ctx, new DeprecatedMethodDelegations.Row(
+                                    methodPattern, replacement,
+                                    "- org.openrewrite.java.InlineMethodCalls:\n" +
+                                            "    methodPattern: '" + methodPattern + "'\n" +
+                                            "    replacement: '" + replacement + "'"));
                             return md;
                         }
                     }.visit(tree, ctx);
