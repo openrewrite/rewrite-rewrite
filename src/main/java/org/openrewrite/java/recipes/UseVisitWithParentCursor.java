@@ -153,11 +153,10 @@ public class UseVisitWithParentCursor extends Recipe {
                                 visitMi = visitMi.withMethodType(visitMt)
                                         .withName(visitMi.getName().withType(visitMt));
                                 return ((J.TypeCast) result).withExpression(visitMi);
-                            } else {
-                                visitMi = (J.MethodInvocation) result;
-                                return visitMi.withMethodType(visitMt)
-                                        .withName(visitMi.getName().withType(visitMt));
                             }
+                            visitMi = (J.MethodInvocation) result;
+                            return visitMi.withMethodType(visitMt)
+                                    .withName(visitMi.getName().withType(visitMt));
                         }
                         return result;
                     }
