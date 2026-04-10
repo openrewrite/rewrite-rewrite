@@ -123,7 +123,13 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                                 return md;
                             }
 
-                            String replacement = methodCall.printTrimmed(getCursor())
+                            J commentFree = (J) new JavaIsoVisitor<ExecutionContext>() {
+                                @Override
+                                public Space visitSpace(Space space, Space.Location loc, ExecutionContext ctx) {
+                                    return space.withComments(emptyList());
+                                }
+                            }.visitNonNull(methodCall, ctx);
+                            String replacement = commentFree.printTrimmed(getCursor())
                                     .replaceAll("\\n\\s+", " ");
                             String methodPattern = MethodMatcher.methodPattern(md.getMethodType());
                             acc.candidatesByProject
