@@ -124,7 +124,11 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                             }
 
                             String replacement = methodCall.printTrimmed(getCursor())
-                                    .replaceAll("\\n\\s+", " ");
+                                    .replaceAll("/\\*[\\s\\S]*?\\*/", "")
+                                    .replaceAll("//[^\n]*", "")
+                                    .replaceAll("\\n\\s+", " ")
+                                    .replaceAll("  +", " ")
+                                    .trim();
                             String methodPattern = MethodMatcher.methodPattern(md.getMethodType());
                             acc.candidatesByProject
                                     .computeIfAbsent(javaProject, k -> new ArrayList<>())
