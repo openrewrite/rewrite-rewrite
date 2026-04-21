@@ -116,11 +116,16 @@ public class UseVisitWithParentCursor extends Recipe {
                         }
 
                         // Determine if the called method is iso-style (return type matches first param type)
-                        // and needs a cast since visit() returns Tree
+                        // and needs a cast since visit() returns Tree. Skip the cast when the parent
+                        // is already a cast, or when the invocation's return value is discarded (i.e. it
+                        // is a standalone statement in a block) - a cast expression would not be a valid
+                        // Java statement in that position.
+                        Object parent = getCursor().getParentTreeCursor().getValue();
                         JavaType returnType = mi.getMethodType().getReturnType();
                         boolean needsCast = TypeUtils.isOfType(returnType, firstParamType) &&
                                 returnType instanceof JavaType.FullyQualified &&
-                                !(getCursor().getParentTreeCursor().getValue() instanceof J.TypeCast);
+                                !(parent instanceof J.TypeCast) &&
+                                !(parent instanceof J.Block);
 
                         String templateStr;
                         if (needsCast) {

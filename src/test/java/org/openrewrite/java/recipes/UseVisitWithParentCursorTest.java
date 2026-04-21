@@ -229,6 +229,68 @@ class UseVisitWithParentCursorTest implements RewriteTest {
     }
 
     @Test
+    void doNotAddCastForStandaloneStatementInvocation() {
+        // When the invocation's return value is discarded (statement-expression context),
+        // adding a cast would produce `(Type) foo.visit(...);` which is not a valid Java
+        // statement, causing the template to generate 0 statements. In this case, emit
+        // the invocation without a cast.
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.*;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              class MyRecipe extends Recipe {
+                  @Override
+                  public String getDisplayName() { return ""; }
+                  @Override
+                  public String getDescription() { return ""; }
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return new JavaIsoVisitor<ExecutionContext>() {
+                          @Override
+                          public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                              J.VariableDeclarations m = super.visitVariableDeclarations(multiVariable, ctx);
+                              JavaIsoVisitor<ExecutionContext> delegate = new JavaIsoVisitor<ExecutionContext>() {};
+                              delegate.visitVariableDeclarations(multiVariable, ctx);
+                              return m;
+                          }
+                      };
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.*;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              class MyRecipe extends Recipe {
+                  @Override
+                  public String getDisplayName() { return ""; }
+                  @Override
+                  public String getDescription() { return ""; }
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return new JavaIsoVisitor<ExecutionContext>() {
+                          @Override
+                          public J.VariableDeclarations visitVariableDeclarations(J.VariableDeclarations multiVariable, ExecutionContext ctx) {
+                              J.VariableDeclarations m = super.visitVariableDeclarations(multiVariable, ctx);
+                              JavaIsoVisitor<ExecutionContext> delegate = new JavaIsoVisitor<ExecutionContext>() {};
+                              delegate.visit(multiVariable, ctx, getCursor().getParentTreeCursor());
+                              return m;
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeSuperCall() {
         rewriteRun(
           java(
