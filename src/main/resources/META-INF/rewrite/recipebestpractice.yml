@@ -101,9 +101,7 @@ recipeList:
   - org.openrewrite.java.recipes.SourceSpecTextBlockIndentation
   - org.openrewrite.java.recipes.UseRewriteTestDefaults
   - org.openrewrite.java.recipes.UseStringUtilsRecipes
-  - org.openrewrite.java.migrate.lang.var.UseVarForConstructors
-  - org.openrewrite.java.migrate.lang.var.UseVarForPrimitive
-  - org.openrewrite.java.migrate.lang.var.UseVarForTypeCast
+  - org.openrewrite.java.migrate.JavaBestPractices
   - org.openrewrite.java.testing.junit.JUnit6BestPractices
   - org.openrewrite.java.testing.assertj.Assertj
   - org.openrewrite.staticanalysis.NeedBraces
