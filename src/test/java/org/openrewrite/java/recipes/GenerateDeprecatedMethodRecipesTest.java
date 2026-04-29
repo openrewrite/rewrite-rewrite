@@ -81,6 +81,52 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
     }
 
     @Test
+    void dataTable() {
+        rewriteRun(
+          spec -> spec.dataTable(DeprecatedMethodDelegations.Row.class, rows -> {
+              assertThat(rows).hasSize(1);
+              assertThat(rows.getFirst().getMethodPattern()).isEqualTo("com.example.Bar oldMethod(java.lang.String)");
+              assertThat(rows.getFirst().getReplacement()).isEqualTo("newMethod(s, \"default\")");
+              assertThat(rows.getFirst().getRecipeYaml()).isEqualTo(
+                  """
+                  - org.openrewrite.java.InlineMethodCalls:
+                      methodPattern: 'com.example.Bar oldMethod(java.lang.String)'
+                      replacement: 'newMethod(s, "default")'""");
+          }),
+          java(
+            """
+              package com.example;
+
+              public class Bar {
+                  public void newMethod(String s, String defaultVal) {
+                  }
+
+                  @Deprecated
+                  public void oldMethod(String s) {
+                      newMethod(s, "default");
+                  }
+              }
+              """
+          ),
+          yaml(
+            doesNotExist(),
+            //language=yaml
+            """
+              type: specs.openrewrite.org/v1beta/recipe
+              name: org.openrewrite.recipes.InlineDeprecatedMethods
+              displayName: Inline deprecated delegating methods
+              description: Automatically generated recipes to inline deprecated method calls that delegate to other methods in the same class.
+              recipeList:
+                - org.openrewrite.java.InlineMethodCalls:
+                    methodPattern: 'com.example.Bar oldMethod(java.lang.String)'
+                    replacement: 'newMethod(s, "default")'
+              """,
+            spec -> spec.path("src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml")
+          )
+        );
+    }
+
+    @Test
     void methodDelegation() {
         rewriteRun(
           java(
@@ -264,6 +310,42 @@ class GenerateDeprecatedMethodRecipesTest implements RewriteTest {
                 - org.openrewrite.java.InlineMethodCalls:
                     methodPattern: 'com.example.Multi oldMethod(java.lang.String, java.lang.String)'
                     replacement: 'newMethod(a, b)'
+              """,
+            spec -> spec.path("src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml")
+          )
+        );
+    }
+
+    @Test
+    void commentsInDelegationBodyStripped() {
+        rewriteRun(
+          java(
+            """
+              package com.example;
+
+              public class Commented {
+                  public void newMethod(String s, String defaultVal) {
+                  }
+
+                  @Deprecated
+                  public void oldMethod(String s) {
+                      newMethod(s, /* noinspection */ "default");
+                  }
+              }
+              """
+          ),
+          yaml(
+            doesNotExist(),
+            //language=yaml
+            """
+              type: specs.openrewrite.org/v1beta/recipe
+              name: org.openrewrite.recipes.InlineDeprecatedMethods
+              displayName: Inline deprecated delegating methods
+              description: Automatically generated recipes to inline deprecated method calls that delegate to other methods in the same class.
+              recipeList:
+                - org.openrewrite.java.InlineMethodCalls:
+                    methodPattern: 'com.example.Commented oldMethod(java.lang.String)'
+                    replacement: 'newMethod(s, "default")'
               """,
             spec -> spec.path("src/main/resources/META-INF/rewrite/inline-deprecated-methods.yml")
           )

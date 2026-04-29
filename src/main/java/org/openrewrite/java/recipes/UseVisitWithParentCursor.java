@@ -21,9 +21,9 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
-import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
+import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.TypeMatcher;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.Expression;
@@ -48,11 +48,11 @@ public class UseVisitWithParentCursor extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
                 new UsesType<>("org.openrewrite.TreeVisitor", true),
-                new JavaIsoVisitor<ExecutionContext>() {
+                new JavaVisitor<ExecutionContext>() {
                     private static final String IN_TREE_VISITOR = "IN_TREE_VISITOR";
 
                     @Override
-                    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                    public J visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                         if (TypeUtils.isAssignableTo("org.openrewrite.TreeVisitor", classDecl.getType())) {
                             getCursor().putMessage(IN_TREE_VISITOR, true);
                         }
@@ -60,7 +60,7 @@ public class UseVisitWithParentCursor extends Recipe {
                     }
 
                     @Override
-                    public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+                    public J visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
                         if (newClass.getBody() != null &&
                                 TypeUtils.isAssignableTo("org.openrewrite.TreeVisitor", newClass.getType())) {
                             getCursor().putMessage(IN_TREE_VISITOR, true);
@@ -69,8 +69,8 @@ public class UseVisitWithParentCursor extends Recipe {
                     }
 
                     @Override
-                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                        J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
+                    public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                        J.MethodInvocation mi = (J.MethodInvocation) super.visitMethodInvocation(method, ctx);
 
                         // Method name must match visit[A-Z]* (not just "visit" or "visitNonNull")
                         String methodName = mi.getSimpleName();
@@ -115,9 +115,28 @@ public class UseVisitWithParentCursor extends Recipe {
                             return mi;
                         }
 
+                        // Determine if the called method is iso-style (return type matches first param type)
+                        // and needs a cast since visit() returns Tree. Skip the cast when the parent
+                        // is already a cast, or when the invocation's return value is discarded (i.e. it
+                        // is a standalone statement in a block) - a cast expression would not be a valid
+                        // Java statement in that position.
+                        Object parent = getCursor().getParentTreeCursor().getValue();
+                        JavaType returnType = mi.getMethodType().getReturnType();
+                        boolean needsCast = TypeUtils.isOfType(returnType, firstParamType) &&
+                                returnType instanceof JavaType.FullyQualified &&
+                                !(parent instanceof J.TypeCast) &&
+                                !(parent instanceof J.Block);
+
+                        String templateStr;
+                        if (needsCast) {
+                            String castTypeName = ((JavaType.FullyQualified) returnType).getClassName();
+                            templateStr = "(" + castTypeName + ") #{any()}.visit(#{any()}, #{any()}, getCursor().getParentTreeCursor())";
+                        } else {
+                            templateStr = "#{any()}.visit(#{any()}, #{any()}, getCursor().getParentTreeCursor())";
+                        }
+
                         // Replace visitXxx(tree, ctx) with visit(tree, ctx, getCursor().getParentTreeCursor())
-                        J.MethodInvocation result = JavaTemplate.builder(
-                                        "#{any()}.visit(#{any()}, #{any()}, getCursor().getParentTreeCursor())")
+                        J result = JavaTemplate.builder(templateStr)
                                 .contextSensitive()
                                 .javaParser(JavaParser.fromJavaVersion().classpath("rewrite-core", "rewrite-java"))
                                 .build()
@@ -133,8 +152,16 @@ public class UseVisitWithParentCursor extends Recipe {
                                     .withName("visit")
                                     .withParameterNames(ListUtils.concat(originalMt.getParameterNames(), "parent"))
                                     .withParameterTypes(ListUtils.concat(originalMt.getParameterTypes(), cursorType));
-                            result = result.withMethodType(visitMt)
-                                    .withName(result.getName().withType(visitMt));
+                            J.MethodInvocation visitMi;
+                            if (result instanceof J.TypeCast) {
+                                visitMi = (J.MethodInvocation) ((J.TypeCast) result).getExpression();
+                                visitMi = visitMi.withMethodType(visitMt)
+                                        .withName(visitMi.getName().withType(visitMt));
+                                return ((J.TypeCast) result).withExpression(visitMi);
+                            }
+                            visitMi = (J.MethodInvocation) result;
+                            return visitMi.withMethodType(visitMt)
+                                    .withName(visitMi.getName().withType(visitMt));
                         }
                         return result;
                     }
