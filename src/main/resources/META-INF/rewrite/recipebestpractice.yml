@@ -33,20 +33,45 @@ recipeList:
   - org.openrewrite.java.SimplifySingleElementAnnotation
   - org.openrewrite.java.format.EmptyNewlineAtEndOfFile
   - org.openrewrite.java.format.RemoveTrailingWhitespace
-  - org.openrewrite.staticanalysis.CompareEnumsWithEqualityOperator
-  - org.openrewrite.staticanalysis.EqualsAvoidsNull
+
+  # Opinionated, not included with Java best practices by default
   - org.openrewrite.staticanalysis.InlineVariable
-  - org.openrewrite.staticanalysis.LambdaBlockToExpression
-  - org.openrewrite.staticanalysis.MissingOverrideAnnotation
   - org.openrewrite.staticanalysis.OperatorWrap:
       wrapOption: EOL
-  - org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
   - org.openrewrite.staticanalysis.RemoveUnusedLocalVariables
   - org.openrewrite.staticanalysis.RemoveUnusedPrivateFields
   - org.openrewrite.staticanalysis.RemoveUnusedPrivateMethods
   #- org.openrewrite.staticanalysis.UnnecessaryThrows
   - org.openrewrite.staticanalysis.UnwrapElseAfterReturn
+
+  # Static analysis: bug prevention
+  - org.openrewrite.staticanalysis.EqualsAvoidsNull
+  - org.openrewrite.staticanalysis.MissingOverrideAnnotation
+  - org.openrewrite.staticanalysis.ReplaceWeekYearWithYear
+  - org.openrewrite.staticanalysis.RemoveHashCodeCallsFromArrayInstances
+  - org.openrewrite.staticanalysis.RemoveToStringCallsFromArrayInstances
+  - org.openrewrite.staticanalysis.UseObjectNotifyAll
+  - org.openrewrite.staticanalysis.RemoveCallsToSystemGc
+  - org.openrewrite.staticanalysis.RemoveCallsToObjectFinalize
+  - org.openrewrite.staticanalysis.URLEqualsHashCodeRecipes
+  # Static analysis: modernization and cleanup
+  - org.openrewrite.staticanalysis.LambdaBlockToExpression
+  - org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
   - org.openrewrite.staticanalysis.UseDiamondOperator
+  - org.openrewrite.staticanalysis.UnnecessaryParentheses
+  - org.openrewrite.staticanalysis.RemoveRedundantNullCheckBeforeInstanceof
+  - org.openrewrite.staticanalysis.ReplaceStringBuilderWithString
+  - org.openrewrite.staticanalysis.UseCollectionInterfaces
+  - org.openrewrite.staticanalysis.CompareEnumsWithEqualityOperator
+  - org.openrewrite.staticanalysis.CombineSemanticallyEqualCatchBlocks
+  - org.openrewrite.staticanalysis.UseStringReplace
+  - org.openrewrite.staticanalysis.UseStandardCharset
+  - org.openrewrite.staticanalysis.UseSystemLineSeparator
+  - org.openrewrite.staticanalysis.RemoveRedundantTypeCast
+  - org.openrewrite.staticanalysis.ReplaceStackWithDeque
+  - org.openrewrite.staticanalysis.UseListSort
+  - org.openrewrite.staticanalysis.EqualsToContentEquals
+
   - org.openrewrite.java.UseStaticImport:
       methodPattern: java.util.stream.Collectors *(..)
   - org.openrewrite.java.UseStaticImport:
@@ -101,7 +126,21 @@ recipeList:
   - org.openrewrite.java.recipes.SourceSpecTextBlockIndentation
   - org.openrewrite.java.recipes.UseRewriteTestDefaults
   - org.openrewrite.java.recipes.UseStringUtilsRecipes
-  - org.openrewrite.java.migrate.JavaBestPractices
+
+  # Local variable type inference — targeted, non-controversial uses
+  # NOTE: UseVarForGenericsConstructors and UseVarForGenericMethodInvocations must run
+  # before UseDiamondOperator, as they need the explicit type arguments on constructors
+  # to safely infer the type for var. Diamond would erase that information.
+  - org.openrewrite.java.migrate.lang.var.UseVarForTypeCast
+  - org.openrewrite.java.migrate.lang.var.UseVarForConstructors
+  - org.openrewrite.java.migrate.lang.var.UseVarForGenericsConstructors
+  - org.openrewrite.java.migrate.lang.var.UseVarForGenericMethodInvocations
+  - org.openrewrite.java.migrate.lang.var.UseVarForPrimitive
+  # Prefer modern Java collection factories and utilities
+  - org.openrewrite.java.migrate.util.JavaUtilAPIs
+  # Markdown documentation comments (JEP 467, Java 23+)
+  - org.openrewrite.java.migrate.lang.JavadocToMarkdownDocComment
+
   - org.openrewrite.java.testing.junit.JUnit6BestPractices
   - org.openrewrite.java.testing.assertj.Assertj
   - org.openrewrite.staticanalysis.NeedBraces
