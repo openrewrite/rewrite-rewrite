@@ -23,8 +23,9 @@ import org.openrewrite.style.NamedStyles;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
+import java.util.List;
+import java.util.Set;
+
 import static org.openrewrite.Tree.randomId;
 import static org.openrewrite.java.Assertions.java;
 
@@ -34,9 +35,9 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
     public void defaults(RecipeSpec spec) {
         spec.recipe(new SourceSpecTextBlockNewLine())
           .parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()).styles(
-            singletonList(
+            List.of(
               new NamedStyles(
-                randomId(), "test", "test", "test", emptySet(), singletonList(
+                randomId(), "test", "test", "test", Set.of(), List.of(
                 new TabsAndIndentsStyle(false, 4, 4, 2, false)
               )
               )

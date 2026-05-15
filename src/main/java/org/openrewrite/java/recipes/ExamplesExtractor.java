@@ -114,8 +114,8 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         Documents emptyDoc = YamlParser.builder().build()
                 .parse("---\n")
-                .filter(sf -> sf instanceof Documents)
-                .map(sf -> (Documents) sf)
+                .filter(Documents.class::isInstance)
+                .map(Documents.class::cast)
                 .findFirst().get();
         return acc.projectRecipeExamples.entrySet().stream()
                 .filter(entry -> !acc.existingExampleFiles.contains(entry.getKey()))

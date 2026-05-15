@@ -123,7 +123,7 @@ public class GenerateDeprecatedMethodRecipes extends ScanningRecipe<GenerateDepr
                                 return md;
                             }
 
-                            J commentFree = (J) new JavaIsoVisitor<ExecutionContext>() {
+                            J commentFree = new JavaIsoVisitor<ExecutionContext>() {
                                 @Override
                                 public Space visitSpace(Space space, Space.Location loc, ExecutionContext ctx) {
                                     return space.withComments(emptyList());
