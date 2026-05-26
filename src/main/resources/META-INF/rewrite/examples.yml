@@ -1374,3 +1374,38 @@ examples:
           }
       }
     language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.recipes.rewrite.OpenRewriteRecipeBestPractices
+examples:
+- description: '`RecipeTestingBestPracticesTest#collapsesSingleReturnLambdaWithInlineActual`'
+  sources:
+  - before: |
+      import org.openrewrite.test.RewriteTest;
+
+      import java.util.function.UnaryOperator;
+
+      import static org.assertj.core.api.Assertions.assertThat;
+
+      class FooTest implements RewriteTest {
+          UnaryOperator<String> assertion() {
+              return after -> {
+                  assertThat(after).contains("~~>");
+                  return after;
+              };
+          }
+      }
+    after: |+
+      import org.openrewrite.test.RewriteTest;
+
+      import java.util.function.UnaryOperator;
+
+      import static org.assertj.core.api.Assertions.assertThat;
+
+      class FooTest implements RewriteTest {
+          UnaryOperator<String> assertion() {
+              return after -> assertThat(after).contains("~~>").actual();
+          }
+      }
+
+    language: java
