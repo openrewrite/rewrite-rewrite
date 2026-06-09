@@ -52,3 +52,5 @@ src/main/generated/
 
 .DS_Store
 working-set*/
+
+.context/
