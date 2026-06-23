@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 import org.openrewrite.*;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.RenameVariable;
+import org.openrewrite.java.VariableNameUtils;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.Statement;
@@ -58,7 +59,8 @@ public class ExecutionContextParameterName extends Recipe {
                                 J.VariableDeclarations param = (J.VariableDeclarations) parameter;
                                 if (TypeUtils.isOfClassType(param.getType(), "org.openrewrite.ExecutionContext") &&
                                         !"delegate".equals(param.getVariables().get(0).getSimpleName()) &&
-                                        !param.getVariables().get(0).getSimpleName().startsWith(prefix)) {
+                                        !param.getVariables().get(0).getSimpleName().startsWith(prefix) &&
+                                        !VariableNameUtils.findNamesInScope(getCursor()).contains(prefix)) {
                                     m = (J.MethodDeclaration) new RenameVariable<ExecutionContext>(param.getVariables().get(0), prefix)
                                             .visitNonNull(m, ctx);
                                 }

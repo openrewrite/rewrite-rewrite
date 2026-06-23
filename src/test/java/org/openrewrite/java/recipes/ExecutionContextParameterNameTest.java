@@ -132,6 +132,25 @@ class ExecutionContextParameterNameTest implements RewriteTest {
     }
 
     @Test
+    void doNotRenameWhenItWouldShadowOuterScope() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.*;
+              class SampleRecipe extends Recipe {
+                  public void test(ExecutionContext ctx) {
+                      new Visitor() {
+                          public void visit(ExecutionContext c) {
+                          }
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotRenameDelegateParameter() {
         rewriteRun(
           java(
