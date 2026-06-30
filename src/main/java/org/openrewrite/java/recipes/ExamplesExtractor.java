@@ -60,10 +60,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
     private static final MethodMatcher ASSERTIONS_METHOD_MATCHER = new MethodMatcher("org.openrewrite.*.Assertions *(..)");
     private static final MethodMatcher BUILD_GRADLE_METHOD_MATCHER = new MethodMatcher("org.openrewrite.gradle.Assertions buildGradle(..)");
     private static final MethodMatcher POM_XML_METHOD_MATCHER = new MethodMatcher("org.openrewrite.maven.Assertions pomXml(..)");
-    private static final MethodMatcher ACTIVE_RECIPES_METHOD_MATCHER = new MethodMatcher("org.openrewrite.config.Environment activateRecipes(..)");
-    private static final MethodMatcher RECIPE_FROM_RESOURCES_METHOD_MATCHER = new MethodMatcher("org.openrewrite.test.RecipeSpec#recipeFromResource*(..)");
     private static final MethodMatcher PATH_METHOD_MATCHER = new MethodMatcher("org.openrewrite.test.SourceSpec path(java.lang.String)");
-    private static final MethodMatcher RECIPE_METHOD_MATCHER = new MethodMatcher("org.openrewrite.test.RecipeSpec#recipe*(..)");
 
     @Getter
     final String displayName = "Extract documentation examples from tests";
@@ -170,7 +167,8 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         @Override
         public J.MethodDeclaration visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
             if (DEFAULTS_METHOD_MATCHER.matches(method.getMethodType())) {
-                getCursor().putMessageOnFirstEnclosing(J.ClassDeclaration.class, RECIPE_KEY, findRecipe(method));
+                getCursor().putMessageOnFirstEnclosing(J.ClassDeclaration.class, RECIPE_KEY,
+                        findRecipe(method, getCursor().firstEnclosing(JavaSourceFile.class)));
                 return method;
             }
 
@@ -198,7 +196,7 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
 
             int sourceStartIndex;
             if (REWRITE_RUN_METHOD_MATCHER_WITH_SPEC.matches(method)) {
-                getCursor().putMessage(RECIPE_KEY, findRecipe(args.get(0)));
+                getCursor().putMessage(RECIPE_KEY, findRecipe(args.get(0), getCursor().firstEnclosing(JavaSourceFile.class)));
                 sourceStartIndex = 1;
             } else if (REWRITE_RUN_METHOD_MATCHER.matches(method)) {
                 sourceStartIndex = 0;
@@ -235,57 +233,99 @@ public class ExamplesExtractor extends ScanningRecipe<ExamplesExtractor.Accumula
         }
 
 
-        private @Nullable RecipeNameAndParameters findRecipe(J tree) {
+        private @Nullable RecipeNameAndParameters findRecipe(J tree, @Nullable JavaSourceFile sourceFile) {
+            // The recipe under test is frequently not resolvable through the type system here: the example
+            // sources are test code, and the recipe class lives in the main source set, which is often only
+            // partially attributed (or not at all) when examples are extracted. As that also leaves the
+            // `spec.recipe(...)` invocation itself untyped, the configuration is matched structurally by method
+            // name. This is safe as the only receiver in a `defaults(RecipeSpec)` method or a `rewriteRun` spec
+            // consumer is the `RecipeSpec`.
             return new JavaIsoVisitor<AtomicReference<@Nullable RecipeNameAndParameters>>() {
                 @Override
                 public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicReference<@Nullable RecipeNameAndParameters> recipe) {
-                    if (RECIPE_METHOD_MATCHER.matches(method)) {
-                        new JavaIsoVisitor<AtomicReference<@Nullable RecipeNameAndParameters>>() {
-                            @Override
-                            public J.NewClass visitNewClass(J.NewClass newClass, AtomicReference<@Nullable RecipeNameAndParameters> recipe) {
-                                JavaType type = newClass.getClazz() != null ? newClass.getClazz().getType() : null;
-                                if (type == null) {
-                                    type = newClass.getType();
+                    String name = method.getSimpleName();
+                    List<Expression> arguments = method.getArguments();
+                    if (("activateRecipes".equals(name) || name.startsWith("recipeFromResource")) && !arguments.isEmpty()) {
+                        // Declarative recipes are referenced by name as a string literal
+                        Expression arg = arguments.get(arguments.size() - 1);
+                        if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
+                            RecipeNameAndParameters named = new RecipeNameAndParameters();
+                            named.name = ((J.Literal) arg).getValue().toString();
+                            recipe.set(named);
+                        }
+                    } else if ("recipe".equals(name) || "recipes".equals(name)) {
+                        // `recipe(...)` / `recipes(...)` take the Recipe instance(s) constructed in place as arguments
+                        for (Expression arg : arguments) {
+                            if (arg instanceof J.NewClass) {
+                                RecipeNameAndParameters constructed = recipeFromConstructor((J.NewClass) arg, sourceFile);
+                                if (constructed != null) {
+                                    recipe.set(constructed); // The last recipe wins, mirroring `spec.recipes(first, second)`
                                 }
-
-                                if (TypeUtils.isAssignableTo("org.openrewrite.Recipe", type) && type instanceof JavaType.Class) {
-                                    JavaType.Class tc = (JavaType.Class) type;
-                                    RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
-                                    recipeNameAndParameters.name = tc.getFullyQualifiedName();
-                                    recipeNameAndParameters.parameters = extractParameters(newClass.getArguments());
-                                    recipe.set(recipeNameAndParameters);
-                                }
-                                return newClass;
                             }
-
-                            @Override
-                            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method,
-                                                                            AtomicReference<@Nullable RecipeNameAndParameters> recipe) {
-                                if (ACTIVE_RECIPES_METHOD_MATCHER.matches(method)) {
-                                    Expression arg = method.getArguments().get(method.getArguments().size() - 1);
-                                    if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
-                                        RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
-                                        recipeNameAndParameters.name = ((J.Literal) arg).getValue().toString();
-                                        recipe.set(recipeNameAndParameters);
-                                    }
-                                    return method;
-                                }
-                                if (RECIPE_FROM_RESOURCES_METHOD_MATCHER.matches(method)) {
-                                    Expression arg = method.getArguments().get(method.getArguments().size() - 1);
-                                    if (arg instanceof J.Literal && ((J.Literal) arg).getValue() != null) {
-                                        RecipeNameAndParameters recipeNameAndParameters = new RecipeNameAndParameters();
-                                        recipeNameAndParameters.name = ((J.Literal) arg).getValue().toString();
-                                        recipe.set(recipeNameAndParameters);
-                                    }
-                                    return method;
-                                }
-                                return super.visitMethodInvocation(method, recipe);
-                            }
-                        }.visit(tree, recipe);
+                        }
                     }
                     return super.visitMethodInvocation(method, recipe);
                 }
             }.reduce(tree, new AtomicReference<@Nullable RecipeNameAndParameters>()).get();
+        }
+
+        private @Nullable RecipeNameAndParameters recipeFromConstructor(J.NewClass newClass, @Nullable JavaSourceFile sourceFile) {
+            String name = recipeName(newClass, sourceFile);
+            if (name == null) {
+                return null;
+            }
+            RecipeNameAndParameters recipe = new RecipeNameAndParameters();
+            recipe.name = name;
+            recipe.parameters = extractParameters(newClass.getArguments());
+            return recipe;
+        }
+
+        private static @Nullable String recipeName(J.NewClass newClass, @Nullable JavaSourceFile sourceFile) {
+            JavaType type = newClass.getClazz() != null ? newClass.getClazz().getType() : null;
+            if (type == null) {
+                type = newClass.getType();
+            }
+            if (type instanceof JavaType.FullyQualified && !(type instanceof JavaType.Unknown)) {
+                return ((JavaType.FullyQualified) type).getFullyQualifiedName();
+            }
+            // Fall back to the source when the type was not (fully) attributed
+            J clazz = newClass.getClazz();
+            if (clazz instanceof J.ParameterizedType) {
+                clazz = ((J.ParameterizedType) clazz).getClazz();
+            }
+            String declared = qualifiedName(clazz);
+            if (declared == null) {
+                return null;
+            }
+            if (declared.contains(".")) {
+                return declared; // already fully qualified in the source
+            }
+            if (sourceFile != null) {
+                for (J.Import anImport : sourceFile.getImports()) {
+                    String imported = anImport.getTypeName();
+                    if (!anImport.isStatic() && (imported.equals(declared) || imported.endsWith("." + declared))) {
+                        return imported;
+                    }
+                }
+                if (sourceFile instanceof J.CompilationUnit) {
+                    J.Package pkg = ((J.CompilationUnit) sourceFile).getPackageDeclaration();
+                    if (pkg != null) {
+                        return qualifiedName(pkg.getExpression()) + "." + declared;
+                    }
+                }
+            }
+            return declared;
+        }
+
+        private static @Nullable String qualifiedName(@Nullable J expression) {
+            if (expression instanceof J.Identifier) {
+                return ((J.Identifier) expression).getSimpleName();
+            }
+            if (expression instanceof J.FieldAccess) {
+                String target = qualifiedName(((J.FieldAccess) expression).getTarget());
+                return target == null ? null : target + "." + ((J.FieldAccess) expression).getSimpleName();
+            }
+            return null;
         }
 
         private List<String> extractParameters(List<Expression> args) {

@@ -21,6 +21,7 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 import org.openrewrite.test.SourceSpec;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.*;
 import static org.openrewrite.test.SourceSpecs.text;
@@ -1557,6 +1558,203 @@ class ExamplesExtractorTest implements RewriteTest {
                       class A {}
                     language: java
                 \n""",
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
+            )
+          )
+        );
+    }
+
+    @Test
+    void extractExampleWhenRecipeTypeUnresolvedSamePackage() {
+        rewriteRun(
+          // The recipe under test lives in the main source set and is frequently not attributed when examples
+          // are extracted, which also leaves the `spec.recipe(...)` invocation untyped. It is referenced here by
+          // its simple name from the same package, as is common in tests.
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          mavenProject(
+            "project",
+            //language=java
+            srcTestJava(
+              java(
+                """
+                  package org.openrewrite.staticanalysis;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class ChainStringBuilderAppendCallsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new ChainStringBuilderAppendCalls());
+                      }
+
+                      @DocumentExample("Objects concatenation.")
+                      @Test
+                      void objectsConcatenation() {
+                          rewriteRun(
+                            java(
+                              ""\"
+                              class A {}
+                              ""\",
+                              ""\"
+                              class B {}
+                              ""\"
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
+            ),
+            //language=yaml
+            yaml(
+              doesNotExist(), // newly created
+              """
+                ---
+                type: specs.openrewrite.org/v1beta/example
+                recipeName: org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
+                examples:
+                - description: Objects concatenation.
+                  sources:
+                  - before: |
+                      class A {}
+                    after: |
+                      class B {}
+                    language: java
+                """,
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
+            )
+          )
+        );
+    }
+
+    @Test
+    void extractExampleWhenRecipeTypeUnresolvedViaImport() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          mavenProject(
+            "project",
+            //language=java
+            srcTestJava(
+              java(
+                """
+                  package org.openrewrite.staticanalysis.other;
+
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class ChainStringBuilderAppendCallsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new ChainStringBuilderAppendCalls());
+                      }
+
+                      @DocumentExample("Objects concatenation.")
+                      @Test
+                      void objectsConcatenation() {
+                          rewriteRun(
+                            java(
+                              ""\"
+                              class A {}
+                              ""\",
+                              ""\"
+                              class B {}
+                              ""\"
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
+            ),
+            //language=yaml
+            yaml(
+              doesNotExist(), // newly created
+              """
+                ---
+                type: specs.openrewrite.org/v1beta/example
+                recipeName: org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
+                examples:
+                - description: Objects concatenation.
+                  sources:
+                  - before: |
+                      class A {}
+                    after: |
+                      class B {}
+                    language: java
+                """,
+              spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
+            )
+          )
+        );
+    }
+
+    @Test
+    void extractExampleWhenRecipeTypeUnresolvedFullyQualified() {
+        rewriteRun(
+          spec -> spec.typeValidationOptions(TypeValidation.none()),
+          mavenProject(
+            "project",
+            //language=java
+            srcTestJava(
+              java(
+                """
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.DocumentExample;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  import static org.openrewrite.java.Assertions.java;
+
+                  class ChainStringBuilderAppendCallsTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls());
+                      }
+
+                      @DocumentExample("Objects concatenation.")
+                      @Test
+                      void objectsConcatenation() {
+                          rewriteRun(
+                            java(
+                              ""\"
+                              class A {}
+                              ""\",
+                              ""\"
+                              class B {}
+                              ""\"
+                            )
+                          );
+                      }
+                  }
+                  """
+              )
+            ),
+            //language=yaml
+            yaml(
+              doesNotExist(), // newly created
+              """
+                ---
+                type: specs.openrewrite.org/v1beta/example
+                recipeName: org.openrewrite.staticanalysis.ChainStringBuilderAppendCalls
+                examples:
+                - description: Objects concatenation.
+                  sources:
+                  - before: |
+                      class A {}
+                    after: |
+                      class B {}
+                    language: java
+                """,
               spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
             )
           )
