@@ -473,6 +473,82 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     }
 
     @Test
+    void shouldHandleClassWithFieldInitializedByMethodCall() {
+        rewriteRun(
+          java(
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RewriteTest;
+
+              import java.util.LinkedHashMap;
+              import java.util.Map;
+
+              class MyTest implements RewriteTest {
+
+                  private static final Map<String, String> PROPS = loadProperties();
+
+                  private static Map<String, String> loadProperties() {
+                      return new LinkedHashMap<>();
+                  }
+
+                  @Test
+                  void test1() {
+                      rewriteRun(
+                          spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                          org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+                      );
+                  }
+
+                  @Test
+                  void test2() {
+                      rewriteRun(
+                          spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                          org.openrewrite.java.Assertions.java("class B {}", "class B {}")
+                      );
+                  }
+              }
+              """,
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              import java.util.LinkedHashMap;
+              import java.util.Map;
+
+              class MyTest implements RewriteTest {
+
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample());
+                  }
+
+                  private static final Map<String, String> PROPS = loadProperties();
+
+                  private static Map<String, String> loadProperties() {
+                      return new LinkedHashMap<>();
+                  }
+
+                  @Test
+                  void test1() {
+                      rewriteRun(
+                          org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+                      );
+                  }
+
+                  @Test
+                  void test2() {
+                      rewriteRun(
+                          org.openrewrite.java.Assertions.java("class B {}", "class B {}")
+                      );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void shouldHandleMethodReference() {
         rewriteRun(
           java(

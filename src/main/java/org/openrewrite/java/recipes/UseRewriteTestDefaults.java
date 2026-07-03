@@ -132,7 +132,8 @@ public class UseRewriteTestDefaults extends Recipe {
 
             private J.ClassDeclaration newlineBeforeFirstStatement(J.ClassDeclaration cd) {
                 return cd.withBody(cd.getBody().withStatements(ListUtils.mapFirst(cd.getBody().getStatements(),
-                        first -> first.withPrefix(first.getPrefix().withWhitespace("\n" + first.getPrefix().getWhitespace())))));
+                        first -> first.withPrefix(first.getPrefix().withWhitespace(
+                                "\n\n" + first.getPrefix().getWhitespace().replaceFirst("^\\n+", ""))))));
             }
 
             private J.ClassDeclaration addDefaultsMethod(J.ClassDeclaration cd, RecipeSpecInfo specInfo) {
@@ -143,7 +144,6 @@ public class UseRewriteTestDefaults extends Recipe {
                                             "public void defaults(RecipeSpec spec) {\n" +
                                             "    #{any()}\n" +
                                             "}")
-                            .contextSensitive()
                             .imports("org.openrewrite.test.RecipeSpec")
                             .javaParser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()))
                             .build()
