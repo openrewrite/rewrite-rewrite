@@ -95,7 +95,12 @@ public class SourceSpecTextBlockIndentation extends Recipe {
                                         }
                                     }
 
-                                    return source.withValueSource(fixedSource.toString());
+                                    String fixed = fixedSource.toString();
+                                    if (fixed.equals(source.getValueSource())) {
+                                        // Nothing to trim (e.g. margin already minimal); avoid a no-op change
+                                        return argument;
+                                    }
+                                    return source.withValueSource(fixed);
                                 }
 
                             }
