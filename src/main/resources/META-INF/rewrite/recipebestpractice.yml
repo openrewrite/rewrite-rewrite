@@ -20,6 +20,11 @@ name: org.openrewrite.recipes.rewrite.OpenRewriteRecipeBestPractices
 displayName: OpenRewrite recipe best practices
 description: Best practices for OpenRewrite recipe development.
 recipeList:
+  # Keep the Develocity build scan configuration consistent across OpenRewrite projects
+  - org.openrewrite.gradle.plugins.SetDevelocityServer:
+      server: "https://community.develocity.cloud/"
+  - org.openrewrite.gradle.plugins.SetDevelocityProjectId:
+      projectId: openrewrite
   - org.openrewrite.recipes.rewrite.InlineMethods
   - org.openrewrite.java.recipes.GenerateDeprecatedMethodRecipes
   - org.openrewrite.java.recipes.JavaRecipeBestPractices
