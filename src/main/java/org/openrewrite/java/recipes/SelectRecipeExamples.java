@@ -57,7 +57,7 @@ public class SelectRecipeExamples extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(Preconditions.not(new UsesType<>(DOCUMENT_EXAMPLE_ANNOTATION_FQN, false)), new JavaIsoVisitor<ExecutionContext>() {
-            private int selectedCount = 0;
+            private int selectedCount;
 
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl,

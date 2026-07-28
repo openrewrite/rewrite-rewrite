@@ -43,7 +43,7 @@ public class ReorderTestMethods extends Recipe {
     final String description = "Reorders `RewriteTest` methods to place `defaults` first, followed by any `@DocumentExample`s.";
 
     private static final Comparator<J.MethodDeclaration> methodDeclarationComparator = Comparator
-            .<J.MethodDeclaration, Boolean>comparing(md -> md.getLeadingAnnotations().stream().anyMatch(BEFORE_ANNOTATION_MATCHER::matches))
+            .comparing(md -> md.getLeadingAnnotations().stream().anyMatch(BEFORE_ANNOTATION_MATCHER::matches))
             .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(AFTER_ANNOTATION_MATCHER::matches))
             .thenComparing(md -> "defaults".equals(md.getSimpleName()))
             .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER::matches))
