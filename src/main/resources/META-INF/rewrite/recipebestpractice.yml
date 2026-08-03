@@ -122,6 +122,7 @@ preconditions:
 recipeList:
   - org.openrewrite.java.migrate.util.ReplaceStreamCollectWithToList:
       convertToList: true
+  - org.openrewrite.java.recipes.ClasspathArgumentsOnePerLine
   - org.openrewrite.java.recipes.RewriteTestClassesShouldNotBePublic
   - org.openrewrite.java.recipes.SelectRecipeExamples
   - org.openrewrite.java.recipes.SingleDocumentExample
