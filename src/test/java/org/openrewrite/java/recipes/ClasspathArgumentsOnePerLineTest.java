@@ -126,6 +126,48 @@ class ClasspathArgumentsOnePerLineTest implements RewriteTest {
     }
 
     @Test
+    void indentMatchesTheSurroundingMethodChain() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.InMemoryExecutionContext;
+              import org.openrewrite.java.JavaParser;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyRecipeTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.expectedCyclesThatMakeChanges(1)
+                              .parser(JavaParser.fromJavaVersion()
+                                      .classpathFromResources(new InMemoryExecutionContext(), "junit-jupiter-api-5", "assertj-core-3", "mockito-core-5"));
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.InMemoryExecutionContext;
+              import org.openrewrite.java.JavaParser;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyRecipeTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.expectedCyclesThatMakeChanges(1)
+                              .parser(JavaParser.fromJavaVersion()
+                                      .classpathFromResources(new InMemoryExecutionContext(),
+                                              "junit-jupiter-api-5",
+                                              "assertj-core-3",
+                                              "mockito-core-5"));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void noChangeWithThreeArguments() {
         rewriteRun(
           //language=java

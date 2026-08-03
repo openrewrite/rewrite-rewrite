@@ -17,6 +17,7 @@ package org.openrewrite.java.recipes;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -28,13 +29,14 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.style.IntelliJ;
 import org.openrewrite.java.style.TabsAndIndentsStyle;
-import org.openrewrite.java.tree.J;
-import org.openrewrite.java.tree.JavaSourceFile;
-import org.openrewrite.java.tree.Space;
-import org.openrewrite.java.tree.TypeUtils;
+import org.openrewrite.java.tree.*;
 import org.openrewrite.style.Style;
 
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.List;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 
 public class ClasspathArgumentsOnePerLine extends Recipe {
 
@@ -60,10 +62,8 @@ public class ClasspathArgumentsOnePerLine extends Recipe {
                     return m;
                 }
 
-                // Not `autoFormat`, as that aligns arguments with the method call itself, and leaves partly split calls ragged
-                Space argumentPrefix = Space.format("\n" + indentOfMethodName(m) + continuationIndent());
-                boolean keepExecutionContextInline = TypeUtils.isAssignableTo("org.openrewrite.ExecutionContext",
-                        m.getArguments().get(0).getType());
+                Space argumentPrefix = Space.format("\n" + argumentIndent(m));
+                boolean keepExecutionContextInline = firstParameterIsExecutionContext(m);
                 return m.withArguments(ListUtils.map(m.getArguments(), (i, argument) -> {
                     if (i == 0 && keepExecutionContextInline ||
                             argument.getPrefix().getWhitespace().contains("\n") ||
@@ -74,15 +74,68 @@ public class ClasspathArgumentsOnePerLine extends Recipe {
                 }));
             }
 
-            private String indentOfMethodName(J.MethodInvocation m) {
-                String indent = indentAfterNewLine(m.getName().getPrefix().getWhitespace());
-                if (indent == null && m.getPadding().getSelect() != null) {
-                    indent = indentAfterNewLine(m.getPadding().getSelect().getAfter().getWhitespace());
+            private boolean firstParameterIsExecutionContext(J.MethodInvocation m) {
+                JavaType.Method methodType = m.getMethodType();
+                return methodType != null && !methodType.getParameterTypes().isEmpty() &&
+                        TypeUtils.isAssignableTo("org.openrewrite.ExecutionContext", methodType.getParameterTypes().get(0));
+            }
+
+            /**
+             * Prefer the indentation of arguments already on their own line, then the indentation of the line the method
+             * name is on plus however much that line is itself indented over the line above it, as neither the styles nor
+             * `autoFormat` reliably reproduce the indentation used for classpath arguments today.
+             */
+            private String argumentIndent(J.MethodInvocation m) {
+                for (Expression argument : m.getArguments()) {
+                    String argumentIndent = indentAfterNewLine(argument.getPrefix().getWhitespace());
+                    if (argumentIndent != null) {
+                        return argumentIndent;
+                    }
                 }
-                for (Iterator<Object> path = getCursor().getPath(J.class::isInstance); indent == null && path.hasNext(); ) {
-                    indent = indentAfterNewLine(((J) path.next()).getPrefix().getWhitespace());
+
+                List<String> lineIndents = enclosingLineIndents();
+                if (lineIndents.isEmpty()) {
+                    return continuationIndent();
                 }
-                return indent == null ? "" : indent;
+                String lineIndent = lineIndents.get(0);
+                if (lineIndents.size() == 2 && lineIndent.startsWith(lineIndents.get(1)) && lineIndent.length() > lineIndents.get(1).length()) {
+                    return lineIndent + lineIndent.substring(lineIndents.get(1).length());
+                }
+                return lineIndent + continuationIndent();
+            }
+
+            private List<String> enclosingLineIndents() {
+                List<String> lineIndents = new ArrayList<>();
+                J child = null;
+                for (Cursor c = getCursor(); c.getValue() instanceof J && lineIndents.size() < 2; c = c.getParentTreeCursor()) {
+                    J j = c.getValue();
+                    for (String whitespace : precedingWhitespace(j, child)) {
+                        String lineIndent = indentAfterNewLine(whitespace);
+                        if (lineIndent != null && lineIndents.add(lineIndent) && lineIndents.size() == 2) {
+                            break;
+                        }
+                    }
+                    if (c.getParentTreeCursor().getValue() instanceof J.Block) {
+                        // Beyond the enclosing statement indentation reflects nesting rather than a continuation
+                        break;
+                    }
+                    child = j;
+                }
+                return lineIndents;
+            }
+
+            private List<String> precedingWhitespace(J j, @Nullable J child) {
+                if (j instanceof J.MethodInvocation) {
+                    J.MethodInvocation mi = (J.MethodInvocation) j;
+                    JRightPadded<Expression> select = mi.getPadding().getSelect();
+                    if (select != null && select.getElement() != child) {
+                        return asList(
+                                mi.getName().getPrefix().getWhitespace(),
+                                select.getAfter().getWhitespace(),
+                                mi.getPrefix().getWhitespace());
+                    }
+                }
+                return singletonList(j.getPrefix().getWhitespace());
             }
 
             private @Nullable String indentAfterNewLine(String whitespace) {
