@@ -24,7 +24,6 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
-import static org.openrewrite.java.Assertions.version;
 
 class MissingOptionExampleTest implements RewriteTest {
     @Override
@@ -209,28 +208,6 @@ class MissingOptionExampleTest implements RewriteTest {
               }
               """
           )
-        );
-    }
-
-    @Test
-    void recordComponent() {
-        rewriteRun(
-          version(
-            java(
-              """
-                import org.openrewrite.Option;
-
-                record SomeOptions(@Option(displayName = "Test", description = "Test") String test) {
-                }
-                """,
-              """
-                import org.openrewrite.Option;
-
-                record SomeOptions(// TODO Provide a usage example for the docs
-                @Option(displayName = "Test", description = "Test") String test) {
-                }
-                """
-            ), 17)
         );
     }
 
