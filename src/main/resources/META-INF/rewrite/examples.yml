@@ -1388,25 +1388,22 @@ examples:
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.recipes.rewrite.InlineMethods
 examples:
-- description: '`RemoveTraitsUsageTest#javaLiteral`'
+- description: '`InlineMethodsTest#staticAnalysisRemoveUnusedLocalVariables`'
   sources:
   - before: |
-      import org.openrewrite.java.trait.Literal;
-      import org.openrewrite.java.trait.Traits;
-      import org.openrewrite.marker.SearchResult;
+      import org.openrewrite.staticanalysis.RemoveUnusedLocalVariables;
 
       class Test {
           void test() {
-              Literal.Matcher literal = Traits.literal();
+              RemoveUnusedLocalVariables recipe = new RemoveUnusedLocalVariables(new String[]{"foo"}, true);
           }
       }
     after: |
-      import org.openrewrite.java.trait.Literal;
-      import org.openrewrite.marker.SearchResult;
+      import org.openrewrite.staticanalysis.RemoveUnusedLocalVariables;
 
       class Test {
           void test() {
-              Literal.Matcher literal = new Literal.Matcher();
+              RemoveUnusedLocalVariables recipe = new RemoveUnusedLocalVariables(new String[]{"foo"}, null, true);
           }
       }
     language: java
