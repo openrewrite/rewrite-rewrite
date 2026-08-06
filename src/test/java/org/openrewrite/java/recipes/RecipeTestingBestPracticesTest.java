@@ -69,4 +69,39 @@ class RecipeTestingBestPracticesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotChangeRefasterTemplates() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().dependsOn(
+            """
+              package com.google.errorprone.refaster.annotation;
+              public @interface AfterTemplate {}
+              """,
+            """
+              package com.google.errorprone.refaster.annotation;
+              public @interface BeforeTemplate {}
+              """)),
+          java(
+            """
+              import com.google.errorprone.refaster.annotation.AfterTemplate;
+              import com.google.errorprone.refaster.annotation.BeforeTemplate;
+
+              import java.util.Comparator;
+
+              public class UseStringCaseInsensitiveOrder {
+                  @BeforeTemplate
+                  Comparator<String> before() {
+                      return (s1, s2) -> s1.compareToIgnoreCase(s2);
+                  }
+
+                  @AfterTemplate
+                  Comparator<String> after() {
+                      return String.CASE_INSENSITIVE_ORDER;
+                  }
+              }
+              """
+          )
+        );
+    }
 }
