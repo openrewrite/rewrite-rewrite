@@ -392,7 +392,8 @@ examples:
       import org.openrewrite.Recipe;
 
       class SomeRecipe extends Recipe {
-          @Option(example = "TODO Provide a usage example for the docs", displayName = "Test", description = "Test")
+          // TODO Provide a usage example for the docs
+          @Option(displayName = "Test", description = "Test")
           private String test;
 
           @Override

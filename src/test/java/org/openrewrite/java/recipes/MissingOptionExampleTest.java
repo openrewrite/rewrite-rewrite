@@ -60,7 +60,8 @@ class MissingOptionExampleTest implements RewriteTest {
               import org.openrewrite.Recipe;
 
               class SomeRecipe extends Recipe {
-                  @Option(example = "TODO Provide a usage example for the docs", displayName = "Test", description = "Test")
+                  // TODO Provide a usage example for the docs
+                  @Option(displayName = "Test", description = "Test")
                   private String test;
 
                   @Override
@@ -88,6 +89,164 @@ class MissingOptionExampleTest implements RewriteTest {
               class SomeRecipe extends Recipe {
                   @Option(displayName = "Test", description = "Test", example = "true")
                   private boolean test = true;
+
+                  @Override
+                  public String getDisplayName() {
+                      return "Find missing `@Option` `example` values";
+                  }
+                  @Override
+                  public String getDescription() {
+                      return "Find `@Option` annotations that are missing `example` values.";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void hasTodoCommentAlready() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.Option;
+              import org.openrewrite.Recipe;
+
+              class SomeRecipe extends Recipe {
+                  // TODO Provide a usage example for the docs
+                  @Option(displayName = "Test", description = "Test")
+                  private String test;
+
+                  @Override
+                  public String getDisplayName() {
+                      return "Find missing `@Option` `example` values";
+                  }
+                  @Override
+                  public String getDescription() {
+                      return "Find `@Option` annotations that are missing `example` values.";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+      "boolean",
+      "Boolean",
+      "int",
+      "Integer",
+      "long",
+      "Long"
+    })
+    void skipBooleanGetter(String type) {
+        rewriteRun(
+          java(
+            """
+              import org.jspecify.annotations.Nullable;
+              import org.openrewrite.Option;
+              import org.openrewrite.Recipe;
+
+              abstract class SomeRecipe extends Recipe {
+                  @Option(displayName = "Test", description = "Test", required = false)
+                  protected abstract @Nullable %s getTest();
+
+                  @Override
+                  public String getDisplayName() {
+                      return "Find missing `@Option` `example` values";
+                  }
+                  @Override
+                  public String getDescription() {
+                      return "Find `@Option` annotations that are missing `example` values.";
+                  }
+              }
+              """.formatted(type)
+          )
+        );
+    }
+
+    @Test
+    void stringGetter() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.Option;
+              import org.openrewrite.Recipe;
+
+              abstract class SomeRecipe extends Recipe {
+                  @Option(displayName = "Test", description = "Test")
+                  protected abstract String getTest();
+
+                  @Override
+                  public String getDisplayName() {
+                      return "Find missing `@Option` `example` values";
+                  }
+                  @Override
+                  public String getDescription() {
+                      return "Find `@Option` annotations that are missing `example` values.";
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.Option;
+              import org.openrewrite.Recipe;
+
+              abstract class SomeRecipe extends Recipe {
+                  // TODO Provide a usage example for the docs
+                  @Option(displayName = "Test", description = "Test")
+                  protected abstract String getTest();
+
+                  @Override
+                  public String getDisplayName() {
+                      return "Find missing `@Option` `example` values";
+                  }
+                  @Override
+                  public String getDescription() {
+                      return "Find `@Option` annotations that are missing `example` values.";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainJavadoc() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.Option;
+              import org.openrewrite.Recipe;
+
+              class SomeRecipe extends Recipe {
+                  /**
+                   * Some field.
+                   */
+                  @Option(displayName = "Test", description = "Test")
+                  private String test;
+
+                  @Override
+                  public String getDisplayName() {
+                      return "Find missing `@Option` `example` values";
+                  }
+                  @Override
+                  public String getDescription() {
+                      return "Find `@Option` annotations that are missing `example` values.";
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.Option;
+              import org.openrewrite.Recipe;
+
+              class SomeRecipe extends Recipe {
+                  /**
+                   * Some field.
+                   */
+                  // TODO Provide a usage example for the docs
+                  @Option(displayName = "Test", description = "Test")
+                  private String test;
 
                   @Override
                   public String getDisplayName() {
