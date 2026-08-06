@@ -41,6 +41,42 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.ClasspathArgumentsOnePerLine
+examples:
+- description: '`ClasspathArgumentsOnePerLineTest#oneArgumentPerLine`'
+  sources:
+  - before: |
+      import org.openrewrite.InMemoryExecutionContext;
+      import org.openrewrite.java.JavaParser;
+      import org.openrewrite.test.RecipeSpec;
+      import org.openrewrite.test.RewriteTest;
+
+      class MyRecipeTest implements RewriteTest {
+          @Override
+          public void defaults(RecipeSpec spec) {
+              spec.parser(JavaParser.fromJavaVersion()
+                .classpathFromResources(new InMemoryExecutionContext(), "junit-jupiter-api-5", "assertj-core-3", "mockito-core-5"));
+          }
+      }
+    after: |
+      import org.openrewrite.InMemoryExecutionContext;
+      import org.openrewrite.java.JavaParser;
+      import org.openrewrite.test.RecipeSpec;
+      import org.openrewrite.test.RewriteTest;
+
+      class MyRecipeTest implements RewriteTest {
+          @Override
+          public void defaults(RecipeSpec spec) {
+              spec.parser(JavaParser.fromJavaVersion()
+                .classpathFromResources(new InMemoryExecutionContext(),
+                  "junit-jupiter-api-5",
+                  "assertj-core-3",
+                  "mockito-core-5"));
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.CorrectlySpacedDescriptions
 examples:
 - description: '`CorrectlySpacedDescriptionsTest#document`'
