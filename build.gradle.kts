@@ -8,10 +8,7 @@ description = "A rewrite module automating best practices and major version migr
 
 recipeDependencies {
     parserClasspath("org.openrewrite:rewrite-core:latest.release")
-    parserClasspath("org.openrewrite:rewrite-gradle:latest.release")
     parserClasspath("org.openrewrite:rewrite-java:latest.release")
-    parserClasspath("org.openrewrite:rewrite-maven:latest.release")
-    parserClasspath("org.openrewrite.recipe:rewrite-static-analysis:latest.release")
 }
 
 val rewriteVersion = rewriteRecipe.rewriteVersion.get()

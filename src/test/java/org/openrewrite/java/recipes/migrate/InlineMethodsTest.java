@@ -19,41 +19,41 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.TypeValidation;
 
 import static org.openrewrite.java.Assertions.java;
 
-class RemoveTraitsUsageTest implements RewriteTest {
+class InlineMethodsTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipeFromResource(
-          "/META-INF/rewrite/inline-rewrite-methods.yml",
-          "org.openrewrite.recipes.rewrite.InlineMethods");
+        spec
+          // Module generated recipes carry no `classpathFromResources`, so `InlineMethodCalls`
+          // builds its template with a bare parser and can not attribute the replacement type.
+          .typeValidationOptions(TypeValidation.builder().constructorInvocations(false).build())
+          .recipeFromResources("org.openrewrite.recipes.rewrite.InlineMethods");
     }
 
     @DocumentExample
     @Test
-    void javaLiteral() {
+    void staticAnalysisRemoveUnusedLocalVariables() {
         rewriteRun(
           java(
             """
-              import org.openrewrite.java.trait.Literal;
-              import org.openrewrite.java.trait.Traits;
-              import org.openrewrite.marker.SearchResult;
+              import org.openrewrite.staticanalysis.RemoveUnusedLocalVariables;
 
               class Test {
                   void test() {
-                      Literal.Matcher literal = Traits.literal();
+                      RemoveUnusedLocalVariables recipe = new RemoveUnusedLocalVariables(new String[]{"foo"}, true);
                   }
               }
               """,
             """
-              import org.openrewrite.java.trait.Literal;
-              import org.openrewrite.marker.SearchResult;
+              import org.openrewrite.staticanalysis.RemoveUnusedLocalVariables;
 
               class Test {
                   void test() {
-                      Literal.Matcher literal = new Literal.Matcher();
+                      RemoveUnusedLocalVariables recipe = new RemoveUnusedLocalVariables(new String[]{"foo"}, null, true);
                   }
               }
               """
