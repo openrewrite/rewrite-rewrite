@@ -19,6 +19,11 @@ type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.recipes.rewrite.OpenRewriteRecipeBestPractices
 displayName: OpenRewrite recipe best practices
 description: Best practices for OpenRewrite recipe development.
+preconditions:
+  # Refaster templates intentionally contain patterns that recipes would otherwise "fix"
+  - org.openrewrite.java.search.DoesNotUseType:
+      fullyQualifiedTypeName: com.google.errorprone.refaster.annotation.BeforeTemplate
+      includeImplicit: true
 recipeList:
   # Keep the Develocity build scan configuration consistent across OpenRewrite projects
   - org.openrewrite.gradle.plugins.SetDevelocityServer:
