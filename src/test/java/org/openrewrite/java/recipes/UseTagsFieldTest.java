@@ -18,6 +18,7 @@ package org.openrewrite.java.recipes;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
+import org.openrewrite.java.RemoveUnusedImports;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -227,6 +228,97 @@ class UseTagsFieldTest implements RewriteTest {
                   public TreeVisitor<?, ExecutionContext> getVisitor() {
                       return TreeVisitor.noop();
                   }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainInitializerFormatting() {
+        rewriteRun(
+          java(
+            """
+              import lombok.Value;
+              import org.openrewrite.Recipe;
+
+              import java.util.Arrays;
+              import java.util.HashSet;
+              import java.util.Set;
+
+              @Value
+              public class MyRecipe extends Recipe {
+                  String displayName = "My Recipe";
+                  String description = "My description.";
+
+                  @Override
+                  public Set<String> getTags() {
+                      return new HashSet<>( Arrays.asList( "tag1", "tag2" ) );
+                  }
+              }
+              """,
+            """
+              import lombok.Value;
+              import org.openrewrite.Recipe;
+
+              import java.util.Arrays;
+              import java.util.HashSet;
+              import java.util.Set;
+
+              @Value
+              public class MyRecipe extends Recipe {
+                  String displayName = "My Recipe";
+                  String description = "My description.";
+
+                  Set<String> tags = new HashSet<>( Arrays.asList( "tag1", "tag2" ) );
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void retainSetImportWhenInitializerDoesNotReferenceSet() {
+        rewriteRun(
+          spec -> spec.recipes(new UseTagsField(), new RemoveUnusedImports()),
+          java(
+            """
+              import lombok.EqualsAndHashCode;
+              import lombok.Value;
+              import org.openrewrite.Recipe;
+
+              import java.util.Arrays;
+              import java.util.HashSet;
+              import java.util.Set;
+
+              @EqualsAndHashCode(callSuper = false)
+              @Value
+              public class MyRecipe extends Recipe {
+                  String displayName = "My Recipe";
+                  String description = "My description.";
+
+                  @Override
+                  public Set<String> getTags() {
+                      return new HashSet<>(Arrays.asList("liberty", "websphere"));
+                  }
+              }
+              """,
+            """
+              import lombok.EqualsAndHashCode;
+              import lombok.Value;
+              import org.openrewrite.Recipe;
+
+              import java.util.Arrays;
+              import java.util.HashSet;
+              import java.util.Set;
+
+              @EqualsAndHashCode(callSuper = false)
+              @Value
+              public class MyRecipe extends Recipe {
+                  String displayName = "My Recipe";
+                  String description = "My description.";
+
+                  Set<String> tags = new HashSet<>(Arrays.asList("liberty", "websphere"));
               }
               """
           )

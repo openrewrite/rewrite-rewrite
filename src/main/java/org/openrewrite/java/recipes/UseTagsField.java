@@ -22,6 +22,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -74,21 +75,24 @@ public class UseTagsField extends Recipe {
                             J.MethodDeclaration method,
                             Expression initializer,
                             boolean addGetterAnnotation) {
+                        maybeAddImport("java.util.Set");
+                        JavaTemplate.Builder builder;
                         if (addGetterAnnotation) {
                             maybeAddImport("lombok.Getter");
-                            return JavaTemplate.builder("@Getter final Set<String> tags = #{any(java.util.Set)}")
+                            builder = JavaTemplate.builder("@Getter final Set<String> tags = #{any(java.util.Set)}")
                                     .javaParser(JavaParser.fromJavaVersion().classpath("lombok"))
-                                    .imports("lombok.Getter", "java.util.Set")
-                                    .build()
-                                    .apply(getCursor(),
-                                            method.getCoordinates().replace(),
-                                            initializer);
+                                    .imports("lombok.Getter", "java.util.Set");
+                        } else {
+                            builder = JavaTemplate.builder("Set<String> tags = #{any(java.util.Set)}")
+                                    .imports("java.util.Set");
                         }
-                        return JavaTemplate.apply(
-                                "Set<String> tags = #{any(java.util.Set)}",
-                                getCursor(),
-                                method.getCoordinates().replace(),
-                                initializer);
+                        J.VariableDeclarations field = builder.build()
+                                .apply(getCursor(),
+                                        method.getCoordinates().replace(),
+                                        initializer);
+                        return field.withVariables(ListUtils.map(field.getVariables(), variable ->
+                                variable.getInitializer() == null ? variable :
+                                        variable.withInitializer(initializer.withPrefix(variable.getInitializer().getPrefix()))));
                     }
 
                     private @Nullable Expression extractImmediateReturnExpression(J.MethodDeclaration method) {
