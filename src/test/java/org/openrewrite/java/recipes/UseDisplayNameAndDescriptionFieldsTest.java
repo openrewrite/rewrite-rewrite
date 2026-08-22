@@ -434,5 +434,153 @@ class UseDisplayNameAndDescriptionFieldsTest implements RewriteTest {
               )
             );
         }
+
+        @Test
+        void optionNamedDescription() {
+            rewriteRun(
+              java(
+                """
+                  import lombok.Value;
+                  import org.openrewrite.ExecutionContext;
+                  import org.openrewrite.Option;
+                  import org.openrewrite.Recipe;
+                  import org.openrewrite.TreeVisitor;
+
+                  @Value
+                  public class MyRecipe extends Recipe {
+                      @Option(displayName = "Description", description = "The label description.")
+                      String description;
+
+                      @Override
+                      public String getDisplayName() {
+                          return "My Recipe";
+                      }
+
+                      @Override
+                      public String getDescription() {
+                          return "My description.";
+                      }
+
+                      @Override
+                      public TreeVisitor<?, ExecutionContext> getVisitor() {
+                          return TreeVisitor.noop();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void optionNamedDisplayName() {
+            rewriteRun(
+              java(
+                """
+                  import lombok.Value;
+                  import org.openrewrite.ExecutionContext;
+                  import org.openrewrite.Option;
+                  import org.openrewrite.Recipe;
+                  import org.openrewrite.TreeVisitor;
+
+                  @Value
+                  public class MyRecipe extends Recipe {
+                      @Option(displayName = "Display name", description = "The label display name.")
+                      String displayName;
+
+                      @Override
+                      public String getDisplayName() {
+                          return "My Recipe";
+                      }
+
+                      @Override
+                      public String getDescription() {
+                          return "My description.";
+                      }
+
+                      @Override
+                      public TreeVisitor<?, ExecutionContext> getVisitor() {
+                          return TreeVisitor.noop();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void inheritedFieldNamedDescription() {
+            rewriteRun(
+              java(
+                """
+                  import org.openrewrite.Recipe;
+
+                  public abstract class BaseRecipe extends Recipe {
+                      protected String description;
+                  }
+                  """
+              ),
+              java(
+                """
+                  import org.openrewrite.ExecutionContext;
+                  import org.openrewrite.TreeVisitor;
+
+                  public class MyRecipe extends BaseRecipe {
+                      @Override
+                      public String getDisplayName() {
+                          return "My Recipe";
+                      }
+
+                      @Override
+                      public String getDescription() {
+                          return "My description.";
+                      }
+
+                      @Override
+                      public TreeVisitor<?, ExecutionContext> getVisitor() {
+                          return TreeVisitor.noop();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void inheritedFieldNamedDisplayName() {
+            rewriteRun(
+              java(
+                """
+                  import org.openrewrite.Recipe;
+
+                  public abstract class BaseRecipe extends Recipe {
+                      protected String displayName;
+                  }
+                  """
+              ),
+              java(
+                """
+                  import org.openrewrite.ExecutionContext;
+                  import org.openrewrite.TreeVisitor;
+
+                  public class MyRecipe extends BaseRecipe {
+                      @Override
+                      public String getDisplayName() {
+                          return "My Recipe";
+                      }
+
+                      @Override
+                      public String getDescription() {
+                          return "My description.";
+                      }
+
+                      @Override
+                      public TreeVisitor<?, ExecutionContext> getVisitor() {
+                          return TreeVisitor.noop();
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }
