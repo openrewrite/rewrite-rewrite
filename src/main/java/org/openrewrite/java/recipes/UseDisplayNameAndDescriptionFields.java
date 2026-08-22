@@ -30,6 +30,7 @@ import org.openrewrite.java.search.DeclaresType;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
@@ -41,6 +42,9 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
     private static final String RECIPE = "org.openrewrite.Recipe";
     private static final MethodMatcher GET_DISPLAY_NAME_MATCHER = new MethodMatcher(RECIPE + " getDisplayName()", true);
     private static final MethodMatcher GET_DESCRIPTION_MATCHER = new MethodMatcher(RECIPE + " getDescription()", true);
+
+    private static final String DISPLAY_NAME = "displayName";
+    private static final String DESCRIPTION = "description";
 
     String displayName = "Replace `getDisplayName()` and `getDescription()` methods with fields";
     String description = "Recipe classes that return a simple string literal (or concatenation of string literals) " +
@@ -56,26 +60,56 @@ public class UseDisplayNameAndDescriptionFields extends Recipe {
                         if (TypeUtils.isAssignableTo(RECIPE, classDecl.getType())) {
                             boolean addGetterAnnotation = !service(AnnotationService.class).isAnnotatedWith(classDecl, "lombok.Value");
                             getCursor().putMessage("addGetterAnnotation", addGetterAnnotation);
+                            getCursor().putMessage("skipClass", declaresDisplayNameOrDescriptionField(classDecl));
                         }
                         return (J.ClassDeclaration) super.visitClassDeclaration(classDecl, ctx);
                     }
 
                     @Override
                     public J visitMethodDeclaration(J.MethodDeclaration method, ExecutionContext ctx) {
+                        if (getCursor().getNearestMessage("skipClass", false)) {
+                            return method;
+                        }
                         if (GET_DISPLAY_NAME_MATCHER.matches(method.getMethodType())) {
                             Expression expr = extractStringLiteralExpression(method);
                             if (expr != null) {
                                 boolean addGetterAnnotation = getCursor().getNearestMessage("addGetterAnnotation", false);
-                                return createField("displayName", method, expr, addGetterAnnotation);
+                                return createField(DISPLAY_NAME, method, expr, addGetterAnnotation);
                             }
                         } else if (GET_DESCRIPTION_MATCHER.matches(method.getMethodType())) {
                             Expression expr = extractStringLiteralExpression(method);
                             if (expr != null) {
                                 boolean addGetterAnnotation = getCursor().getNearestMessage("addGetterAnnotation", false);
-                                return createField("description", method, expr, addGetterAnnotation);
+                                return createField(DESCRIPTION, method, expr, addGetterAnnotation);
                             }
                         }
                         return method;
+                    }
+
+                    private boolean declaresDisplayNameOrDescriptionField(J.ClassDeclaration classDecl) {
+                        for (Statement statement : classDecl.getBody().getStatements()) {
+                            if (statement instanceof J.VariableDeclarations) {
+                                for (J.VariableDeclarations.NamedVariable variable : ((J.VariableDeclarations) statement).getVariables()) {
+                                    if (isDisplayNameOrDescription(variable.getSimpleName())) {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                        JavaType.FullyQualified type = classDecl.getType();
+                        for (JavaType.FullyQualified supertype = type == null ? null : type.getSupertype();
+                             supertype != null; supertype = supertype.getSupertype()) {
+                            for (JavaType.Variable member : supertype.getMembers()) {
+                                if (isDisplayNameOrDescription(member.getName())) {
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    }
+
+                    private boolean isDisplayNameOrDescription(String name) {
+                        return DISPLAY_NAME.equals(name) || DESCRIPTION.equals(name);
                     }
 
                     private J.VariableDeclarations createField(
