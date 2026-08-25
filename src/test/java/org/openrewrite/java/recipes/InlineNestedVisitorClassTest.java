@@ -456,6 +456,73 @@ class InlineNestedVisitorClassTest implements RewriteTest {
     }
 
     @Test
+    void hoistConstantsAfterTheFieldsTheyReferTo() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.TreeVisitor;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.MethodMatcher;
+
+              public class MyRecipe extends Recipe {
+                  private static final String TYPE = "java.util.List";
+
+                  @Override
+                  public String getDisplayName() {
+                      return "My recipe";
+                  }
+
+                  @Override
+                  public String getDescription() {
+                      return "My description.";
+                  }
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return new MyRecipeVisitor();
+                  }
+
+                  private static class MyRecipeVisitor extends JavaIsoVisitor<ExecutionContext> {
+                      private static final MethodMatcher ADD = new MethodMatcher(TYPE + " add(..)");
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.TreeVisitor;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.MethodMatcher;
+
+              public class MyRecipe extends Recipe {
+                  private static final String TYPE = "java.util.List";
+
+                  private static final MethodMatcher ADD = new MethodMatcher(TYPE + " add(..)");
+
+                  @Override
+                  public String getDisplayName() {
+                      return "My recipe";
+                  }
+
+                  @Override
+                  public String getDescription() {
+                      return "My description.";
+                  }
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return new JavaIsoVisitor<ExecutionContext>() {
+                      };
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotHoistConstantsThatCollideWithAnExistingField() {
         rewriteRun(
           java(

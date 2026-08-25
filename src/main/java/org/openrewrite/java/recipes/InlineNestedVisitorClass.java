@@ -138,12 +138,41 @@ public class InlineNestedVisitorClass extends Recipe {
                     remaining = ListUtils.mapFirst(remaining, first -> first.withPrefix(prefix));
                 }
                 if (!hoisted.isEmpty() && !remaining.isEmpty()) {
-                    Space prefix = remaining.get(0).getPrefix();
-                    remaining = ListUtils.mapFirst(remaining, first -> first.withPrefix(blankLineBefore(prefix)));
+                    // Constants must come after any existing field they refer to, or they forward reference it
+                    int at = insertionPoint(remaining, hoisted);
+                    Space prefix = remaining.get(at).getPrefix();
+                    List<Statement> constants = ListUtils.mapFirst(hoisted, first -> first.withPrefix(prefix));
+                    List<Statement> tail = ListUtils.mapFirst(remaining.subList(at, remaining.size()),
+                            first -> first.withPrefix(blankLineBefore(prefix)));
                     remaining = ListUtils.concatAll(
-                            ListUtils.mapFirst(hoisted, first -> first.withPrefix(prefix)), remaining);
+                            ListUtils.concatAll(new ArrayList<>(remaining.subList(0, at)), constants), tail);
                 }
                 return cd.withBody(cd.getBody().withStatements(remaining));
+            }
+
+            private int insertionPoint(List<Statement> statements, List<Statement> constants) {
+                Set<String> referenced = new HashSet<>();
+                for (Statement constant : constants) {
+                    new JavaIsoVisitor<Set<String>>() {
+                        @Override
+                        public J.Identifier visitIdentifier(J.Identifier identifier, Set<String> names) {
+                            names.add(identifier.getSimpleName());
+                            return identifier;
+                        }
+                    }.visit(constant, referenced);
+                }
+                int at = 0;
+                for (int i = 0; i < statements.size(); i++) {
+                    Statement statement = statements.get(i);
+                    if (statement instanceof J.VariableDeclarations) {
+                        for (J.VariableDeclarations.NamedVariable variable : ((J.VariableDeclarations) statement).getVariables()) {
+                            if (referenced.contains(variable.getSimpleName())) {
+                                at = i + 1;
+                            }
+                        }
+                    }
+                }
+                return at;
             }
 
             private boolean declaresNestedClass(List<Statement> statements) {
