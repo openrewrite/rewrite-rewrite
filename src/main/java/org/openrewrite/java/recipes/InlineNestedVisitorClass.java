@@ -26,8 +26,9 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.format.BlankLinesVisitor;
 import org.openrewrite.java.format.ShiftFormat;
-import org.openrewrite.java.search.DeclaresType;
+import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.style.IntelliJ;
 import org.openrewrite.java.style.TabsAndIndentsStyle;
 import org.openrewrite.java.tree.Comment;
@@ -48,8 +49,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toSet;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -67,16 +70,17 @@ public class InlineNestedVisitorClass extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new DeclaresType<>(RECIPE, true), new JavaIsoVisitor<ExecutionContext>() {
+        return Preconditions.check(new UsesType<>(RECIPE, true), new JavaIsoVisitor<ExecutionContext>() {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
                 List<Statement> statements = cd.getBody().getStatements();
-                if (!declaresNestedClass(statements) || !TypeUtils.isAssignableTo(RECIPE, cd.getType())) {
+                if (statements.stream().noneMatch(J.ClassDeclaration.class::isInstance) ||
+                        !TypeUtils.isAssignableTo(RECIPE, cd.getType())) {
                     return cd;
                 }
 
-                boolean canHoist = getCursor().getParentTreeCursor().getValue() instanceof J.CompilationUnit;
+                boolean recipeIsTopLevel = getCursor().getParentTreeCursor().getValue() instanceof J.CompilationUnit;
                 List<J.ClassDeclaration> inlined = new ArrayList<>();
                 List<Statement> hoisted = new ArrayList<>();
                 List<Statement> mapped = ListUtils.map(statements, statement -> {
@@ -97,8 +101,11 @@ public class InlineNestedVisitorClass extends Recipe {
                         return statement;
                     }
                     // Anonymous classes can not declare constants, so they move up onto the recipe class instead
-                    List<Statement> constants = staticFields(nested);
-                    if (!constants.isEmpty() && (!canHoist || collidesWithExistingField(statements, constants))) {
+                    List<Statement> constants = constants(nested);
+                    if (!constants.isEmpty() && (!recipeIsTopLevel || collidesWithExistingField(statements, constants))) {
+                        return statement;
+                    }
+                    if (!isReferencedExactlyOnce(nested)) {
                         return statement;
                     }
 
@@ -106,9 +113,9 @@ public class InlineNestedVisitorClass extends Recipe {
                     J.Block body = nested.getBody();
                     if (!constants.isEmpty()) {
                         boolean leading = constants.contains(body.getStatements().get(0));
-                        List<Statement> kept = ListUtils.map(body.getStatements(), s -> constants.contains(s) ? null : s);
+                        List<Statement> kept = ListUtils.filter(body.getStatements(), s -> !constants.contains(s));
                         if (leading) {
-                            kept = ListUtils.mapFirst(kept, first -> first.withPrefix(singleLine(first.getPrefix())));
+                            kept = ListUtils.mapFirst(kept, first -> first.withPrefix(withoutBlankLines(first.getPrefix())));
                         }
                         body = body.withStatements(kept);
                         for (Statement constant : constants) {
@@ -134,64 +141,56 @@ public class InlineNestedVisitorClass extends Recipe {
                 if (inlined.isEmpty()) {
                     return cd;
                 }
-                List<Statement> remaining = ListUtils.map(mapped, statement -> inlined.contains(statement) ? null : statement);
+                List<Statement> remaining = ListUtils.filter(mapped, statement -> !inlined.contains(statement));
                 if (inlined.contains(statements.get(0))) {
                     Space prefix = statements.get(0).getPrefix();
                     remaining = ListUtils.mapFirst(remaining, first -> first.withPrefix(prefix));
                 }
                 if (!hoisted.isEmpty() && !remaining.isEmpty()) {
-                    // Constants must come after any existing field they refer to, or they forward reference it
-                    int at = insertionPoint(remaining, hoisted);
-                    boolean append = at == remaining.size();
-                    Space prefix = remaining.get(append ? at - 1 : at).getPrefix();
-                    List<Statement> constants = ListUtils.mapFirst(hoisted,
-                            first -> first.withPrefix(append ? blankLineBefore(prefix) : prefix));
-                    List<Statement> tail = ListUtils.mapFirst(remaining.subList(at, remaining.size()),
-                            first -> first.withPrefix(blankLineBefore(prefix)));
-                    remaining = ListUtils.concatAll(
-                            ListUtils.concatAll(new ArrayList<>(remaining.subList(0, at)), constants), tail);
+                    remaining = insertConstants(remaining, hoisted);
                 }
                 return cd.withBody(cd.getBody().withStatements(remaining));
             }
 
-            private int insertionPoint(List<Statement> statements, List<Statement> constants) {
-                Set<String> referenced = new HashSet<>();
-                for (Statement constant : constants) {
-                    new JavaIsoVisitor<Set<String>>() {
-                        @Override
-                        public J.Identifier visitIdentifier(J.Identifier identifier, Set<String> names) {
-                            names.add(identifier.getSimpleName());
-                            return identifier;
-                        }
-                    }.visit(constant, referenced);
-                }
-                int at = 0;
-                for (int i = 0; i < statements.size(); i++) {
-                    Statement statement = statements.get(i);
-                    if (statement instanceof J.VariableDeclarations) {
-                        for (J.VariableDeclarations.NamedVariable variable : ((J.VariableDeclarations) statement).getVariables()) {
-                            if (referenced.contains(variable.getSimpleName())) {
-                                at = i + 1;
-                            }
-                        }
-                    }
-                }
-                return at;
+            private List<Statement> insertConstants(List<Statement> statements, List<Statement> constants) {
+                // Constants must come after any existing field they refer to, or they forward reference it
+                int at = insertionPoint(statements, constants);
+                boolean append = at == statements.size();
+                Space prefix = statements.get(append ? at - 1 : at).getPrefix();
+                return ListUtils.insertAll(
+                        append ? statements : ListUtils.map(statements, (i, statement) ->
+                                i == at ? statement.withPrefix(blankLineBefore(prefix)) : statement),
+                        at,
+                        ListUtils.mapFirst(constants, first -> first.withPrefix(append ? blankLineBefore(prefix) : prefix)));
             }
 
-            private boolean declaresNestedClass(List<Statement> statements) {
-                for (Statement statement : statements) {
-                    if (statement instanceof J.ClassDeclaration) {
-                        return true;
+            private int insertionPoint(List<Statement> statements, List<Statement> constants) {
+                // Conservatively, any identifier sharing a name with a field counts as referring to it
+                Set<String> referenced = new JavaIsoVisitor<Set<String>>() {
+                    @Override
+                    public J.Identifier visitIdentifier(J.Identifier identifier, Set<String> names) {
+                        names.add(identifier.getSimpleName());
+                        return identifier;
+                    }
+                }.reduce(constants, new HashSet<>());
+                for (int i = statements.size() - 1; i >= 0; i--) {
+                    if (fieldNames(statements.get(i)).anyMatch(referenced::contains)) {
+                        return i + 1;
                     }
                 }
-                return false;
+                return 0;
+            }
+
+            private Stream<String> fieldNames(Statement statement) {
+                if (!(statement instanceof J.VariableDeclarations)) {
+                    return Stream.empty();
+                }
+                return ((J.VariableDeclarations) statement).getVariables().stream()
+                        .map(J.VariableDeclarations.NamedVariable::getSimpleName);
             }
 
             private J.@Nullable NewClass soleReturnedNewClass(J.MethodDeclaration method) {
-                if (method.getBody() == null ||
-                        method.getBody().getStatements().size() != 1 ||
-                        !TypeUtils.isAssignableTo(TREE_VISITOR, method.getMethodType() == null ? null : method.getMethodType().getReturnType())) {
+                if (method.getBody() == null || method.getBody().getStatements().size() != 1) {
                     return null;
                 }
                 Statement statement = method.getBody().getStatements().get(0);
@@ -205,7 +204,8 @@ public class InlineNestedVisitorClass extends Recipe {
                 J.NewClass newClass = (J.NewClass) returned;
                 List<Expression> arguments = newClass.getArguments();
                 if (newClass.getBody() != null ||
-                        !(arguments.isEmpty() || arguments.size() == 1 && arguments.get(0) instanceof J.Empty)) {
+                        !(arguments.isEmpty() || arguments.size() == 1 && arguments.get(0) instanceof J.Empty) ||
+                        !TypeUtils.isAssignableTo(TREE_VISITOR, method.getMethodType() == null ? null : method.getMethodType().getReturnType())) {
                     return null;
                 }
                 return newClass;
@@ -240,80 +240,56 @@ public class InlineNestedVisitorClass extends Recipe {
                 }
                 // Anonymous classes cannot declare constructors, and before Java 16 no static members either
                 for (Statement statement : nested.getBody().getStatements()) {
-                    if (statement instanceof J.Block ||
-                            statement instanceof J.ClassDeclaration ||
-                            statement instanceof J.MethodDeclaration && ((J.MethodDeclaration) statement).isConstructor()) {
+                    if (statement instanceof J.Block || statement instanceof J.ClassDeclaration) {
                         return false;
                     }
-                    if (statement instanceof J.MethodDeclaration &&
-                            ((J.MethodDeclaration) statement).hasModifier(J.Modifier.Type.Static)) {
-                        return false;
-                    }
-                    if (statement instanceof J.VariableDeclarations &&
-                            ((J.VariableDeclarations) statement).hasModifier(J.Modifier.Type.Static) &&
-                            !isPrivateStaticFinalField(statement)) {
-                        return false;
+                    if (statement instanceof J.MethodDeclaration) {
+                        J.MethodDeclaration method = (J.MethodDeclaration) statement;
+                        if (method.isConstructor() || method.hasModifier(J.Modifier.Type.Static)) {
+                            return false;
+                        }
+                    } else if (statement instanceof J.VariableDeclarations) {
+                        J.VariableDeclarations field = (J.VariableDeclarations) statement;
+                        if (field.hasModifier(J.Modifier.Type.Static) && !isConstant(field)) {
+                            return false;
+                        }
                     }
                 }
-                return countReferences(nested) == 1;
+                return true;
             }
 
-            private boolean isPrivateStaticFinalField(Statement statement) {
-                if (!(statement instanceof J.VariableDeclarations)) {
-                    return false;
-                }
-                J.VariableDeclarations field = (J.VariableDeclarations) statement;
+            private boolean isConstant(J.VariableDeclarations field) {
                 return field.hasModifier(J.Modifier.Type.Private) &&
                         field.hasModifier(J.Modifier.Type.Static) &&
                         field.hasModifier(J.Modifier.Type.Final);
             }
 
-            private List<Statement> staticFields(J.ClassDeclaration nested) {
-                List<Statement> constants = new ArrayList<>();
-                for (Statement statement : nested.getBody().getStatements()) {
-                    if (isPrivateStaticFinalField(statement)) {
-                        constants.add(statement);
-                    }
-                }
-                return constants;
+            private List<Statement> constants(J.ClassDeclaration nested) {
+                return ListUtils.filter(nested.getBody().getStatements(), statement ->
+                        statement instanceof J.VariableDeclarations && isConstant((J.VariableDeclarations) statement));
             }
 
             private boolean collidesWithExistingField(List<Statement> statements, List<Statement> constants) {
-                Set<String> existing = new HashSet<>();
-                for (Statement statement : statements) {
-                    if (statement instanceof J.VariableDeclarations) {
-                        for (J.VariableDeclarations.NamedVariable variable : ((J.VariableDeclarations) statement).getVariables()) {
-                            existing.add(variable.getSimpleName());
-                        }
-                    }
-                }
-                for (Statement constant : constants) {
-                    for (J.VariableDeclarations.NamedVariable variable : ((J.VariableDeclarations) constant).getVariables()) {
-                        if (!existing.add(variable.getSimpleName())) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
+                Set<String> existing = statements.stream().flatMap(this::fieldNames).collect(toSet());
+                return constants.stream().flatMap(this::fieldNames).anyMatch(name -> !existing.add(name));
             }
 
-            private int countReferences(J.ClassDeclaration nested) {
+            private boolean isReferencedExactlyOnce(J.ClassDeclaration nested) {
                 JavaType.FullyQualified type = nested.getType();
                 if (type == null) {
-                    return -1;
+                    return false;
                 }
-                AtomicInteger references = new AtomicInteger();
-                new JavaIsoVisitor<AtomicInteger>() {
+                return new JavaIsoVisitor<AtomicInteger>() {
                     @Override
                     public J.Identifier visitIdentifier(J.Identifier identifier, AtomicInteger count) {
-                        if (!identifier.getId().equals(nested.getName().getId()) &&
+                        if (nested.getSimpleName().equals(identifier.getSimpleName()) &&
+                                !identifier.getId().equals(nested.getName().getId()) &&
                                 TypeUtils.isOfType(type, identifier.getType())) {
                             count.incrementAndGet();
                         }
                         return identifier;
                     }
-                }.visit(getCursor().firstEnclosingOrThrow(JavaSourceFile.class), references);
-                return references.get();
+                }.reduce(getCursor().firstEnclosingOrThrow(JavaSourceFile.class), new AtomicInteger()).get() == 1;
             }
 
             private <J2 extends J> J2 shiftIndent(J2 tree, Cursor cursor, int levels) {
@@ -333,12 +309,11 @@ public class InlineNestedVisitorClass extends Recipe {
             private Comment shiftComment(Comment comment, String indent, int levels) {
                 if (comment instanceof TextComment) {
                     TextComment textComment = (TextComment) comment;
-                    if (textComment.getText().contains("\n")) {
-                        return textComment.withText(levels > 0 ?
-                                textComment.getText().replace("\n", "\n" + indent) :
-                                textComment.getText().replace("\n" + indent, "\n"));
-                    }
-                } else if (comment instanceof Javadoc.DocComment) {
+                    return textComment.withText(levels > 0 ?
+                            textComment.getText().replace("\n", "\n" + indent) :
+                            textComment.getText().replace("\n" + indent, "\n"));
+                }
+                if (comment instanceof Javadoc.DocComment) {
                     Javadoc.DocComment docComment = (Javadoc.DocComment) comment;
                     return docComment.withBody(ListUtils.map(docComment.getBody(), doc -> shiftJavadoc(doc, indent, levels)));
                 }
@@ -350,28 +325,25 @@ public class InlineNestedVisitorClass extends Recipe {
                     return doc;
                 }
                 String margin = ((Javadoc.LineBreak) doc).getMargin();
-                int i = 0;
-                while (i < margin.length() && Character.isWhitespace(margin.charAt(i))) {
-                    i++;
-                }
-                String whitespace = margin.substring(0, i);
+                // The margin closing a doc comment is all whitespace, with no `*` after it
+                int i = StringUtils.indexOfNonWhitespace(margin);
+                String whitespace = i < 0 ? margin : margin.substring(0, i);
                 if (levels > 0) {
                     whitespace += indent;
                 } else if (whitespace.endsWith(indent)) {
                     whitespace = whitespace.substring(0, whitespace.length() - indent.length());
                 }
-                return ((Javadoc.LineBreak) doc).withMargin(whitespace + margin.substring(i));
+                return ((Javadoc.LineBreak) doc).withMargin(whitespace + (i < 0 ? "" : margin.substring(i)));
             }
 
-            private Space singleLine(Space prefix) {
+            private Space withoutBlankLines(Space prefix) {
                 String whitespace = prefix.getWhitespace();
                 int last = whitespace.lastIndexOf('\n');
                 return last < 0 ? prefix : prefix.withWhitespace(whitespace.substring(last));
             }
 
             private Space blankLineBefore(Space prefix) {
-                String whitespace = prefix.getWhitespace();
-                return whitespace.startsWith("\n\n") ? prefix : prefix.withWhitespace("\n" + whitespace);
+                return prefix.withWhitespace(BlankLinesVisitor.minimumLines(prefix.getWhitespace(), 1));
             }
 
             private @Nullable TypeTree supertypeOf(J.ClassDeclaration nested) {
