@@ -49,6 +49,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.Collections.emptyList;
+
 @Value
 @EqualsAndHashCode(callSuper = false)
 public class InlineNestedVisitorClass extends Recipe {
@@ -140,8 +142,10 @@ public class InlineNestedVisitorClass extends Recipe {
                 if (!hoisted.isEmpty() && !remaining.isEmpty()) {
                     // Constants must come after any existing field they refer to, or they forward reference it
                     int at = insertionPoint(remaining, hoisted);
-                    Space prefix = remaining.get(at).getPrefix();
-                    List<Statement> constants = ListUtils.mapFirst(hoisted, first -> first.withPrefix(prefix));
+                    boolean append = at == remaining.size();
+                    Space prefix = remaining.get(append ? at - 1 : at).getPrefix();
+                    List<Statement> constants = ListUtils.mapFirst(hoisted,
+                            first -> first.withPrefix(append ? blankLineBefore(prefix) : prefix));
                     List<Statement> tail = ListUtils.mapFirst(remaining.subList(at, remaining.size()),
                             first -> first.withPrefix(blankLineBefore(prefix)));
                     remaining = ListUtils.concatAll(
@@ -371,13 +375,12 @@ public class InlineNestedVisitorClass extends Recipe {
             }
 
             private @Nullable TypeTree supertypeOf(J.ClassDeclaration nested) {
+                // An anonymous class has exactly one supertype, so anything more would be lost
+                List<TypeTree> implemented = nested.getImplements() == null ? emptyList() : nested.getImplements();
                 if (nested.getExtends() != null) {
-                    return nested.getExtends();
+                    return implemented.isEmpty() ? nested.getExtends() : null;
                 }
-                if (nested.getImplements() != null && nested.getImplements().size() == 1) {
-                    return nested.getImplements().get(0);
-                }
-                return null;
+                return implemented.size() == 1 ? implemented.get(0) : null;
             }
         });
     }

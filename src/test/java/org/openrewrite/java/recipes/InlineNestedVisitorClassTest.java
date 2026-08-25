@@ -706,4 +706,108 @@ class InlineNestedVisitorClassTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void hoistConstantsAfterAFieldDeclaredLast() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.TreeVisitor;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.MethodMatcher;
+
+              public class MyRecipe extends Recipe {
+                  @Override
+                  public String getDisplayName() {
+                      return "My recipe";
+                  }
+
+                  @Override
+                  public String getDescription() {
+                      return "My description.";
+                  }
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return new MyRecipeVisitor();
+                  }
+
+                  private static class MyRecipeVisitor extends JavaIsoVisitor<ExecutionContext> {
+                      private static final MethodMatcher ADD = new MethodMatcher(TYPE + " add(..)");
+                  }
+
+                  private static final String TYPE = "java.util.List";
+              }
+              """,
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.TreeVisitor;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.MethodMatcher;
+
+              public class MyRecipe extends Recipe {
+                  @Override
+                  public String getDisplayName() {
+                      return "My recipe";
+                  }
+
+                  @Override
+                  public String getDescription() {
+                      return "My description.";
+                  }
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return new JavaIsoVisitor<ExecutionContext>() {
+                      };
+                  }
+
+                  private static final String TYPE = "java.util.List";
+
+                  private static final MethodMatcher ADD = new MethodMatcher(TYPE + " add(..)");
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotInlineVisitorThatAlsoImplementsAnInterface() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.Recipe;
+              import org.openrewrite.TreeVisitor;
+              import org.openrewrite.java.JavaIsoVisitor;
+
+              public class MyRecipe extends Recipe {
+                  @Override
+                  public String getDisplayName() {
+                      return "My recipe";
+                  }
+
+                  @Override
+                  public String getDescription() {
+                      return "My description.";
+                  }
+
+                  @Override
+                  public TreeVisitor<?, ExecutionContext> getVisitor() {
+                      return new MyRecipeVisitor();
+                  }
+
+                  private static class MyRecipeVisitor extends JavaIsoVisitor<ExecutionContext> implements Runnable {
+                      @Override
+                      public void run() {
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
 }
