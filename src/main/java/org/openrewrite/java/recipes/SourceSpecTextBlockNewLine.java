@@ -21,6 +21,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.*;
 
@@ -63,6 +64,9 @@ public class SourceSpecTextBlockNewLine extends Recipe {
                         ) {
                             Expression formatted = argument.withPrefix(Space.format("\n"));
                             formatted = maybeAutoFormat(argument, formatted, ctx, new Cursor(new Cursor(getCursor(), arguments), jrp));
+                            if (isCurrentTextBlock) {
+                                formatted = restoreTextBlock((J.Literal) argument, (J.Literal) formatted);
+                            }
                             return jrp.withElement(formatted);
                         }
                         return jrp;
@@ -84,6 +88,24 @@ public class SourceSpecTextBlockNewLine extends Recipe {
                     return methodPadding.withArguments(argumentsPadding.withElements(formattedElements));
                 }
                 return super.visitMethodInvocation(method, ctx);
+            }
+
+            // Auto formatting reflows the contents of a text block to the enclosing continuation indent, churning the
+            // source the text block holds; keep the contents, and never indent the opening delimiter past the contents
+            // it opens.
+            private J.Literal restoreTextBlock(J.Literal original, J.Literal formatted) {
+                J.Literal restored = formatted
+                        .withValueSource(original.getValueSource())
+                        .withValue(original.getValue());
+
+                String whitespace = restored.getPrefix().getWhitespace();
+                int lineStart = whitespace.lastIndexOf('\n') + 1;
+                int contentIndent = StringUtils.minCommonIndentLevel(original.getValueSource().substring(4));
+                if (whitespace.length() - lineStart > contentIndent) {
+                    return restored.withPrefix(Space.format(
+                            whitespace.substring(0, lineStart) + StringUtils.repeat(" ", contentIndent)));
+                }
+                return restored;
             }
 
             private boolean isTextBlock(Expression expression) {
