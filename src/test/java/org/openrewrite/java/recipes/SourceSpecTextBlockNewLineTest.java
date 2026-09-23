@@ -308,6 +308,50 @@ class SourceSpecTextBlockNewLineTest implements RewriteTest {
     }
 
     @Test
+    void doNotReflowContentsOnLargeContinuationIndent() {
+        rewriteRun(
+          spec -> spec.parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath())),
+          //language=java
+          java(
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                      rewriteRun(
+                        text(\"""
+                          module github.com/example/app
+
+                          go 1.21
+                          \""")
+                      );
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.test.SourceSpecs.text;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                      rewriteRun(
+                        text(
+                          \"""
+                          module github.com/example/app
+
+                          go 1.21
+                          \"""
+                        )
+                      );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void noChangeWhenNotTextBlock() {
         rewriteRun(
           //language=java
