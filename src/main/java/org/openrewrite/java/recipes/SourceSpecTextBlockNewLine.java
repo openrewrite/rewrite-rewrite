@@ -91,8 +91,8 @@ public class SourceSpecTextBlockNewLine extends Recipe {
             }
 
             // Auto formatting reflows the contents of a text block to the enclosing continuation indent, churning the
-            // source the text block holds and indenting its blank lines; keep the contents, and never indent the
-            // opening delimiter past the contents it opens.
+            // source the text block holds; keep the contents, and never indent the opening delimiter past the contents
+            // it opens.
             private J.Literal restoreTextBlock(J.Literal original, J.Literal formatted) {
                 J.Literal restored = formatted
                         .withValueSource(original.getValueSource())
