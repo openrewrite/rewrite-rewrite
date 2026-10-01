@@ -30,6 +30,11 @@ recipeList:
       server: "https://community.develocity.cloud/"
   - org.openrewrite.gradle.plugins.SetDevelocityProjectId:
       projectId: openrewrite
+  # Flag ignored return values of Lombok-generated methods, such as unassigned `@With` calls on LST elements
+  - org.openrewrite.text.AppendToTextFile:
+      relativeFileName: '{,**/}lombok.config'
+      content: lombok.checkReturnValueAnnotation += lombok
+      existingFileStrategy: Merge
   - org.openrewrite.recipes.rewrite.InlineMethods
   - org.openrewrite.java.recipes.GenerateDeprecatedMethodRecipes
   - org.openrewrite.java.recipes.JavaRecipeBestPractices
