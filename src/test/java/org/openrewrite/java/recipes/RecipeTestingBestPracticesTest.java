@@ -22,6 +22,7 @@ import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
 import static org.openrewrite.java.Assertions.java;
+import static org.openrewrite.test.SourceSpecs.text;
 
 class RecipeTestingBestPracticesTest implements RewriteTest {
 
@@ -101,6 +102,34 @@ class RecipeTestingBestPracticesTest implements RewriteTest {
                   }
               }
               """
+          )
+        );
+    }
+
+    @Test
+    void addCheckReturnValueAnnotationToLombokConfig() {
+        rewriteRun(
+          text(
+            """
+              config.stopBubbling = true
+              """,
+            """
+              config.stopBubbling = true
+              lombok.checkReturnValueAnnotation += lombok
+              """,
+            spec -> spec.path("lombok.config").noTrim()
+          )
+        );
+    }
+
+    @Test
+    void retainExistingCheckReturnValueAnnotation() {
+        rewriteRun(
+          text(
+            """
+              lombok.checkReturnValueAnnotation += lombok
+              """,
+            spec -> spec.path("lombok.config").noTrim()
           )
         );
     }
