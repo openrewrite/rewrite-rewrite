@@ -69,6 +69,22 @@ recipeList:
   - org.openrewrite.staticanalysis.RemoveCallsToSystemGc
   - org.openrewrite.staticanalysis.RemoveCallsToObjectFinalize
   - org.openrewrite.staticanalysis.URLEqualsHashCodeRecipes
+  # LST tree packages declare `@CheckReturnValue` in their `package-info.java`, which type attribution does not see
+  - org.openrewrite.staticanalysis.FindIgnoredCheckReturnValue:
+      checkReturnValuePackages:
+        - org.openrewrite.tree
+        - org.openrewrite.groovy.tree
+        - org.openrewrite.hcl.tree
+        - org.openrewrite.java.tree
+        - org.openrewrite.javascript.tree
+        - org.openrewrite.json.tree
+        - org.openrewrite.kotlin.tree
+        - org.openrewrite.maven.tree
+        - org.openrewrite.properties.tree
+        - org.openrewrite.protobuf.tree
+        - org.openrewrite.toml.tree
+        - org.openrewrite.xml.tree
+        - org.openrewrite.yaml.tree
   # Static analysis: modernization and cleanup
   - org.openrewrite.staticanalysis.LambdaBlockToExpression
   - org.openrewrite.staticanalysis.ReplaceLambdaWithMethodReference
