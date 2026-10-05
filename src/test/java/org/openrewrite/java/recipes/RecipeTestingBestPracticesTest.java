@@ -133,4 +133,37 @@ class RecipeTestingBestPracticesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void findIgnoredResultsOfLstWithers() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.java.tree.J;
+
+              import static java.util.Collections.emptyList;
+
+              class Foo {
+                  void foo(J.Literal literal, J.MethodInvocation method) {
+                      literal.withValue(1);
+                      method.withArguments(emptyList());
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.java.tree.J;
+
+              import static java.util.Collections.emptyList;
+
+              class Foo {
+                  void foo(J.Literal literal, J.MethodInvocation method) {
+                      /*~~(Result of `withValue` is ignored, but `@CheckReturnValue` on the method requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/literal.withValue(1);
+                      /*~~(Result of `withArguments` is ignored, but `@CheckReturnValue` on package `org.openrewrite.java.tree` requires using it. Use the returned value, remove the call, or annotate the method with `@CanIgnoreReturnValue` if ignoring the result is intended.)~~>*/method.withArguments(emptyList());
+                  }
+              }
+
+              """
+          )
+        );
+    }
 }
