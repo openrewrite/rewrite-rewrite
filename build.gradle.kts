@@ -35,6 +35,7 @@ dependencies {
     runtimeOnly("org.openrewrite.recipe:rewrite-java-dependencies:$rewriteVersion")
 
     testImplementation("org.openrewrite:rewrite-test")
+    testImplementation("org.openrewrite:rewrite-kotlin")
     testImplementation("org.junit-pioneer:junit-pioneer:2.3.0")
 }
 

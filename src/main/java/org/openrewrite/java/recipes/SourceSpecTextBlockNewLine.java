@@ -23,6 +23,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.internal.StringUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.marker.TrailingComma;
 import org.openrewrite.java.tree.*;
 
 import java.util.List;
@@ -79,7 +80,9 @@ public class SourceSpecTextBlockNewLine extends Recipe {
                         }
 
                         Expression argument = jrp.getElement();
-                        if (isTextBlock(argument) && !jrp.getAfter().getWhitespace().startsWith("\n")) {
+                        if (isTextBlock(argument) &&
+                                !jrp.getAfter().getWhitespace().startsWith("\n") &&
+                                !jrp.getMarkers().findFirst(TrailingComma.class).isPresent()) {
                             return jrp.withAfter(method.getPrefix().withComments(emptyList()));
                         }
                         return jrp;
