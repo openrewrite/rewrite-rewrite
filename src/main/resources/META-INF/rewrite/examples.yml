@@ -339,6 +339,77 @@ examples:
     language: yaml
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.InlineNestedVisitorClass
+examples:
+- description: '`InlineNestedVisitorClassTest#inlineNestedVisitorClass`'
+  sources:
+  - before: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.tree.J;
+
+      public class MyRecipe extends Recipe {
+          @Override
+          public String getDisplayName() {
+              return "My recipe";
+          }
+
+          @Override
+          public String getDescription() {
+              return "My description.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return new MyRecipeVisitor();
+          }
+
+          private static class MyRecipeVisitor extends JavaIsoVisitor<ExecutionContext> {
+              @Override
+              public J.Literal visitLiteral(J.Literal literal, ExecutionContext ctx) {
+                  if (literal.getValue() == null) {
+                      return literal;
+                  }
+                  return super.visitLiteral(literal, ctx);
+              }
+          }
+      }
+    after: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.tree.J;
+
+      public class MyRecipe extends Recipe {
+          @Override
+          public String getDisplayName() {
+              return "My recipe";
+          }
+
+          @Override
+          public String getDescription() {
+              return "My description.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return new JavaIsoVisitor<ExecutionContext>() {
+                  @Override
+                  public J.Literal visitLiteral(J.Literal literal, ExecutionContext ctx) {
+                      if (literal.getValue() == null) {
+                          return literal;
+                      }
+                      return super.visitLiteral(literal, ctx);
+                  }
+              };
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.IsLiteralNullRecipe
 examples:
 - description: '`IsLiteralNullTest#expressionArgument`'
