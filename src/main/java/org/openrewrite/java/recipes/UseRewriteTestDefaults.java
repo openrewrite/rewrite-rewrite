@@ -148,7 +148,7 @@ public class UseRewriteTestDefaults extends Recipe {
                             .javaParser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()))
                             .build()
                             .apply(
-                                    new Cursor(getCursor(), cd),
+                                    new Cursor(getCursor().getParentOrThrow(), cd),
                                     cd.getBody().getCoordinates().firstStatement(),
                                     specInfo.lambda.getBody());
                 }
@@ -165,7 +165,7 @@ public class UseRewriteTestDefaults extends Recipe {
                             .javaParser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()))
                             .build()
                             .apply(
-                                    new Cursor(getCursor(), cd),
+                                    new Cursor(getCursor().getParentOrThrow(), cd),
                                     cd.getBody().getCoordinates().firstStatement());
                 }
                 return cd;
