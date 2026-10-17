@@ -19,6 +19,7 @@ import lombok.Getter;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
+import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
@@ -63,7 +64,7 @@ public class RecipeClassesShouldBePublic extends Recipe {
 
                             // Create a new modifier list with public at the beginning
                             J.Modifier publicModifier = new J.Modifier(
-                                    cd.getId(),
+                                    Tree.randomId(),
                                     cd.getPrefix(),
                                     cd.getMarkers(),
                                     null,

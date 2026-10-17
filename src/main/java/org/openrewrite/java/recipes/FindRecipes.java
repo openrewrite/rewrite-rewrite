@@ -101,7 +101,7 @@ public class FindRecipes extends Recipe {
                                     name,
                                     description,
                                     RewriteRecipeSource.RecipeType.Refaster,
-                                    cd.printTrimmed(getCursor()),
+                                    cd.printTrimmed(getCursor().getParentOrThrow()),
                                     "[]"
                             ));
                             return SearchResult.found(cd);
@@ -235,7 +235,7 @@ public class FindRecipes extends Recipe {
                                         displayName,
                                         description,
                                         RewriteRecipeSource.RecipeType.Yaml,
-                                        doc.withPrefix("").printTrimmed(getCursor()),
+                                        doc.withPrefix("").printTrimmed(getCursor().getParentOrThrow()),
                                         "[]"
                                 ));
                                 return SearchResult.found(doc);
