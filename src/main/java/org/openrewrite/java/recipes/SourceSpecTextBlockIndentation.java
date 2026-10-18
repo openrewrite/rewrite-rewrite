@@ -100,7 +100,9 @@ public class SourceSpecTextBlockIndentation extends Recipe {
                                         // Nothing to trim (e.g. margin already minimal); avoid a no-op change
                                         return argument;
                                     }
-                                    return source.withValueSource(fixed);
+                                    // the closing delimiter stays, so each line of the value loses the margin its source line lost
+                                    return source.withValueSource(fixed).withValue(source.getValue() instanceof String ?
+                                            trimMargin((String) source.getValue(), marginTrim) : source.getValue());
                                 }
 
                             }
@@ -111,5 +113,17 @@ public class SourceSpecTextBlockIndentation extends Recipe {
                 return super.visitMethodInvocation(method, ctx);
             }
         };
+    }
+
+    private static String trimMargin(String value, int margin) {
+        StringJoiner trimmed = new StringJoiner("\n");
+        for (String line : value.split("\n", -1)) {
+            int start = 0;
+            while (start < margin && start < line.length() && line.charAt(start) == ' ') {
+                start++;
+            }
+            trimmed.add(line.substring(start));
+        }
+        return trimmed.toString();
     }
 }
