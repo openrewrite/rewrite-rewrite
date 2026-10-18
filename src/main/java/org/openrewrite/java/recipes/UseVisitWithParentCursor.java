@@ -128,17 +128,29 @@ public class UseVisitWithParentCursor extends Recipe {
                                 !(parent instanceof J.Block);
 
                         String templateStr;
+                        String castTypeImport = null;
                         if (needsCast) {
-                            String castTypeName = ((JavaType.FullyQualified) returnType).getClassName();
+                            JavaType.FullyQualified castType = (JavaType.FullyQualified) returnType;
+                            String castTypeName = castType.getClassName();
+                            // A nested type's class name starts with its outermost class, which is the one to import
+                            while (castType.getOwningClass() != null) {
+                                castType = castType.getOwningClass();
+                            }
+                            castTypeImport = castType.getFullyQualifiedName();
                             templateStr = "(" + castTypeName + ") #{any()}.visit(#{any()}, #{any()}, getCursor().getParentTreeCursor())";
                         } else {
                             templateStr = "#{any()}.visit(#{any()}, #{any()}, getCursor().getParentTreeCursor())";
                         }
 
                         // Replace visitXxx(tree, ctx) with visit(tree, ctx, getCursor().getParentTreeCursor())
-                        J result = JavaTemplate.builder(templateStr)
+                        JavaTemplate.Builder template = JavaTemplate.builder(templateStr)
                                 .contextSensitive()
-                                .javaParser(JavaParser.fromJavaVersion().classpath("rewrite-core", "rewrite-java"))
+                                .javaParser(JavaParser.fromJavaVersion().classpath("rewrite-core", "rewrite-java"));
+                        if (castTypeImport != null) {
+                            template.imports(castTypeImport);
+                            maybeAddImport(castTypeImport);
+                        }
+                        J result = template
                                 .build()
                                 .apply(getCursor(), mi.getCoordinates().replace(),
                                         mi.getSelect(), mi.getArguments().get(0), mi.getArguments().get(1));
