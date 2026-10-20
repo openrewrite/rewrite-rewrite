@@ -182,7 +182,6 @@ class RemoveImportBeforeAddImportTest implements RewriteTest {
     @Test
     void swapMultiplePairs() {
         rewriteRun(
-          spec -> spec.expectedCyclesThatMakeChanges(2),
           java(
             """
               import org.openrewrite.ExecutionContext;
