@@ -57,29 +57,47 @@ public class RemoveImportBeforeAddImport extends Recipe {
                             return b;
                         }
 
-                        List<Statement> reordered = new ArrayList<>(statements.size());
+                        List<Statement> reordered = new ArrayList<>(statements);
                         boolean changed = false;
                         int i = 0;
 
                         while (i < statements.size()) {
-                            Statement current = statements.get(i);
-                            if (i + 1 < statements.size()) {
-                                Statement next = statements.get(i + 1);
-                                if (matches(current, MAYBE_ADD_IMPORT_MATCHER) &&
-                                        matches(next, MAYBE_REMOVE_IMPORT_MATCHER)) {
-                                    // Swap: put maybeRemoveImport before maybeAddImport
-                                    reordered.add(next.withPrefix(current.getPrefix()));
-                                    reordered.add(current.withPrefix(next.getPrefix()));
-                                    changed = true;
-                                    i += 2;
-                                    continue;
+                            int end = i;
+                            while (end < statements.size() && isImportCall(statements.get(end))) {
+                                end++;
+                            }
+                            if (end - i < 2) {
+                                i = end + 1;
+                                continue;
+                            }
+
+                            // Stable-partition the whole run (removes first) so a single cycle converges
+                            List<Statement> run = new ArrayList<>(end - i);
+                            for (int j = i; j < end; j++) {
+                                if (matches(statements.get(j), MAYBE_REMOVE_IMPORT_MATCHER)) {
+                                    run.add(statements.get(j));
                                 }
                             }
-                            reordered.add(current);
-                            i++;
+                            for (int j = i; j < end; j++) {
+                                if (matches(statements.get(j), MAYBE_ADD_IMPORT_MATCHER)) {
+                                    run.add(statements.get(j));
+                                }
+                            }
+                            for (int j = i; j < end; j++) {
+                                Statement moved = run.get(j - i);
+                                if (moved != statements.get(j)) {
+                                    reordered.set(j, moved.withPrefix(statements.get(j).getPrefix()));
+                                    changed = true;
+                                }
+                            }
+                            i = end;
                         }
 
                         return changed ? b.withStatements(reordered) : b;
+                    }
+
+                    private boolean isImportCall(Statement stmt) {
+                        return matches(stmt, MAYBE_ADD_IMPORT_MATCHER) || matches(stmt, MAYBE_REMOVE_IMPORT_MATCHER);
                     }
 
                     private boolean matches(Statement stmt, MethodMatcher matcher) {
