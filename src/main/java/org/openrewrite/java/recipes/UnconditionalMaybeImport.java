@@ -131,11 +131,10 @@ public class UnconditionalMaybeImport extends Recipe {
                         }));
                     }
 
-                    private boolean isSideEffectFree(J j) {
+                    private boolean isSideEffectFree(Expression expression) {
+                        J j = expression.unwrap();
                         if (j instanceof J.Literal || j instanceof J.Identifier) {
                             return true;
-                        } else if (j instanceof J.Parentheses) {
-                            return isSideEffectFree(((J.Parentheses<?>) j).getTree());
                         } else if (j instanceof J.FieldAccess) {
                             return isSideEffectFree(((J.FieldAccess) j).getTarget());
                         } else if (j instanceof J.InstanceOf) {
