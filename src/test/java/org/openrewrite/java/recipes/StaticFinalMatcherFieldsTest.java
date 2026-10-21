@@ -48,7 +48,7 @@ class StaticFinalMatcherFieldsTest implements RewriteTest {
               import org.openrewrite.java.tree.J;
 
               public class A extends Recipe {
-                  private final transient MethodMatcher listAdd = new MethodMatcher("java.util.List add(..)", true);
+                  private final MethodMatcher listAdd = new MethodMatcher("java.util.List add(..)", true);
 
                   @Override
                   public String getDisplayName() {

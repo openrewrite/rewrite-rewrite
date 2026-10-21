@@ -92,9 +92,8 @@ public class StaticFinalMatcherFields extends Recipe {
                             if (field.getVariables().size() != 1 || !field.getLeadingAnnotations().isEmpty()) {
                                 return field;
                             }
-                            if (!field.hasModifier(J.Modifier.Type.Private) || !field.hasModifier(J.Modifier.Type.Final) ||
-                                    !field.getModifiers().stream().allMatch(m -> m.getType() == J.Modifier.Type.Private ||
-                                            m.getType() == J.Modifier.Type.Final || m.getType() == J.Modifier.Type.Transient)) {
+                            if (field.getModifiers().size() != 2 ||
+                                    !field.hasModifier(J.Modifier.Type.Private) || !field.hasModifier(J.Modifier.Type.Final)) {
                                 return field;
                             }
                             if (MATCHER_TYPES.stream().noneMatch(t -> TypeUtils.isOfClassType(field.getType(), t))) {
