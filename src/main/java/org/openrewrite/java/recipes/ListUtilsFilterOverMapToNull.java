@@ -115,17 +115,14 @@ public class ListUtilsFilterOverMapToNull extends Recipe {
                     return mi;
                 }
 
-                while (condition instanceof J.Parentheses && ((J.Parentheses<?>) condition).getTree() instanceof Expression) {
-                    condition = (Expression) ((J.Parentheses<?>) condition).getTree();
-                }
+                condition = condition.unwrap();
                 Expression predicate;
                 if (isElement(whenTrue, element) && J.Literal.isLiteralValue(whenFalse, null)) {
                     predicate = condition;
                 } else if (!J.Literal.isLiteralValue(whenTrue, null) || !isElement(whenFalse, element)) {
                     return mi;
                 } else if (condition instanceof J.Unary && ((J.Unary) condition).getOperator() == J.Unary.Type.Not) {
-                    Expression operand = ((J.Unary) condition).getExpression();
-                    predicate = operand instanceof J.Parentheses ? (Expression) ((J.Parentheses<?>) operand).getTree() : operand;
+                    predicate = ((J.Unary) condition).getExpression().unwrap();
                 } else if (condition instanceof J.Binary && ((J.Binary) condition).getOperator() == J.Binary.Type.Equal) {
                     predicate = ((J.Binary) condition).withOperator(J.Binary.Type.NotEqual);
                 } else if (condition instanceof J.Binary && ((J.Binary) condition).getOperator() == J.Binary.Type.NotEqual) {
