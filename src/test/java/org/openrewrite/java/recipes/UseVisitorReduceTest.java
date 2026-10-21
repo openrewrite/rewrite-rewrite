@@ -151,6 +151,47 @@ class UseVisitorReduceTest implements RewriteTest {
           java(
             """
               import org.openrewrite.Tree;
+              import org.openrewrite.TreeVisitor;
+
+              import java.util.concurrent.atomic.AtomicBoolean;
+
+              class A {
+                  String describe(TreeVisitor<?, AtomicBoolean> visitor, Tree tree) {
+                      AtomicBoolean found = new AtomicBoolean(false);
+                      visitor.visitNonNull(tree, found);
+                      if (!found.get()) {
+                          return "none";
+                      }
+                      return "some";
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.Tree;
+              import org.openrewrite.TreeVisitor;
+
+              import java.util.concurrent.atomic.AtomicBoolean;
+
+              class A {
+                  String describe(TreeVisitor<?, AtomicBoolean> visitor, Tree tree) {
+                      if (!visitor.reduce(tree, new AtomicBoolean(false)).get()) {
+                          return "none";
+                      }
+                      return "some";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void anonymousVisitorNotInlinedIntoCondition() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.Tree;
               import org.openrewrite.java.JavaIsoVisitor;
               import org.openrewrite.java.tree.J;
 
@@ -171,6 +212,18 @@ class UseVisitorReduceTest implements RewriteTest {
                       }
                       return "some";
                   }
+
+                  String label(Tree tree) {
+                      AtomicBoolean found = new AtomicBoolean(false);
+                      new JavaIsoVisitor<AtomicBoolean>() {
+                          @Override
+                          public J.Literal visitLiteral(J.Literal literal, AtomicBoolean f) {
+                              f.set(true);
+                              return literal;
+                          }
+                      }.visit(tree, found);
+                      return found.get() ? "some" : "none";
+                  }
               }
               """,
             """
@@ -182,16 +235,109 @@ class UseVisitorReduceTest implements RewriteTest {
 
               class A {
                   String describe(Tree tree) {
-                      if (!new JavaIsoVisitor<AtomicBoolean>() {
+                      AtomicBoolean found = new JavaIsoVisitor<AtomicBoolean>() {
                           @Override
                           public J.Literal visitLiteral(J.Literal literal, AtomicBoolean f) {
                               f.set(true);
                               return literal;
                           }
-                      }.reduce(tree, new AtomicBoolean(false)).get()) {
+                      }.reduce(tree, new AtomicBoolean(false));
+                      if (!found.get()) {
                           return "none";
                       }
                       return "some";
+                  }
+
+                  String label(Tree tree) {
+                      AtomicBoolean found = new JavaIsoVisitor<AtomicBoolean>() {
+                          @Override
+                          public J.Literal visitLiteral(J.Literal literal, AtomicBoolean f) {
+                              f.set(true);
+                              return literal;
+                          }
+                      }.reduce(tree, new AtomicBoolean(false));
+                      return found.get() ? "some" : "none";
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepWhitespaceAfterLastArgument() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.Tree;
+              import org.openrewrite.TreeVisitor;
+
+              import java.util.concurrent.atomic.AtomicBoolean;
+
+              class A {
+                  boolean visit(TreeVisitor<?, AtomicBoolean> visitor, Tree tree) {
+                      AtomicBoolean found = new AtomicBoolean();
+                      visitor.visit(
+                              tree,
+                              found
+                      );
+                      return found.get();
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.Tree;
+              import org.openrewrite.TreeVisitor;
+
+              import java.util.concurrent.atomic.AtomicBoolean;
+
+              class A {
+                  boolean visit(TreeVisitor<?, AtomicBoolean> visitor, Tree tree) {
+                      return visitor.reduce(
+                              tree,
+                              new AtomicBoolean()
+                      ).get();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void indentContinuationOfWrappedDeclaration() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.Tree;
+              import org.openrewrite.java.JavaIsoVisitor;
+
+              import java.util.concurrent.atomic.AtomicBoolean;
+
+              class A {
+                  boolean visit(Tree tree, boolean enabled) {
+                      AtomicBoolean found =
+                              new AtomicBoolean();
+                      new JavaIsoVisitor<AtomicBoolean>()
+                              .visit(tree, found);
+                      return enabled && found.get();
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.Tree;
+              import org.openrewrite.java.JavaIsoVisitor;
+
+              import java.util.concurrent.atomic.AtomicBoolean;
+
+              class A {
+                  boolean visit(Tree tree, boolean enabled) {
+                      AtomicBoolean found =
+                              new JavaIsoVisitor<AtomicBoolean>()
+                                      .reduce(tree, new AtomicBoolean());
+                      return enabled && found.get();
                   }
               }
               """
@@ -547,6 +693,61 @@ class UseVisitorReduceTest implements RewriteTest {
                           ArrayList<String> names = new ArrayList<>();
                           new JavaIsoVisitor<List<String>>().visit(tree, names);
                           return names;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void executionContext() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import org.openrewrite.ExecutionContext;
+                  import org.openrewrite.InMemoryExecutionContext;
+                  import org.openrewrite.Tree;
+                  import org.openrewrite.TreeVisitor;
+
+                  class A {
+                      Object scan(TreeVisitor<?, ExecutionContext> scanner, Tree tree) {
+                          ExecutionContext ctx = new InMemoryExecutionContext();
+                          scanner.visit(tree, ctx);
+                          return ctx.getMessage("found");
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void annotatedTypeArgument() {
+            rewriteRun(
+              //language=java
+              java(
+                """
+                  import org.jspecify.annotations.Nullable;
+                  import org.openrewrite.Tree;
+                  import org.openrewrite.java.JavaIsoVisitor;
+                  import org.openrewrite.java.tree.J;
+
+                  import java.util.concurrent.atomic.AtomicReference;
+
+                  class A {
+                      String firstLiteral(Tree tree) {
+                          AtomicReference<@Nullable String> first = new AtomicReference<>();
+                          new JavaIsoVisitor<AtomicReference<String>>() {
+                              @Override
+                              public J.Literal visitLiteral(J.Literal literal, AtomicReference<String> f) {
+                                  f.compareAndSet(null, literal.getValueSource());
+                                  return literal;
+                              }
+                          }.visit(tree, first);
+                          String value = first.get();
+                          return value == null ? "" : value;
                       }
                   }
                   """

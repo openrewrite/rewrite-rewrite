@@ -31,6 +31,7 @@ import org.openrewrite.java.tree.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.singletonList;
 
@@ -82,6 +83,8 @@ public class UseVisitorReduce extends Recipe {
                             JavaType.Variable accumulatorType = accumulator.getVariableType();
                             Expression initializer = accumulator.getInitializer();
                             if (accumulatorType == null ||
+                                    TypeUtils.isAssignableTo("org.openrewrite.ExecutionContext", accumulatorType.getType()) ||
+                                    hasAnnotation(declaration.getTypeExpression()) ||
                                     !(initializer instanceof J.Literal || initializer instanceof J.NewClass &&
                                             ((J.NewClass) initializer).getEnclosing() == null &&
                                             ((J.NewClass) initializer).getBody() == null &&
@@ -101,21 +104,26 @@ public class UseVisitorReduce extends Recipe {
 
                             JavaType.Method reduceType = REDUCE_MATCHER.matches(visit) ? visitType :
                                     visitType.withName("reduce").withReturnType(visitType.getParameterTypes().get(1));
-                            J.MethodInvocation reduce = visit
+                            J.MethodInvocation renamed = visit
                                     .withName(visit.getName().withSimpleName("reduce").withType(reduceType))
-                                    .withMethodType(reduceType)
-                                    .withArguments(ListUtils.map(visit.getArguments(),
-                                            (index, arg) -> index == 1 ? initializer.withPrefix(arg.getPrefix()) : arg));
+                                    .withMethodType(reduceType);
+                            JContainer<Expression> arguments = renamed.getPadding().getArguments();
+                            J.MethodInvocation reduce = renamed.getPadding().withArguments(arguments.getPadding().withElements(
+                                    ListUtils.map(arguments.getPadding().getElements(), (index, arg) -> index == 1 ?
+                                            arg.withElement(initializer.withPrefix(arg.getElement().getPrefix())) : arg)));
 
                             int declarationIndex = i;
                             Statement next = statements.get(i + 2);
                             J.Identifier onlyReference = laterReferences.get(0);
+                            boolean anonymousVisitor = visit.getSelect() instanceof J.NewClass &&
+                                    ((J.NewClass) visit.getSelect()).getBody() != null;
                             if (laterReferences.size() == 1 && next.getComments().isEmpty() &&
-                                    firstEvaluated(next) == onlyReference) {
+                                    firstEvaluated(next, !anonymousVisitor) == onlyReference) {
                                 Statement inlined = ((Statement) new JavaVisitor<ExecutionContext>() {
                                     @Override
                                     public J visitIdentifier(J.Identifier identifier, ExecutionContext ctx) {
-                                        return identifier == onlyReference ? reduce.withPrefix(identifier.getPrefix()) : identifier;
+                                        return identifier == onlyReference ?
+                                                reindent(reduce, visit.getPrefix(), identifier.getPrefix()) : identifier;
                                     }
                                 }.visitNonNull(next, ctx)).withPrefix(declaration.getPrefix());
                                 statements = ListUtils.map(statements, (index, s) ->
@@ -123,7 +131,7 @@ public class UseVisitorReduce extends Recipe {
                                                 index == declarationIndex + 2 ? inlined : s);
                             } else {
                                 J.VariableDeclarations reduced = declaration.withVariables(singletonList(
-                                        accumulator.withInitializer(reduce.withPrefix(initializer.getPrefix()))));
+                                        accumulator.withInitializer(reindent(reduce, visit.getPrefix(), initializer.getPrefix()))));
                                 statements = ListUtils.map(statements, (index, s) ->
                                         index == declarationIndex ? reduced : index == declarationIndex + 1 ? null : s);
                             }
@@ -145,40 +153,79 @@ public class UseVisitorReduce extends Recipe {
         }.reduce(trees, new ArrayList<>());
     }
 
-    private static @Nullable J firstEvaluated(@Nullable J j) {
+    private static boolean hasAnnotation(@Nullable TypeTree typeExpression) {
+        return typeExpression != null && new JavaIsoVisitor<AtomicBoolean>() {
+            @Override
+            public J.Annotation visitAnnotation(J.Annotation annotation, AtomicBoolean found) {
+                found.set(true);
+                return annotation;
+            }
+        }.reduce(typeExpression, new AtomicBoolean()).get();
+    }
+
+    // Continuation lines follow `reduce` when it starts a deeper line than the visit statement did,
+    // as when the declaration wraps after its `=`
+    private static J.MethodInvocation reindent(J.MethodInvocation reduce, Space visitPrefix, Space prefix) {
+        String from = indentation(visitPrefix.getWhitespace());
+        String to = indentation(prefix.getWhitespace());
+        if (!prefix.getWhitespace().contains("\n") || to.equals(from) || !to.startsWith(from)) {
+            return reduce.withPrefix(prefix);
+        }
+        return new JavaIsoVisitor<Integer>() {
+            @Override
+            public Space visitSpace(@Nullable Space space, Space.Location loc, Integer p) {
+                Space s = super.visitSpace(space, loc, p);
+                return s.withWhitespace(shift(s.getWhitespace()))
+                        .withComments(ListUtils.map(s.getComments(), c -> c.withSuffix(shift(c.getSuffix()))));
+            }
+
+            private String shift(String whitespace) {
+                int lineStart = whitespace.lastIndexOf('\n') + 1;
+                return lineStart > 0 && whitespace.startsWith(from, lineStart) ?
+                        whitespace.substring(0, lineStart) + to + whitespace.substring(lineStart + from.length()) :
+                        whitespace;
+            }
+        }.visitNonNull(reduce.withPrefix(Space.EMPTY), 0).withPrefix(prefix);
+    }
+
+    private static String indentation(String whitespace) {
+        return whitespace.substring(whitespace.lastIndexOf('\n') + 1);
+    }
+
+    private static @Nullable J firstEvaluated(@Nullable J j, boolean intoConditions) {
         if (j instanceof J.Return) {
-            return firstEvaluated(((J.Return) j).getExpression());
+            return firstEvaluated(((J.Return) j).getExpression(), intoConditions);
         }
         if (j instanceof J.If) {
-            return firstEvaluated(((J.If) j).getIfCondition().getTree());
+            return intoConditions ? firstEvaluated(((J.If) j).getIfCondition().getTree(), true) : null;
         }
         if (j instanceof J.VariableDeclarations) {
             List<J.VariableDeclarations.NamedVariable> variables = ((J.VariableDeclarations) j).getVariables();
-            return variables.size() == 1 ? firstEvaluated(variables.get(0).getInitializer()) : null;
+            return variables.size() == 1 ? firstEvaluated(variables.get(0).getInitializer(), intoConditions) : null;
         }
         if (j instanceof J.MethodInvocation) {
-            return firstEvaluated(((J.MethodInvocation) j).getSelect());
+            return firstEvaluated(((J.MethodInvocation) j).getSelect(), intoConditions);
         }
         if (j instanceof J.FieldAccess) {
-            return firstEvaluated(((J.FieldAccess) j).getTarget());
+            return firstEvaluated(((J.FieldAccess) j).getTarget(), intoConditions);
         }
         if (j instanceof J.Parentheses) {
-            return firstEvaluated(((J.Parentheses<?>) j).getTree());
+            return firstEvaluated(((J.Parentheses<?>) j).getTree(), intoConditions);
         }
         if (j instanceof J.TypeCast) {
-            return firstEvaluated(((J.TypeCast) j).getExpression());
+            return firstEvaluated(((J.TypeCast) j).getExpression(), intoConditions);
         }
         if (j instanceof J.InstanceOf) {
-            return firstEvaluated(((J.InstanceOf) j).getExpression());
+            return firstEvaluated(((J.InstanceOf) j).getExpression(), intoConditions);
         }
         if (j instanceof J.Binary) {
-            return firstEvaluated(((J.Binary) j).getLeft());
+            return firstEvaluated(((J.Binary) j).getLeft(), intoConditions);
         }
         if (j instanceof J.Ternary) {
-            return firstEvaluated(((J.Ternary) j).getCondition());
+            return intoConditions ? firstEvaluated(((J.Ternary) j).getCondition(), true) : null;
         }
         if (j instanceof J.Unary && !((J.Unary) j).getOperator().isModifying()) {
-            return firstEvaluated(((J.Unary) j).getExpression());
+            return firstEvaluated(((J.Unary) j).getExpression(), intoConditions);
         }
         return j;
     }
