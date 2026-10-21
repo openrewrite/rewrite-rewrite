@@ -346,6 +346,60 @@ class UseVisitorReduceTest implements RewriteTest {
     }
 
     @Test
+    void indentAnonymousVisitorOfWrappedDeclaration() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.Tree;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              import java.util.concurrent.atomic.AtomicBoolean;
+
+              class A {
+                  boolean visit(Tree tree, boolean enabled) {
+                      AtomicBoolean found =
+                              new AtomicBoolean();
+                      new JavaIsoVisitor<AtomicBoolean>() {
+                          @Override
+                          public J.Literal visitLiteral(J.Literal literal,
+                                                        AtomicBoolean f) {
+                              f.set(true);
+                              return literal;
+                          }
+                      }.visit(tree, found);
+                      return enabled && found.get();
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.Tree;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              import java.util.concurrent.atomic.AtomicBoolean;
+
+              class A {
+                  boolean visit(Tree tree, boolean enabled) {
+                      AtomicBoolean found =
+                              new JavaIsoVisitor<AtomicBoolean>() {
+                                  @Override
+                                  public J.Literal visitLiteral(J.Literal literal,
+                                                                AtomicBoolean f) {
+                                      f.set(true);
+                                      return literal;
+                                  }
+                              }.reduce(tree, new AtomicBoolean());
+                      return enabled && found.get();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void multipleLaterUsesKeepDeclaration() {
         rewriteRun(
           //language=java

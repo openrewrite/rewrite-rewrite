@@ -122,16 +122,17 @@ public class UseVisitorReduce extends Recipe {
                                 Statement inlined = ((Statement) new JavaVisitor<ExecutionContext>() {
                                     @Override
                                     public J visitIdentifier(J.Identifier identifier, ExecutionContext ctx) {
-                                        return identifier == onlyReference ?
-                                                reindent(reduce, visit.getPrefix(), identifier.getPrefix()) : identifier;
+                                        return identifier == onlyReference ? reduce.withPrefix(identifier.getPrefix()) : identifier;
                                     }
                                 }.visitNonNull(next, ctx)).withPrefix(declaration.getPrefix());
+                                Statement indented = startsLine(onlyReference) ? autoIndent(inlined, ctx, getCursor()) : inlined;
                                 statements = ListUtils.map(statements, (index, s) ->
                                         index == declarationIndex || index == declarationIndex + 1 ? null :
-                                                index == declarationIndex + 2 ? inlined : s);
+                                                index == declarationIndex + 2 ? indented : s);
                             } else {
-                                J.VariableDeclarations reduced = declaration.withVariables(singletonList(
-                                        accumulator.withInitializer(reindent(reduce, visit.getPrefix(), initializer.getPrefix()))));
+                                J.VariableDeclarations withReduce = declaration.withVariables(singletonList(
+                                        accumulator.withInitializer(reduce.withPrefix(initializer.getPrefix()))));
+                                J.VariableDeclarations reduced = startsLine(initializer) ? autoIndent(withReduce, ctx, getCursor()) : withReduce;
                                 statements = ListUtils.map(statements, (index, s) ->
                                         index == declarationIndex ? reduced : index == declarationIndex + 1 ? null : s);
                             }
@@ -163,33 +164,8 @@ public class UseVisitorReduce extends Recipe {
         }.reduce(typeExpression, new AtomicBoolean()).get();
     }
 
-    // Continuation lines follow `reduce` when it starts a deeper line than the visit statement did,
-    // as when the declaration wraps after its `=`
-    private static J.MethodInvocation reindent(J.MethodInvocation reduce, Space visitPrefix, Space prefix) {
-        String from = indentation(visitPrefix.getWhitespace());
-        String to = indentation(prefix.getWhitespace());
-        if (!prefix.getWhitespace().contains("\n") || to.equals(from) || !to.startsWith(from)) {
-            return reduce.withPrefix(prefix);
-        }
-        return new JavaIsoVisitor<Integer>() {
-            @Override
-            public Space visitSpace(@Nullable Space space, Space.Location loc, Integer p) {
-                Space s = super.visitSpace(space, loc, p);
-                return s.withWhitespace(shift(s.getWhitespace()))
-                        .withComments(ListUtils.map(s.getComments(), c -> c.withSuffix(shift(c.getSuffix()))));
-            }
-
-            private String shift(String whitespace) {
-                int lineStart = whitespace.lastIndexOf('\n') + 1;
-                return lineStart > 0 && whitespace.startsWith(from, lineStart) ?
-                        whitespace.substring(0, lineStart) + to + whitespace.substring(lineStart + from.length()) :
-                        whitespace;
-            }
-        }.visitNonNull(reduce.withPrefix(Space.EMPTY), 0).withPrefix(prefix);
-    }
-
-    private static String indentation(String whitespace) {
-        return whitespace.substring(whitespace.lastIndexOf('\n') + 1);
+    private static boolean startsLine(J j) {
+        return j.getPrefix().getWhitespace().contains("\n");
     }
 
     private static @Nullable J firstEvaluated(@Nullable J j, boolean intoConditions) {

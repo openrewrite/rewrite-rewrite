@@ -42,6 +42,7 @@ recipeList:
   - org.openrewrite.java.recipes.JavaRecipeBestPractices
   - org.openrewrite.java.recipes.RecipeTestingBestPractices
   - org.openrewrite.java.recipes.RecipeNullabilityBestPractices
+  - org.openrewrite.java.recipes.DeclarativeRecipeBestPractices
   - org.openrewrite.java.recipes.RemoveToBeRemoved
   - org.openrewrite.java.recipes.UpgradeTestsToJava21
   - org.openrewrite.java.recipes.ExamplesExtractor
@@ -131,6 +132,7 @@ recipeList:
   - org.openrewrite.java.recipes.RecipeClassesShouldBePublic
   - org.openrewrite.java.recipes.UnconditionalMaybeImport
   - org.openrewrite.java.recipes.RemoveImportBeforeAddImport
+  - org.openrewrite.java.recipes.StaticFinalMatcherFields
   - org.openrewrite.java.recipes.UseDisplayNameAndDescriptionFields
   - org.openrewrite.java.recipes.UseEstimatedEffortPerOccurrenceField
   - org.openrewrite.java.recipes.UseStringUtilsRecipes
@@ -214,6 +216,19 @@ recipeList:
   - org.openrewrite.java.jspecify.MigrateToJSpecify
   - org.openrewrite.staticanalysis.AnnotateNullableMethods
   - org.openrewrite.staticanalysis.NullableOnMethodReturnType
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.java.recipes.DeclarativeRecipeBestPractices
+displayName: Declarative recipe best practices
+description: Best practices for declarative YAML recipe development.
+preconditions:
+  - org.openrewrite.FindSourceFiles:
+      filePattern: '**/META-INF/rewrite/*.yml'
+recipeList:
+  - org.openrewrite.java.recipes.EndDeclarativeRecipeDescriptionsWithPeriod
+  - org.openrewrite.java.recipes.LowercaseVersionWildcards
+  - org.openrewrite.java.recipes.RemoveEmptyRecipeOptions
+  - org.openrewrite.java.recipes.RemoveConsecutiveDuplicateRecipes
 ---
 type: specs.openrewrite.org/v1beta/recipe
 name: org.openrewrite.java.recipes.UpgradeTestsToJava21
