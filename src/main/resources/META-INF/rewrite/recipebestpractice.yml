@@ -131,6 +131,7 @@ recipeList:
   - org.openrewrite.java.recipes.RecipeClassesShouldBePublic
   - org.openrewrite.java.recipes.UnconditionalMaybeImport
   - org.openrewrite.java.recipes.RemoveImportBeforeAddImport
+  - org.openrewrite.java.recipes.StaticFinalMatcherFields
   - org.openrewrite.java.recipes.UseDisplayNameAndDescriptionFields
   - org.openrewrite.java.recipes.UseEstimatedEffortPerOccurrenceField
   - org.openrewrite.java.recipes.UseStringUtilsRecipes
