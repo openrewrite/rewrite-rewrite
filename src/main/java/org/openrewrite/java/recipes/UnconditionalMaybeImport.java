@@ -16,6 +16,7 @@
 package org.openrewrite.java.recipes;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -27,12 +28,11 @@ import org.openrewrite.java.format.ShiftFormat;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Collections.disjoint;
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 
 public class UnconditionalMaybeImport extends Recipe {
@@ -73,7 +73,8 @@ public class UnconditionalMaybeImport extends Recipe {
                             if (guarded.isEmpty() || !isSideEffectFree(condition)) {
                                 return statement;
                             }
-                            Set<String> conditionIdentifiers = identifiers(condition);
+                            Set<String> conditionIdentifiers = withSources(identifiers(condition),
+                                    getCursor().firstEnclosingOrThrow(JavaSourceFile.class));
                             for (Statement s : guarded) {
                                 if (!(s instanceof J.MethodInvocation)) {
                                     return statement;
@@ -159,6 +160,51 @@ public class UnconditionalMaybeImport extends Recipe {
                                 return identifier;
                             }
                         }.reduce(j, new HashSet<>());
+                    }
+
+                    private Set<String> withSources(Set<String> names, J scope) {
+                        Map<String, Set<String>> sources = new JavaIsoVisitor<Map<String, Set<String>>>() {
+                            @Override
+                            public J.VariableDeclarations.NamedVariable visitVariable(J.VariableDeclarations.NamedVariable variable, Map<String, Set<String>> sources) {
+                                addSource(variable.getName(), variable.getInitializer(), sources);
+                                return super.visitVariable(variable, sources);
+                            }
+
+                            @Override
+                            public J.Assignment visitAssignment(J.Assignment assignment, Map<String, Set<String>> sources) {
+                                addSource(assignment.getVariable(), assignment.getAssignment(), sources);
+                                return super.visitAssignment(assignment, sources);
+                            }
+
+                            @Override
+                            public J.AssignmentOperation visitAssignmentOperation(J.AssignmentOperation assignOp, Map<String, Set<String>> sources) {
+                                addSource(assignOp.getVariable(), assignOp.getAssignment(), sources);
+                                return super.visitAssignmentOperation(assignOp, sources);
+                            }
+
+                            private void addSource(Expression variable, @Nullable Expression value, Map<String, Set<String>> sources) {
+                                if (value == null) {
+                                    return;
+                                }
+                                Expression target = variable.unwrap();
+                                String name = target instanceof J.Identifier ? ((J.Identifier) target).getSimpleName() :
+                                        target instanceof J.FieldAccess ? ((J.FieldAccess) target).getSimpleName() : null;
+                                if (name != null) {
+                                    sources.computeIfAbsent(name, k -> new HashSet<>()).addAll(identifiers(value));
+                                }
+                            }
+                        }.reduce(scope, new HashMap<>());
+
+                        Set<String> all = new HashSet<>(names);
+                        Deque<String> pending = new ArrayDeque<>(names);
+                        while (!pending.isEmpty()) {
+                            for (String source : sources.getOrDefault(pending.pop(), emptySet())) {
+                                if (all.add(source)) {
+                                    pending.push(source);
+                                }
+                            }
+                        }
+                        return all;
                     }
 
                     private boolean isThis(Expression expression) {

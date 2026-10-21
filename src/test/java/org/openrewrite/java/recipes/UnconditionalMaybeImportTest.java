@@ -461,6 +461,63 @@ class UnconditionalMaybeImportTest implements RewriteTest {
         }
 
         @Test
+        void conditionDerivedFromArgument() {
+            rewriteRun(
+              java(
+                """
+                  import org.jspecify.annotations.Nullable;
+                  import org.openrewrite.ExecutionContext;
+                  import org.openrewrite.java.JavaIsoVisitor;
+                  import org.openrewrite.java.tree.J;
+
+                  class SampleVisitor extends JavaIsoVisitor<ExecutionContext> {
+                      @Override
+                      public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+                          String fqn = fullyQualifiedName(newClass);
+                          boolean hasType = fqn != null;
+                          if (hasType) {
+                              maybeAddImport(fqn);
+                          }
+                          return newClass;
+                      }
+
+                      private @Nullable String fullyQualifiedName(J.NewClass newClass) {
+                          return null;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void conditionAssignedFromArgument() {
+            rewriteRun(
+              java(
+                """
+                  import org.openrewrite.ExecutionContext;
+                  import org.openrewrite.java.JavaIsoVisitor;
+                  import org.openrewrite.java.tree.J;
+
+                  class SampleVisitor extends JavaIsoVisitor<ExecutionContext> {
+                      private String fqn;
+                      private boolean known;
+
+                      @Override
+                      public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+                          known = fqn != null;
+                          if (known) {
+                              maybeAddImport(fqn);
+                          }
+                          return newClass;
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void argumentWithMethodInvocation() {
             rewriteRun(
               java(
