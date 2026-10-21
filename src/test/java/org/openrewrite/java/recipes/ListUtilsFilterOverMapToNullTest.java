@@ -178,6 +178,47 @@ class ListUtilsFilterOverMapToNullTest implements RewriteTest {
     }
 
     @Test
+    void wrapLongPredicateAfterArrow() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.openrewrite.internal.ListUtils;
+              import org.openrewrite.java.tree.J;
+              import org.openrewrite.java.tree.Statement;
+
+              import java.util.List;
+
+              class A {
+                  List<Statement> withoutAssertions(List<Statement> statements) {
+                      return ListUtils.map(statements, statement -> {
+                          if (statement instanceof J.MethodInvocation && "assertThat".equals(((J.MethodInvocation) statement).getSimpleName())) {
+                              return null;
+                          }
+                          return statement;
+                      });
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.internal.ListUtils;
+              import org.openrewrite.java.tree.J;
+              import org.openrewrite.java.tree.Statement;
+
+              import java.util.List;
+
+              class A {
+                  List<Statement> withoutAssertions(List<Statement> statements) {
+                      return ListUtils.filter(statements, statement ->
+                              !(statement instanceof J.MethodInvocation && "assertThat".equals(((J.MethodInvocation) statement).getSimpleName())));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void ifElseKeepingElement() {
         rewriteRun(
           //language=java

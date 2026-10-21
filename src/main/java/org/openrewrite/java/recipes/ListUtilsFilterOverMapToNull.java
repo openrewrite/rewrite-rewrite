@@ -17,13 +17,16 @@ package org.openrewrite.java.recipes;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
+import org.openrewrite.PrintOutputCapture;
 import org.openrewrite.Recipe;
 import org.openrewrite.Tree;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
+import org.openrewrite.java.JavaPrinter;
 import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.*;
@@ -31,12 +34,15 @@ import org.openrewrite.marker.Markers;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.openrewrite.Tree.randomId;
 
 public class ListUtilsFilterOverMapToNull extends Recipe {
+
+    private static final int MAX_LINE_LENGTH = 120;
 
     private static final MethodMatcher MAP_MATCHER = new MethodMatcher("org.openrewrite.internal.ListUtils map(java.util.List, ..)");
 
@@ -150,12 +156,50 @@ public class ListUtilsFilterOverMapToNull extends Recipe {
                 J.Lambda filterLambda = lambda
                         .withBody(predicate.withPrefix(lambda.getBody().getPrefix()))
                         .withType(predicateType);
-                return mi
+                J.MethodInvocation filter = mi
                         .withName(mi.getName().withSimpleName("filter").withType(filterType))
                         .withMethodType(filterType)
                         .withArguments(asList(mi.getArguments().get(0), filterLambda));
+                if (lambda.getBody() instanceof J.Block && exceedsMaxLineLength(getCursor(), filter, filterLambda)) {
+                    J.Lambda wrapped = filterLambda.withBody(predicate.withPrefix(Space.format("\n")));
+                    return filter.withArguments(asList(mi.getArguments().get(0),
+                            autoFormat(wrapped, ctx, new Cursor(getCursor().getParentOrThrow(), filter))));
+                }
+                return filter;
             }
         });
+    }
+
+    private static boolean exceedsMaxLineLength(Cursor cursor, J.MethodInvocation filter, J.Lambda filterLambda) {
+        J.CompilationUnit cu = cursor.firstEnclosing(J.CompilationUnit.class);
+        if (cu == null) {
+            return false;
+        }
+        J.MethodInvocation original = cursor.getValue();
+        PrintOutputCapture<AtomicInteger> out = new PrintOutputCapture<>(new AtomicInteger(-1));
+        new JavaPrinter<AtomicInteger>() {
+            @Override
+            public J visitMethodInvocation(J.MethodInvocation method, PrintOutputCapture<AtomicInteger> p) {
+                return super.visitMethodInvocation(method == original ? filter : method, p);
+            }
+
+            @Override
+            public J visitLambda(J.Lambda lambda, PrintOutputCapture<AtomicInteger> p) {
+                J l = super.visitLambda(lambda, p);
+                if (lambda == filterLambda) {
+                    p.getContext().set(p.getOut().length());
+                }
+                return l;
+            }
+        }.visit(cu, out);
+        String printed = out.getOut();
+        int lambdaEnd = out.getContext().get();
+        if (lambdaEnd < 0) {
+            return false;
+        }
+        int lineEnd = printed.indexOf('\n', lambdaEnd);
+        int lineStart = printed.lastIndexOf('\n', lambdaEnd - 1) + 1;
+        return (lineEnd < 0 ? printed.length() : lineEnd) - lineStart > MAX_LINE_LENGTH;
     }
 
     private static @Nullable Expression returned(Statement statement) {
