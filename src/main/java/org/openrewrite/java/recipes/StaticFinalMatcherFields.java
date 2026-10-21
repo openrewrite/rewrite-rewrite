@@ -22,9 +22,11 @@ import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
+import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.RenameVariable;
 import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.Markers;
 
@@ -43,6 +45,12 @@ public class StaticFinalMatcherFields extends Recipe {
             "org.openrewrite.java.AnnotationMatcher",
             "org.openrewrite.java.TypeMatcher");
 
+    private static final List<AnnotationMatcher> LOMBOK_ACCESSOR_ANNOTATIONS = asList(
+            new AnnotationMatcher("@lombok.Value"),
+            new AnnotationMatcher("@lombok.Data"),
+            new AnnotationMatcher("@lombok.Getter"),
+            new AnnotationMatcher("@lombok.Setter"));
+
     @Getter
     final String displayName = "Make matcher fields `static final` constants";
 
@@ -54,10 +62,7 @@ public class StaticFinalMatcherFields extends Recipe {
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
-                Preconditions.or(
-                        new UsesType<>(MATCHER_TYPES.get(0), false),
-                        new UsesType<>(MATCHER_TYPES.get(1), false),
-                        new UsesType<>(MATCHER_TYPES.get(2), false)),
+                new UsesType<>("org.openrewrite.java.*Matcher", false),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
@@ -67,7 +72,7 @@ public class StaticFinalMatcherFields extends Recipe {
                                 !(getCursor().getParentTreeCursor().getValue() instanceof JavaSourceFile || cd.hasModifier(J.Modifier.Type.Static)) ||
                                 !(TypeUtils.isAssignableTo("org.openrewrite.Recipe", classType) ||
                                         TypeUtils.isAssignableTo("org.openrewrite.TreeVisitor", classType)) ||
-                                cd.getLeadingAnnotations().stream().anyMatch(a -> asList("Value", "Data", "Getter", "Setter").contains(a.getSimpleName()))) {
+                                LOMBOK_ACCESSOR_ANNOTATIONS.stream().anyMatch(m -> service(AnnotationService.class).matches(getCursor(), m))) {
                             return cd;
                         }
 
