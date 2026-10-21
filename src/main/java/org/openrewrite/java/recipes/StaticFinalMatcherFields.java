@@ -89,21 +89,30 @@ public class StaticFinalMatcherFields extends Recipe {
                                 field.getVariables().forEach(v -> initializedStaticFields.add(v.getSimpleName()));
                                 return field;
                             }
-                            J.VariableDeclarations.NamedVariable variable = field.getVariables().get(0);
-                            Expression initializer = variable.getInitializer();
-                            String constantName = variable.getSimpleName()
-                                    .replaceAll("([a-z0-9])([A-Z])", "$1_$2")
-                                    .replaceAll("([A-Z]+)([A-Z][a-z])", "$1_$2")
-                                    .toUpperCase();
-                            if (field.getVariables().size() != 1 || !field.getLeadingAnnotations().isEmpty() ||
-                                    !field.hasModifier(J.Modifier.Type.Private) || !field.hasModifier(J.Modifier.Type.Final) ||
+                            if (field.getVariables().size() != 1 || !field.getLeadingAnnotations().isEmpty()) {
+                                return field;
+                            }
+                            if (!field.hasModifier(J.Modifier.Type.Private) || !field.hasModifier(J.Modifier.Type.Final) ||
                                     !field.getModifiers().stream().allMatch(m -> m.getType() == J.Modifier.Type.Private ||
-                                            m.getType() == J.Modifier.Type.Final || m.getType() == J.Modifier.Type.Transient) ||
-                                    MATCHER_TYPES.stream().noneMatch(t -> TypeUtils.isOfClassType(field.getType(), t)) ||
-                                    !(initializer instanceof J.NewClass) || ((J.NewClass) initializer).getBody() != null ||
-                                    !((J.NewClass) initializer).getArguments().stream().allMatch(arg ->
-                                            isConstant(arg, classType, initializedStaticFields)) ||
-                                    !constantName.equals(variable.getSimpleName()) && usedNames.contains(constantName)) {
+                                            m.getType() == J.Modifier.Type.Final || m.getType() == J.Modifier.Type.Transient)) {
+                                return field;
+                            }
+                            if (MATCHER_TYPES.stream().noneMatch(t -> TypeUtils.isOfClassType(field.getType(), t))) {
+                                return field;
+                            }
+
+                            J.VariableDeclarations.NamedVariable variable = field.getVariables().get(0);
+                            if (!(variable.getInitializer() instanceof J.NewClass)) {
+                                return field;
+                            }
+                            J.NewClass newMatcher = (J.NewClass) variable.getInitializer();
+                            if (newMatcher.getBody() != null ||
+                                    !newMatcher.getArguments().stream().allMatch(arg -> isConstant(arg, classType, initializedStaticFields))) {
+                                return field;
+                            }
+
+                            String constantName = toConstantName(variable.getSimpleName());
+                            if (!constantName.equals(variable.getSimpleName()) && usedNames.contains(constantName)) {
                                 return field;
                             }
 
@@ -119,6 +128,13 @@ public class StaticFinalMatcherFields extends Recipe {
                         })));
                     }
                 });
+    }
+
+    private static String toConstantName(String fieldName) {
+        return fieldName
+                .replaceAll("([a-z0-9])([A-Z])", "$1_$2")
+                .replaceAll("([A-Z]+)([A-Z][a-z])", "$1_$2")
+                .toUpperCase();
     }
 
     private static boolean isConstant(@Nullable Expression expression, JavaType.FullyQualified classType, Set<String> initializedStaticFields) {
