@@ -37,12 +37,9 @@ import static java.util.Collections.singletonList;
 
 public class UseVisitorReduce extends Recipe {
 
-    private static final MethodMatcher VISIT_MATCHER =
-            new MethodMatcher("org.openrewrite.TreeVisitor visit(org.openrewrite.Tree, ..)", true);
-    private static final MethodMatcher VISIT_NON_NULL_MATCHER =
-            new MethodMatcher("org.openrewrite.TreeVisitor visitNonNull(org.openrewrite.Tree, ..)", true);
-    private static final MethodMatcher REDUCE_MATCHER =
-            new MethodMatcher("org.openrewrite.TreeVisitor reduce(..)", true);
+    private static final MethodMatcher VISIT_MATCHER = new MethodMatcher("org.openrewrite.TreeVisitor visit(org.openrewrite.Tree, ..)", true);
+    private static final MethodMatcher VISIT_NON_NULL_MATCHER = new MethodMatcher("org.openrewrite.TreeVisitor visitNonNull(org.openrewrite.Tree, ..)", true);
+    private static final MethodMatcher REDUCE_MATCHER = new MethodMatcher("org.openrewrite.TreeVisitor reduce(..)", true);
 
     @Getter
     final String displayName = "Use `TreeVisitor#reduce` instead of a captured accumulator";
