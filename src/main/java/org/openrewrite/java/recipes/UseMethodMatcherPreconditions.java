@@ -27,7 +27,7 @@ import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.search.UsesMethod;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JavaType;
@@ -41,22 +41,14 @@ import static org.openrewrite.Tree.randomId;
 
 public class UseMethodMatcherPreconditions extends Recipe {
 
-    private static final MethodMatcher USES_METHOD_PATTERN =
-            new MethodMatcher("org.openrewrite.java.search.UsesMethod <constructor>(String, ..)");
-    private static final MethodMatcher DECLARES_METHOD_PATTERN =
-            new MethodMatcher("org.openrewrite.java.search.DeclaresMethod <constructor>(String, ..)");
-    private static final MethodMatcher METHOD_MATCHER_PATTERN =
-            new MethodMatcher("org.openrewrite.java.MethodMatcher <constructor>(String, ..)");
-    private static final MethodMatcher FIND_METHODS =
-            new MethodMatcher("org.openrewrite.java.search.FindMethods <constructor>(String, Boolean)");
-    private static final MethodMatcher FIND_METHOD_DECLARATION =
-            new MethodMatcher("org.openrewrite.java.search.FindMethodDeclaration <constructor>(String, Boolean)");
-    private static final MethodMatcher GET_VISITOR =
-            new MethodMatcher("org.openrewrite.Recipe getVisitor()", true);
-    private static final MethodMatcher PRECONDITIONS_CHECK =
-            new MethodMatcher("org.openrewrite.Preconditions check(..)");
-    private static final MethodMatcher PRECONDITIONS_COMBINATOR =
-            new MethodMatcher("org.openrewrite.Preconditions *(..)");
+    private static final MethodMatcher USES_METHOD_PATTERN = new MethodMatcher("org.openrewrite.java.search.UsesMethod <constructor>(String, ..)");
+    private static final MethodMatcher DECLARES_METHOD_PATTERN = new MethodMatcher("org.openrewrite.java.search.DeclaresMethod <constructor>(String, ..)");
+    private static final MethodMatcher METHOD_MATCHER_PATTERN = new MethodMatcher("org.openrewrite.java.MethodMatcher <constructor>(String, ..)");
+    private static final MethodMatcher FIND_METHODS = new MethodMatcher("org.openrewrite.java.search.FindMethods <constructor>(String, Boolean)");
+    private static final MethodMatcher FIND_METHOD_DECLARATION = new MethodMatcher("org.openrewrite.java.search.FindMethodDeclaration <constructor>(String, Boolean)");
+    private static final MethodMatcher GET_VISITOR = new MethodMatcher("org.openrewrite.Recipe getVisitor()", true);
+    private static final MethodMatcher PRECONDITIONS_CHECK = new MethodMatcher("org.openrewrite.Preconditions check(..)");
+    private static final MethodMatcher PRECONDITIONS_COMBINATOR = new MethodMatcher("org.openrewrite.Preconditions *(..)");
 
     @Getter
     final String displayName = "Use `UsesMethod` and `DeclaresMethod` preconditions with `MethodMatcher`s";
@@ -71,10 +63,10 @@ public class UseMethodMatcherPreconditions extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
                 Preconditions.or(
-                        new UsesType<>("org.openrewrite.java.search.UsesMethod", false),
-                        new UsesType<>("org.openrewrite.java.search.DeclaresMethod", false),
-                        new UsesType<>("org.openrewrite.java.search.FindMethods", false),
-                        new UsesType<>("org.openrewrite.java.search.FindMethodDeclaration", false)),
+                        new UsesMethod<>(USES_METHOD_PATTERN),
+                        new UsesMethod<>(DECLARES_METHOD_PATTERN),
+                        new UsesMethod<>(FIND_METHODS),
+                        new UsesMethod<>(FIND_METHOD_DECLARATION)),
                 new JavaVisitor<ExecutionContext>() {
                     @Override
                     public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
