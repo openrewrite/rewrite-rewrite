@@ -45,11 +45,7 @@ public class StaticFinalMatcherFields extends Recipe {
             "org.openrewrite.java.AnnotationMatcher",
             "org.openrewrite.java.TypeMatcher");
 
-    private static final List<AnnotationMatcher> LOMBOK_ACCESSOR_ANNOTATIONS = asList(
-            new AnnotationMatcher("@lombok.Value"),
-            new AnnotationMatcher("@lombok.Data"),
-            new AnnotationMatcher("@lombok.Getter"),
-            new AnnotationMatcher("@lombok.Setter"));
+    private static final AnnotationMatcher LOMBOK_ANNOTATION = new AnnotationMatcher("@lombok..*");
 
     @Getter
     final String displayName = "Make matcher fields `static final` constants";
@@ -72,7 +68,7 @@ public class StaticFinalMatcherFields extends Recipe {
                                 !(getCursor().getParentTreeCursor().getValue() instanceof JavaSourceFile || cd.hasModifier(J.Modifier.Type.Static)) ||
                                 !(TypeUtils.isAssignableTo("org.openrewrite.Recipe", classType) ||
                                         TypeUtils.isAssignableTo("org.openrewrite.TreeVisitor", classType)) ||
-                                LOMBOK_ACCESSOR_ANNOTATIONS.stream().anyMatch(m -> service(AnnotationService.class).matches(getCursor(), m))) {
+                                service(AnnotationService.class).matches(getCursor(), LOMBOK_ANNOTATION)) {
                             return cd;
                         }
 
