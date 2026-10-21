@@ -141,6 +141,7 @@ recipeList:
   - org.openrewrite.java.recipes.UseMethodMatcherPreconditions
   - org.openrewrite.java.recipes.UseTreeRandomId
   - org.openrewrite.java.recipes.UseVisitWithParentCursor
+  - org.openrewrite.java.recipes.UseVisitorReduce
   - org.openrewrite.staticanalysis.NeedBraces
   - org.openrewrite.staticanalysis.RemoveSystemOutPrintln
   - org.openrewrite.java.recipes.RemoveNlsRewriteAnnotations
