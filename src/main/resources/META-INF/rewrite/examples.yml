@@ -108,6 +108,37 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.DeclarativeRecipeBestPractices
+examples:
+- description: '`DeclarativeRecipeBestPracticesTest#recipeResource`'
+  sources:
+  - before: |
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My recipe
+      description: Does something useful
+      recipeList:
+        - org.openrewrite.java.dependencies.UpgradeDependencyVersion:
+            groupId: org.springframework
+            artifactId: "*"
+            newVersion: 6.2.X
+        - org.openrewrite.java.OrderImports:
+        - org.openrewrite.java.OrderImports
+    after: |
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My recipe
+      description: Does something useful.
+      recipeList:
+        - org.openrewrite.java.dependencies.UpgradeDependencyVersion:
+            groupId: org.springframework
+            artifactId: "*"
+            newVersion: 6.2.x
+        - org.openrewrite.java.OrderImports
+    path: src/main/resources/META-INF/rewrite/my-recipe.yml
+    language: yaml
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.DeclarativeSingleton
 examples:
 - description: '`DeclarativeSingletonTest#addsSingletonPreconditionToRecipeWithoutPreconditions`'
@@ -133,6 +164,27 @@ examples:
       recipeList:
         - org.openrewrite.java.OrderImports
     path: src/main/resources/META-INF/rewrite/test.yml
+    language: yaml
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.EndDeclarativeRecipeDescriptionsWithPeriod
+examples:
+- description: '`EndDeclarativeRecipeDescriptionsWithPeriodTest#plainDescription`'
+  sources:
+  - before: |
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My recipe
+      description: Does something useful with `Foo`
+      recipeList:
+        - org.openrewrite.java.OrderImports
+    after: |
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My recipe
+      description: Does something useful with `Foo`.
+      recipeList:
+        - org.openrewrite.java.OrderImports
     language: yaml
 ---
 type: specs.openrewrite.org/v1beta/example
@@ -304,6 +356,69 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.FindSharedVisitorInstances
+examples:
+- description: '`FindSharedVisitorInstancesTest#staticPreconditionWalkingTheTree`'
+  sources:
+  - before: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Preconditions;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.search.UsesMethod;
+
+      public class A extends Recipe {
+          private static final TreeVisitor<?, ExecutionContext> PRECONDITION = Preconditions.or(
+                  new UsesMethod<>("org.junit.Assert assertEquals(..)"),
+                  new UsesMethod<>("org.junit.Assert assertNotEquals(..)"));
+
+          @Override
+          public String getDisplayName() {
+              return "A";
+          }
+
+          @Override
+          public String getDescription() {
+              return "A.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return Preconditions.check(PRECONDITION, new JavaIsoVisitor<>());
+          }
+      }
+    after: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Preconditions;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.search.UsesMethod;
+
+      public class A extends Recipe {
+          private static final TreeVisitor<?, ExecutionContext> /*~~(Visitor instance shared across concurrent visits)~~>*/PRECONDITION = Preconditions.or(
+                  new UsesMethod<>("org.junit.Assert assertEquals(..)"),
+                  new UsesMethod<>("org.junit.Assert assertNotEquals(..)"));
+
+          @Override
+          public String getDisplayName() {
+              return "A";
+          }
+
+          @Override
+          public String getDescription() {
+              return "A.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return Preconditions.check(PRECONDITION, new JavaIsoVisitor<>());
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.GenerateDeprecatedMethodRecipes
 examples:
 - description: '`GenerateDeprecatedMethodRecipesTest#constructorDelegation`'
@@ -437,6 +552,76 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.ListUtilsFilterOverMapToNull
+examples:
+- description: '`ListUtilsFilterOverMapToNullTest#ternaryReturningNull`'
+  sources:
+  - before: |
+      import org.openrewrite.internal.ListUtils;
+      import org.openrewrite.java.tree.J;
+
+      import java.util.List;
+
+      class A {
+          List<J.Import> withoutList(List<J.Import> imports) {
+              return ListUtils.map(imports, i -> "java.util.List".equals(i.getTypeName()) ? null : i);
+          }
+      }
+    after: |
+      import org.openrewrite.internal.ListUtils;
+      import org.openrewrite.java.tree.J;
+
+      import java.util.List;
+
+      class A {
+          List<J.Import> withoutList(List<J.Import> imports) {
+              return ListUtils.filter(imports, i -> !"java.util.List".equals(i.getTypeName()));
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.LowercaseVersionWildcards
+examples:
+- description: '`LowercaseVersionWildcardsTest#lowercaseWildcards`'
+  sources:
+  - before: |
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My recipe
+      description: Does something useful.
+      recipeList:
+        - org.openrewrite.java.dependencies.ChangeDependency:
+            oldGroupId: org.acegisecurity
+            oldArtifactId: acegi-security
+            newGroupId: org.springframework.security
+            newArtifactId: spring-security-core
+            newVersion: 2.0.X
+        - org.openrewrite.java.dependencies.AddDependency:
+            groupId: org.springframework.security
+            artifactId: spring-security-web
+            version: 3.X
+            onlyIfUsing: org.springframework.security.web..*
+    after: |
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My recipe
+      description: Does something useful.
+      recipeList:
+        - org.openrewrite.java.dependencies.ChangeDependency:
+            oldGroupId: org.acegisecurity
+            oldArtifactId: acegi-security
+            newGroupId: org.springframework.security
+            newArtifactId: spring-security-core
+            newVersion: 2.0.x
+        - org.openrewrite.java.dependencies.AddDependency:
+            groupId: org.springframework.security
+            artifactId: spring-security-web
+            version: 3.x
+            onlyIfUsing: org.springframework.security.web..*
+    language: yaml
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.MissingOptionExample
 examples:
 - description: '`MissingOptionExampleTest#lacksExample`'
@@ -562,6 +747,68 @@ examples:
       class MyRecipe extends Recipe {
       }
     language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.RemoveConsecutiveDuplicateRecipes
+examples:
+- description: '`RemoveConsecutiveDuplicateRecipesTest#removeRepeatedEntryWithOptions`'
+  sources:
+  - before: |
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My recipe
+      description: Does something useful.
+      recipeList:
+        - org.openrewrite.maven.UpgradePluginVersion:
+            groupId: org.springframework.boot
+            artifactId: spring-boot-maven-plugin
+            newVersion: 4.0.x
+        - org.openrewrite.maven.UpgradePluginVersion:
+            groupId: org.springframework.boot
+            artifactId: spring-boot-maven-plugin
+            newVersion: 4.0.x
+        - org.openrewrite.java.OrderImports
+    after: |
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My recipe
+      description: Does something useful.
+      recipeList:
+        - org.openrewrite.maven.UpgradePluginVersion:
+            groupId: org.springframework.boot
+            artifactId: spring-boot-maven-plugin
+            newVersion: 4.0.x
+        - org.openrewrite.java.OrderImports
+    language: yaml
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.RemoveEmptyRecipeOptions
+examples:
+- description: '`RemoveEmptyRecipeOptionsTest#removeTrailingColon`'
+  sources:
+  - before: |
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My recipe
+      description: Does something useful.
+      recipeList:
+        - org.openrewrite.java.OrderImports:
+        - org.openrewrite.java.ChangeType:
+            oldFullyQualifiedTypeName: com.example.Foo
+            newFullyQualifiedTypeName: com.example.Bar
+        - org.openrewrite.java.RemoveUnusedImports:
+    after: |
+      type: specs.openrewrite.org/v1beta/recipe
+      name: com.example.MyRecipe
+      displayName: My recipe
+      description: Does something useful.
+      recipeList:
+        - org.openrewrite.java.OrderImports
+        - org.openrewrite.java.ChangeType:
+            oldFullyQualifiedTypeName: com.example.Foo
+            newFullyQualifiedTypeName: com.example.Bar
+        - org.openrewrite.java.RemoveUnusedImports
+    language: yaml
 ---
 type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.RemoveImportBeforeAddImport
@@ -1101,6 +1348,152 @@ examples:
     language: java
 ---
 type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.StaticFinalMatcherFields
+examples:
+- description: '`StaticFinalMatcherFieldsTest#methodMatcherInRecipe`'
+  sources:
+  - before: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.MethodMatcher;
+      import org.openrewrite.java.tree.J;
+
+      public class A extends Recipe {
+          private final MethodMatcher listAdd = new MethodMatcher("java.util.List add(..)", true);
+
+          @Override
+          public String getDisplayName() {
+              return "A";
+          }
+
+          @Override
+          public String getDescription() {
+              return "A.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return new JavaIsoVisitor<ExecutionContext>() {
+                  @Override
+                  public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                      if (listAdd.matches(method)) {
+                          return method.withName(method.getName().withSimpleName("addAll"));
+                      }
+                      return super.visitMethodInvocation(method, ctx);
+                  }
+              };
+          }
+      }
+    after: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.MethodMatcher;
+      import org.openrewrite.java.tree.J;
+
+      public class A extends Recipe {
+          private static final MethodMatcher LIST_ADD = new MethodMatcher("java.util.List add(..)", true);
+
+          @Override
+          public String getDisplayName() {
+              return "A";
+          }
+
+          @Override
+          public String getDescription() {
+              return "A.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return new JavaIsoVisitor<ExecutionContext>() {
+                  @Override
+                  public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                      if (LIST_ADD.matches(method)) {
+                          return method.withName(method.getName().withSimpleName("addAll"));
+                      }
+                      return super.visitMethodInvocation(method, ctx);
+                  }
+              };
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.UnconditionalMaybeImport
+examples:
+- description: '`UnconditionalMaybeImportTest#unwrapGuardedMaybeRemoveImport`'
+  sources:
+  - before: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.tree.J;
+
+      public class SampleRecipe extends Recipe {
+          @Override
+          public String getDisplayName() {
+              return "Sample";
+          }
+
+          @Override
+          public String getDescription() {
+              return "Sample recipe.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return new JavaIsoVisitor<ExecutionContext>() {
+                  @Override
+                  public J.Annotation visitAnnotation(J.Annotation annotation, ExecutionContext ctx) {
+                      boolean isMock = "Mock".equals(annotation.getSimpleName());
+                      if (isMock) {
+                          maybeRemoveImport("org.mockito.Mock");
+                      }
+                      maybeAddImport("org.mockito.Spy");
+                      return annotation;
+                  }
+              };
+          }
+      }
+    after: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.tree.J;
+
+      public class SampleRecipe extends Recipe {
+          @Override
+          public String getDisplayName() {
+              return "Sample";
+          }
+
+          @Override
+          public String getDescription() {
+              return "Sample recipe.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return new JavaIsoVisitor<ExecutionContext>() {
+                  @Override
+                  public J.Annotation visitAnnotation(J.Annotation annotation, ExecutionContext ctx) {
+                      boolean isMock = "Mock".equals(annotation.getSimpleName());
+                      maybeRemoveImport("org.mockito.Mock");
+                      maybeAddImport("org.mockito.Spy");
+                      return annotation;
+                  }
+              };
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
 recipeName: org.openrewrite.java.recipes.UseDisplayNameAndDescriptionFields
 examples:
 - description: '`UseDisplayNameAndDescriptionFieldsTest#replaceSimpleStringLiteralMethods`'
@@ -1240,6 +1633,69 @@ examples:
           @Override
           public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
               return JavaTemplate.apply("#{any()}", getCursor(), method.getCoordinates().replace());
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.UseMethodMatcherPreconditions
+examples:
+- description: '`UseMethodMatcherPreconditionsTest#passMatcherToUsesMethod`'
+  sources:
+  - before: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Preconditions;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.MethodMatcher;
+      import org.openrewrite.java.search.UsesMethod;
+
+      public class SampleRecipe extends Recipe {
+          private static final MethodMatcher BAR = new MethodMatcher("com.example.Foo bar(..)");
+
+          @Override
+          public String getDisplayName() {
+              return "Sample";
+          }
+
+          @Override
+          public String getDescription() {
+              return "Sample recipe.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return Preconditions.check(new UsesMethod<>("com.example.Foo bar(..)"), new JavaIsoVisitor<ExecutionContext>() {
+              });
+          }
+      }
+    after: |
+      import org.openrewrite.ExecutionContext;
+      import org.openrewrite.Preconditions;
+      import org.openrewrite.Recipe;
+      import org.openrewrite.TreeVisitor;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.MethodMatcher;
+      import org.openrewrite.java.search.UsesMethod;
+
+      public class SampleRecipe extends Recipe {
+          private static final MethodMatcher BAR = new MethodMatcher("com.example.Foo bar(..)");
+
+          @Override
+          public String getDisplayName() {
+              return "Sample";
+          }
+
+          @Override
+          public String getDescription() {
+              return "Sample recipe.";
+          }
+
+          @Override
+          public TreeVisitor<?, ExecutionContext> getVisitor() {
+              return Preconditions.check(new UsesMethod<>(BAR), new JavaIsoVisitor<ExecutionContext>() {
+              });
           }
       }
     language: java
@@ -1453,6 +1909,61 @@ examples:
               J m = super.visitMethodInvocation(method, ctx);
               m = new OtherJavaVisitor().visit(method, ctx, getCursor().getParentTreeCursor());
               return m;
+          }
+      }
+    language: java
+---
+type: specs.openrewrite.org/v1beta/example
+recipeName: org.openrewrite.java.recipes.UseVisitorReduce
+examples:
+- description: '`UseVisitorReduceTest#returnAtomicBoolean`'
+  sources:
+  - before: |
+      import org.openrewrite.Tree;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.MethodMatcher;
+      import org.openrewrite.java.tree.J;
+
+      import java.util.concurrent.atomic.AtomicBoolean;
+
+      class A {
+          private static final MethodMatcher MATCHER = new MethodMatcher("java.util.List add(..)");
+
+          boolean usesAdd(Tree tree) {
+              AtomicBoolean found = new AtomicBoolean();
+              new JavaIsoVisitor<AtomicBoolean>() {
+                  @Override
+                  public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, AtomicBoolean f) {
+                      if (MATCHER.matches(mi)) {
+                          f.set(true);
+                      }
+                      return super.visitMethodInvocation(mi, f);
+                  }
+              }.visit(tree, found);
+              return found.get();
+          }
+      }
+    after: |
+      import org.openrewrite.Tree;
+      import org.openrewrite.java.JavaIsoVisitor;
+      import org.openrewrite.java.MethodMatcher;
+      import org.openrewrite.java.tree.J;
+
+      import java.util.concurrent.atomic.AtomicBoolean;
+
+      class A {
+          private static final MethodMatcher MATCHER = new MethodMatcher("java.util.List add(..)");
+
+          boolean usesAdd(Tree tree) {
+              return new JavaIsoVisitor<AtomicBoolean>() {
+                  @Override
+                  public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, AtomicBoolean f) {
+                      if (MATCHER.matches(mi)) {
+                          f.set(true);
+                      }
+                      return super.visitMethodInvocation(mi, f);
+                  }
+              }.reduce(tree, new AtomicBoolean()).get();
           }
       }
     language: java
