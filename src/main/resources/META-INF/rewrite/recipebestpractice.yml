@@ -109,7 +109,6 @@ recipeList:
   - org.openrewrite.staticanalysis.UseStandardCharset
   - org.openrewrite.staticanalysis.UseSystemLineSeparator
   - org.openrewrite.staticanalysis.RemoveRedundantTypeCast
-  - org.openrewrite.staticanalysis.ReplaceStackWithDeque
   - org.openrewrite.staticanalysis.UseListSort
   - org.openrewrite.staticanalysis.EqualsToContentEquals
 
