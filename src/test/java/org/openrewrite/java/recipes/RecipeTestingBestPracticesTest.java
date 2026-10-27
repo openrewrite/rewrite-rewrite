@@ -135,6 +135,28 @@ class RecipeTestingBestPracticesTest implements RewriteTest {
     }
 
     @Test
+    void deleteExamplesYml() {
+        rewriteRun(
+          text(
+            """
+              type: specs.openrewrite.org/v1beta/example
+              recipeName: org.openrewrite.java.recipes.SingleDocumentExample
+              """,
+            null,
+            spec -> spec.path("src/main/resources/META-INF/rewrite/examples.yml")
+          ),
+          text(
+            """
+              type: specs.openrewrite.org/v1beta/example
+              recipeName: org.openrewrite.java.recipes.SingleDocumentExample
+              """,
+            null,
+            spec -> spec.path("rewrite-java/src/main/resources/META-INF/rewrite/examples.yml")
+          )
+        );
+    }
+
+    @Test
     void findIgnoredResultsOfLstWithers() {
         rewriteRun(
           java(

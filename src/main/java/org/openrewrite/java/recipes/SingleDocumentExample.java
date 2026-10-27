@@ -40,7 +40,7 @@ public class SingleDocumentExample extends Recipe {
 
     @Getter
     final String description = "Ensures there's only one `@DocumentExample` annotated `@Test` method per test class, " +
-            "as that looks best in our documentation. `@ParameterizedTest` methods are not supported.";
+            "so it is clear which test is the reference example. `@ParameterizedTest` methods are not supported.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
