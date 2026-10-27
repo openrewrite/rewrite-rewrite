@@ -129,6 +129,7 @@ recipeList:
   - org.openrewrite.java.recipes.BlankLinesAroundFieldsWithAnnotations
   - org.openrewrite.java.recipes.CorrectlySpacedDescriptions
   - org.openrewrite.java.recipes.ExecutionContextParameterName
+  - org.openrewrite.java.recipes.FindQualityCheckEvasionsInRecipes
   - org.openrewrite.java.recipes.InlineNestedVisitorClass
   - org.openrewrite.java.recipes.IsLiteralNullRecipe
   - org.openrewrite.java.recipes.ListUtilsFilterOverMapToNull
@@ -164,6 +165,7 @@ recipeList:
   - org.openrewrite.java.migrate.util.ReplaceStreamCollectWithToList:
       convertToList: true
   - org.openrewrite.java.recipes.ClasspathArgumentsOnePerLine
+  - org.openrewrite.java.recipes.FindQualityCheckEvasionsInTests
   - org.openrewrite.java.recipes.RewriteTestClassesShouldNotBePublic
   - org.openrewrite.java.recipes.SelectRecipeExamples
   - org.openrewrite.java.recipes.SingleDocumentExample

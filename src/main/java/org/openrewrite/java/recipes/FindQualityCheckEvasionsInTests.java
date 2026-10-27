@@ -17,11 +17,9 @@ package org.openrewrite.java.recipes;
 
 import lombok.Getter;
 import org.openrewrite.ExecutionContext;
-import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.MethodMatcher;
-import org.openrewrite.java.search.IsLikelyTest;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -49,6 +47,6 @@ public class FindQualityCheckEvasionsInTests extends Recipe {
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
-        return Preconditions.check(new IsLikelyTest().getVisitor(), new FlagMethodCallsWithAdvice(ADVICE));
+        return new FlagMethodCallsWithAdvice(ADVICE);
     }
 }

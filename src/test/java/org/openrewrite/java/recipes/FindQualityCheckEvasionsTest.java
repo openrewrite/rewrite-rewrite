@@ -27,7 +27,7 @@ class FindQualityCheckEvasionsTest implements RewriteTest {
 
     @Override
     public void defaults(RecipeSpec spec) {
-        spec.recipeFromResources("org.openrewrite.java.recipes.FindQualityCheckEvasions")
+        spec.recipes(new FindQualityCheckEvasionsInRecipes(), new FindQualityCheckEvasionsInTests())
           .parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()));
     }
 
