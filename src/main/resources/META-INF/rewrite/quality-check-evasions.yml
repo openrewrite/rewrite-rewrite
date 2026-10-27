@@ -1,0 +1,69 @@
+#
+# Copyright 2026 the original author or authors.
+# <p>
+# Licensed under the Moderne Source Available License (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# <p>
+# https://docs.moderne.io/licensing/moderne-source-available-license
+# <p>
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.java.recipes.FindQualityCheckEvasions
+displayName: Find ways recipes get past `rewriteRun` quality checks
+description: >-
+  Finds code that gets a recipe past a `rewriteRun` quality check without fixing what the check guards: state kept on
+  the `ExecutionContext`, markers rewrite's own recipes use carrying a recipe's information,
+  source sets rebuilt without their classpath, cycles forced through scheduler internals, and tests that pin cycles or
+  turn checks off. Each finding is worth a look, not necessarily a defect.
+recipeList:
+  - org.openrewrite.java.recipes.FindQualityCheckEvasionsInRecipes
+  - org.openrewrite.java.recipes.FindQualityCheckEvasionsInTests
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.java.recipes.FindQualityCheckEvasionsInRecipes
+displayName: Find ways recipe code gets past `rewriteRun` quality checks
+description: >-
+  Finds recipe code that keeps state on the `ExecutionContext`, reuses a marker of rewrite's own recipes
+  to carry information, rebuilds a `JavaSourceSet` from a few of its fields, or adds to the recipes that made changes in
+  a cycle to force another.
+preconditions:
+  - org.openrewrite.java.search.IsLikelyNotTest
+recipeList:
+  - org.openrewrite.java.search.FindMethods:
+      methodPattern: org.openrewrite.ExecutionContext computeMessageIfAbsent(..)
+      matchOverrides: true
+  - org.openrewrite.java.search.FindMethods:
+      methodPattern: org.openrewrite.ExecutionContext getMessages()
+      matchOverrides: true
+  - org.openrewrite.java.search.FindMethods:
+      methodPattern: org.openrewrite.marker.AlreadyReplaced <constructor>(..)
+  - org.openrewrite.java.search.FindMethods:
+      methodPattern: org.openrewrite.java.marker.JavaSourceSet build(..)
+  - org.openrewrite.java.search.FindMethods:
+      methodPattern: org.openrewrite.java.marker.JavaSourceSet <constructor>(..)
+  - org.openrewrite.java.search.FindMethods:
+      methodPattern: org.openrewrite.scheduling.RecipeRunCycle getMadeChangesInThisCycle()
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.openrewrite.java.recipes.FindQualityCheckEvasionsInTests
+displayName: Find ways recipe tests get past `rewriteRun` quality checks
+description: >-
+  Finds recipe tests that pin the cycles `rewriteRun` runs, which can skip the cycle that checks a recipe settles, and
+  tests that turn a recipe quality check off.
+preconditions:
+  - org.openrewrite.java.search.IsLikelyTest
+recipeList:
+  - org.openrewrite.java.search.FindMethods:
+      methodPattern: org.openrewrite.test.RecipeSpec cycles(int)
+  - org.openrewrite.java.search.FindMethods:
+      methodPattern: org.openrewrite.test.RecipeQualityValidation.RecipeQualityValidationBuilder *(boolean)
+  - org.openrewrite.java.search.FindMethods:
+      methodPattern: org.openrewrite.test.TypeValidation none()
