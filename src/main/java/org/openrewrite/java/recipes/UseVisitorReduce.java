@@ -88,7 +88,7 @@ public class UseVisitorReduce extends Recipe {
                                             ((J.NewClass) initializer).getArguments().stream().allMatch(arg ->
                                                     arg instanceof J.Empty || arg instanceof J.Literal || arg instanceof J.Identifier)) ||
                                     !(visit.getArguments().get(1) instanceof J.Identifier) ||
-                                    !accumulatorType.equals(((J.Identifier) visit.getArguments().get(1)).getFieldType()) ||
+                                    !TypeUtils.isOfType(accumulatorType, ((J.Identifier) visit.getArguments().get(1)).getFieldType()) ||
                                     !TypeUtils.isOfType(visitType.getParameterTypes().get(1), accumulatorType.getType()) ||
                                     references(singletonList(visit), accumulatorType).size() != 1) {
                                 continue;
@@ -143,7 +143,7 @@ public class UseVisitorReduce extends Recipe {
         return new JavaIsoVisitor<List<J.Identifier>>() {
             @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, List<J.Identifier> references) {
-                if (variable.equals(identifier.getFieldType())) {
+                if (TypeUtils.isOfType(variable, identifier.getFieldType())) {
                     references.add(identifier);
                 }
                 return identifier;
