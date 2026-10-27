@@ -166,4 +166,37 @@ class RecipeTestingBestPracticesTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void saysWhatToDoInsteadOfTurningTypeValidationOff() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+              import org.openrewrite.test.TypeValidation;
+
+              class LooseTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.typeValidationOptions(TypeValidation.none());
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+              import org.openrewrite.test.TypeValidation;
+
+              class LooseTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.typeValidationOptions(/*~~(Fix the missing types, or relax only the type validation that fails, rather than turning all of it off)~~>*/TypeValidation.none());
+                  }
+              }
+
+              """
+          )
+        );
+    }
 }

@@ -129,7 +129,27 @@ recipeList:
   - org.openrewrite.java.recipes.BlankLinesAroundFieldsWithAnnotations
   - org.openrewrite.java.recipes.CorrectlySpacedDescriptions
   - org.openrewrite.java.recipes.ExecutionContextParameterName
-  - org.openrewrite.java.recipes.FindQualityCheckEvasionsInRecipes
+  # Ways recipe code gets past `rewriteRun` quality checks without fixing what the checks guard
+  - org.openrewrite.java.recipes.FindMethodsWithAdvice:
+      methodPattern: org.openrewrite.ExecutionContext computeMessageIfAbsent(..)
+      matchOverrides: true
+      advice: Keep state across source files in a `ScanningRecipe` accumulator, and within one source file in cursor messages, rather than on the `ExecutionContext` a run shares
+  - org.openrewrite.java.recipes.FindMethodsWithAdvice:
+      methodPattern: org.openrewrite.ExecutionContext getMessages()
+      matchOverrides: true
+      advice: Keep state across source files in a `ScanningRecipe` accumulator, and within one source file in cursor messages, rather than on the `ExecutionContext` a run shares
+  - org.openrewrite.java.recipes.FindMethodsWithAdvice:
+      methodPattern: org.openrewrite.marker.AlreadyReplaced <constructor>(..)
+      advice: Check the tree for the change already made, rather than reusing the marker rewrite's own `FindAndReplace` uses to carry information
+  - org.openrewrite.java.recipes.FindMethodsWithAdvice:
+      methodPattern: org.openrewrite.java.marker.JavaSourceSet build(..)
+      advice: Derive the new `JavaSourceSet` from the existing marker with its `with` methods, so it keeps the classpath and type information it already carries
+  - org.openrewrite.java.recipes.FindMethodsWithAdvice:
+      methodPattern: org.openrewrite.java.marker.JavaSourceSet <constructor>(..)
+      advice: Derive the new `JavaSourceSet` from the existing marker with its `with` methods, so it keeps the classpath and type information it already carries
+  - org.openrewrite.java.recipes.FindMethodsWithAdvice:
+      methodPattern: org.openrewrite.scheduling.RecipeRunCycle getMadeChangesInThisCycle()
+      advice: Finish the change within the cycle, for instance with `doAfterVisit`, rather than forcing another cycle through scheduler internals
   - org.openrewrite.java.recipes.InlineNestedVisitorClass
   - org.openrewrite.java.recipes.IsLiteralNullRecipe
   - org.openrewrite.java.recipes.ListUtilsFilterOverMapToNull
@@ -165,7 +185,6 @@ recipeList:
   - org.openrewrite.java.migrate.util.ReplaceStreamCollectWithToList:
       convertToList: true
   - org.openrewrite.java.recipes.ClasspathArgumentsOnePerLine
-  - org.openrewrite.java.recipes.FindQualityCheckEvasionsInTests
   - org.openrewrite.java.recipes.RewriteTestClassesShouldNotBePublic
   - org.openrewrite.java.recipes.SelectRecipeExamples
   - org.openrewrite.java.recipes.SingleDocumentExample
@@ -175,6 +194,16 @@ recipeList:
   - org.openrewrite.java.recipes.SourceSpecTextBlockIndentation
   - org.openrewrite.java.recipes.UseRewriteTestDefaults
   - org.openrewrite.java.recipes.SimplifyRecipeSpecCycles
+  # Ways recipe tests get past `rewriteRun` quality checks without fixing what the checks guard
+  - org.openrewrite.java.recipes.FindMethodsWithAdvice:
+      methodPattern: org.openrewrite.test.RecipeSpec cycles(int)
+      advice: 'Drop `cycles(..)`: `rewriteRun` already runs one cycle past `expectedCyclesThatMakeChanges`, and that extra cycle checks the recipe settles'
+  - org.openrewrite.java.recipes.FindMethodsWithAdvice:
+      methodPattern: org.openrewrite.test.RecipeQualityValidation.RecipeQualityValidationBuilder *(boolean)
+      advice: Fix what this quality check reports in the recipe, rather than turning the check off in the test
+  - org.openrewrite.java.recipes.FindMethodsWithAdvice:
+      methodPattern: org.openrewrite.test.TypeValidation none()
+      advice: Fix the missing types, or relax only the type validation that fails, rather than turning all of it off
   - org.openrewrite.java.recipes.UseStringUtilsRecipes
 
   # Local variable type inference — targeted, non-controversial uses
