@@ -62,8 +62,7 @@ public class SimplifyRecipeSpecCycles extends Recipe {
                     return cd;
                 }
 
-                Scopes scopes = new Scopes();
-                new Collector().visit(cd.getBody(), scopes, new Cursor(getCursor().getParentOrThrow(), cd));
+                Scopes scopes = new Collector().reduce(cd.getBody(), new Scopes(), new Cursor(getCursor().getParentOrThrow(), cd));
                 Set<UUID> redundant = scopes.redundantCycles();
                 if (redundant.isEmpty()) {
                     return cd;
@@ -71,7 +70,7 @@ public class SimplifyRecipeSpecCycles extends Recipe {
 
                 J.Block body = (J.Block) new Remover(redundant).visitNonNull(cd.getBody(), ctx, new Cursor(getCursor().getParentOrThrow(), cd));
                 if (scopes.defaults != null && !scopes.defaults.cycles.isEmpty() && redundant.containsAll(ids(scopes.defaults.cycles))) {
-                    body = body.withStatements(ListUtils.map(body.getStatements(), s -> isEmptyDefaults(s) ? null : s));
+                    body = body.withStatements(ListUtils.filter(body.getStatements(), s -> !isEmptyDefaults(s)));
                     maybeRemoveImport(RECIPE_SPEC);
                 }
                 return cd.withBody(body);
