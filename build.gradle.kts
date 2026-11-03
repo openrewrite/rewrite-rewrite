@@ -9,6 +9,9 @@ description = "A rewrite module automating best practices and major version migr
 recipeDependencies {
     parserClasspath("org.openrewrite:rewrite-core:latest.release")
     parserClasspath("org.openrewrite:rewrite-java:latest.release")
+    parserClasspath("org.openrewrite:rewrite-python:latest.release")
+    parserClasspath("io.moderne:jsonrpc:latest.release")
+    parserClasspath("io.moderne.recipe:rewrite-program-analysis:latest.release")
 }
 
 val rewriteVersion = rewriteRecipe.rewriteVersion.get()
@@ -41,4 +44,12 @@ dependencies {
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-Arewrite.javaParserClasspathFrom=resources")
+}
+
+tasks.register<UpdateInlineRewriteMethods>("updateInlineRewriteMethods") {
+    group = "generation"
+    description = "Merges an export of the `DeprecatedMethodDelegations` data table, " +
+            "passed as `-PdelegationsCsv=<file>`, into `inline-rewrite-methods.yml`."
+    delegations.set(providers.gradleProperty("delegationsCsv").map { layout.projectDirectory.file(it) })
+    recipeFile.set(layout.projectDirectory.file("src/main/resources/META-INF/rewrite/inline-rewrite-methods.yml"))
 }
