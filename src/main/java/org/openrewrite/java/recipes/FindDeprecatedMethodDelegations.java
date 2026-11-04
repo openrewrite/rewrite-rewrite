@@ -25,6 +25,7 @@ import org.openrewrite.java.marker.JavaSourceSet;
 import org.openrewrite.java.tree.*;
 import org.openrewrite.marker.SearchResult;
 
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
@@ -67,9 +68,18 @@ public class FindDeprecatedMethodDelegations extends Recipe {
                 if (delegate == null) {
                     return md;
                 }
-                Requirements requirements = requirements(delegate, methodType.hasFlags(Flag.Protected));
+                Requirements requirements = requirements(delegate, methodType);
                 if (!requirements.inlinable) {
                     return md;
+                }
+                if (md.isConstructor()) {
+                    // `InlineMethodCalls` otherwise removes the import of the class its `new Outer.Inner(..)` names,
+                    // when it can not attribute that `new` for lack of a classpath
+                    JavaType.FullyQualified outermost = methodType.getDeclaringType();
+                    while (outermost.getOwningClass() != null) {
+                        outermost = outermost.getOwningClass();
+                    }
+                    requirements.imports.add(dotted(outermost));
                 }
 
                 String methodPattern = MethodMatcher.methodPattern(methodType);
@@ -131,8 +141,10 @@ public class FindDeprecatedMethodDelegations extends Recipe {
 
     // Callers outside the declaring class only see public members, or protected ones too when they subclass to reach a
     // protected deprecated method. Unqualified instance calls and fields only resolve inside the declaring class, other
-    // than the delegate itself, which `InlineMethodCalls` qualifies with the original receiver.
-    private static Requirements requirements(MethodCall delegate, boolean protectedVisible) {
+    // than the delegate itself, which `InlineMethodCalls` qualifies with the original receiver. A parameter used twice
+    // would evaluate the argument a caller passes twice.
+    private static Requirements requirements(MethodCall delegate, JavaType.Method deprecated) {
+        boolean protectedVisible = deprecated.hasFlags(Flag.Protected);
         return new JavaIsoVisitor<Requirements>() {
             @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, Requirements r) {
@@ -145,6 +157,10 @@ public class FindDeprecatedMethodDelegations extends Recipe {
                 boolean qualified = parent instanceof J.FieldAccess && ((J.FieldAccess) parent).getName() == identifier;
                 JavaType.Variable variable = id.getFieldType();
                 if (variable != null) {
+                    if (deprecated.getParameterNames().contains(variable.getName()) && !(variable.getOwner() instanceof JavaType.FullyQualified) &&
+                            !r.usedParameters.add(variable.getName())) {
+                        r.inlinable = false;
+                    }
                     if (variable.getOwner() instanceof JavaType.FullyQualified) {
                         r.requireVisible(variable.hasFlags(Flag.Public), variable.hasFlags(Flag.Protected), protectedVisible);
                         if (!qualified) {
@@ -240,6 +256,7 @@ public class FindDeprecatedMethodDelegations extends Recipe {
     private static class Requirements {
         final Set<String> imports = new TreeSet<>();
         final Set<String> staticImports = new TreeSet<>();
+        final Set<String> usedParameters = new HashSet<>();
         boolean inlinable = true;
 
         void requireVisible(boolean isPublic, boolean isProtected, boolean protectedVisible) {

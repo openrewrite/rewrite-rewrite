@@ -27,14 +27,17 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
             .sortedWith(compareBy({ it.getValue("repositoryPath") }, { it.getValue("methodPattern") }))
             .forEach { row ->
                 val repository = row.getValue("repositoryPath")
+                val methodPattern = row.getValue("methodPattern")
                 var entry = row.getValue("recipeYaml")
-                // Without the types of what a replacement imports, `InlineMethodCalls` does not add those imports
-                if ("\n    imports:" in entry) {
+                // Without the types of what a replacement imports, `InlineMethodCalls` does not add those imports;
+                // the class a constructor call names is already imported, and the JDK is always on the classpath
+                val constructedClass = methodPattern.substringBefore(" ").substringBefore('$').takeIf { " <constructor>(" in methodPattern }
+                if (importsOf(entry).any { !it.startsWith("java.") && it != constructedClass }) {
                     val classpath = CLASSPATH_FROM_RESOURCES[repository]
                         ?: error("Add `parserClasspath` type tables for $repository to CLASSPATH_FROM_RESOURCES")
                     entry += "\n    classpathFromResources:" + classpath.joinToString("") { "\n      - '$it'" }
                 }
-                entries[row.getValue("methodPattern")] = repository to entry.lines().joinToString("\n") { "  $it" }
+                entries[methodPattern] = repository to entry.lines().joinToString("\n") { "  $it" }
             }
 
         val byRepository = entries.entries.groupBy({ it.value.first }, { it.key to it.value.second }).toSortedMap()
@@ -43,6 +46,11 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
         })
         logger.lifecycle("Wrote ${entries.size} entries from ${byRepository.size} repositories to $yaml")
     }
+
+    private fun importsOf(entry: String): List<String> =
+        entry.substringAfter("\n    imports:", "").lines().drop(1)
+            .takeWhile { it.startsWith("      - ") }
+            .map { it.removePrefix("      - ").trim('\'') }
 
     private fun existingEntries(recipeList: String): MutableMap<String, Pair<String, String>> {
         val entries = mutableMapOf<String, Pair<String, String>>()

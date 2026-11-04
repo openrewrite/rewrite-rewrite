@@ -69,6 +69,34 @@ class InlineMethodsTest implements RewriteTest {
     }
 
     @Test
+    void keepsImportOfConstructedClass() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.Recipe;
+              import org.openrewrite.staticanalysis.RemoveUnusedLocalVariables;
+
+              class Test {
+                  Recipe recipe() {
+                      return new RemoveUnusedLocalVariables(new String[]{"foo"}, true);
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.Recipe;
+              import org.openrewrite.staticanalysis.RemoveUnusedLocalVariables;
+
+              class Test {
+                  Recipe recipe() {
+                      return new RemoveUnusedLocalVariables(new String[]{"foo"}, null, true);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void addsImportsTheReplacementNeeds() {
         rewriteRun(
           java(

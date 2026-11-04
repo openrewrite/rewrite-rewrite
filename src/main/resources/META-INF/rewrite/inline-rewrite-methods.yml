@@ -29,6 +29,7 @@ recipeList:
       methodPattern: 'io.moderne.jsonrpc.JsonRpc <constructor>(io.moderne.jsonrpc.handler.MessageHandler)'
       replacement: 'this(messageHandler, new JsonMessageFormatter())'
       imports:
+        - 'io.moderne.jsonrpc.JsonRpc'
         - 'io.moderne.jsonrpc.formatter.JsonMessageFormatter'
       classpathFromResources:
         - 'jsonrpc-'
@@ -37,12 +38,18 @@ recipeList:
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.java.dependencies.DependencyVulnerabilityCheck <constructor>(java.lang.String, java.lang.Boolean, org.openrewrite.java.dependencies.DependencyVulnerabilityCheckBase$UpgradeDelta)'
       replacement: 'this(scope, overrideTransitive, maximumUpgradeDelta, null, null)'
+      imports:
+        - 'org.openrewrite.java.dependencies.DependencyVulnerabilityCheck'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.java.dependencies.DependencyVulnerabilityCheck <constructor>(java.lang.String, java.lang.Boolean, org.openrewrite.java.dependencies.DependencyVulnerabilityCheckBase$UpgradeDelta, java.lang.String)'
       replacement: 'this(scope, overrideTransitive, maximumUpgradeDelta, minimumSeverity, null)'
+      imports:
+        - 'org.openrewrite.java.dependencies.DependencyVulnerabilityCheck'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.java.dependencies.table.VulnerabilityReport$Row <constructor>(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, boolean, java.lang.String, java.lang.String, java.lang.Integer, java.lang.String, java.lang.Double)'
       replacement: 'this(projectName, cve, groupId, artifactId, version, fixedVersion, lastAffectedVersion, versionWithinDelta, summary, severity, depth, CWEs, epss, null, null, null, null, null, null, "")'
+      imports:
+        - 'org.openrewrite.java.dependencies.table.VulnerabilityReport'
 
   # moderneinc/rewrite-program-analysis
   - org.openrewrite.java.InlineMethodCalls:
@@ -50,32 +57,9 @@ recipeList:
       replacement: 'this(variableName, variableTree, taintSource, singleton(StandardTaintType.UNTRUSTED))'
       imports:
         - 'org.openrewrite.analysis.java.taint.StandardTaintType'
+        - 'org.openrewrite.analysis.java.taint.TaintedValue'
       staticImports:
         - 'java.util.Collections.singleton'
-      classpathFromResources:
-        - 'rewrite-core-8'
-        - 'rewrite-program-analysis-'
-  - org.openrewrite.java.InlineMethodCalls:
-      methodPattern: 'org.openrewrite.analysis.java.taint.TaintedValue <constructor>(java.lang.String, org.openrewrite.Tree, org.openrewrite.Tree, java.util.Set)'
-      replacement: 'this(variableName, variableTree != null ? new Cursor(null, variableTree) : null, taintSource != null ? new Cursor(null, taintSource) : null, taintTypes)'
-      imports:
-        - 'org.openrewrite.Cursor'
-      classpathFromResources:
-        - 'rewrite-core-8'
-        - 'rewrite-program-analysis-'
-  - org.openrewrite.java.InlineMethodCalls:
-      methodPattern: 'org.openrewrite.analysis.java.taint.TaintedValue <constructor>(org.openrewrite.java.tree.JavaType$Variable, org.openrewrite.Tree, org.openrewrite.Tree, java.util.Set)'
-      replacement: 'this(variable, variableTree != null ? new Cursor(null, variableTree) : null, taintSource != null ? new Cursor(null, taintSource) : null, taintTypes)'
-      imports:
-        - 'org.openrewrite.Cursor'
-      classpathFromResources:
-        - 'rewrite-core-8'
-        - 'rewrite-program-analysis-'
-  - org.openrewrite.java.InlineMethodCalls:
-      methodPattern: 'org.openrewrite.analysis.java.taint.TaintedValue <constructor>(org.openrewrite.java.tree.JavaType$Variable, org.openrewrite.java.tree.JavaType$Method, org.openrewrite.Tree, org.openrewrite.Tree, java.util.Set)'
-      replacement: 'this(variable, methodReference, variableTree != null ? new Cursor(null, variableTree) : null, taintSource != null ? new Cursor(null, taintSource) : null, taintTypes)'
-      imports:
-        - 'org.openrewrite.Cursor'
       classpathFromResources:
         - 'rewrite-core-8'
         - 'rewrite-program-analysis-'
@@ -86,16 +70,15 @@ recipeList:
       replacement: 'this(outputDir, outputStreamFactory, path -> new ByteArrayInputStream(new byte[0]), fileExtension, prefixColumns, suffixColumns)'
       imports:
         - 'java.io.ByteArrayInputStream'
-      classpathFromResources:
-        - 'rewrite-core-8'
-        - 'rewrite-java-8'
-        - 'rewrite-python-8'
+        - 'org.openrewrite.CsvDataTableStore'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.RecipeRun getDataTableRows(java.lang.String)'
       replacement: 'getDataTableRows(name, null)'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.config.RecipeDescriptor <constructor>(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.util.Set, java.time.Duration, java.util.List, java.util.List, java.util.List, java.util.List, java.util.List, java.util.List, java.net.URI)'
       replacement: 'this(name, displayName, instanceName, description, tags, estimatedEffortPerOccurrence, options, emptyList(), recipeList, dataTables, maintainers, contributors, examples, source)'
+      imports:
+        - 'org.openrewrite.config.RecipeDescriptor'
       staticImports:
         - 'java.util.Collections.emptyList'
   - org.openrewrite.java.InlineMethodCalls:
@@ -105,21 +88,23 @@ recipeList:
       methodPattern: 'org.openrewrite.config.YamlResourceLoader listRecipeDescriptors(java.util.Collection, java.util.Map, java.util.Map)'
       replacement: 'listRecipeDescriptors(externalRecipes)'
   - org.openrewrite.java.InlineMethodCalls:
-      methodPattern: 'org.openrewrite.gradle.marker.GradleDependencyConfiguration <constructor>(java.lang.String, java.lang.String, boolean, boolean, boolean, java.util.List, java.util.List, java.util.List, java.lang.String, java.lang.String)'
-      replacement: 'this(name, description, isTransitive, isCanBeResolved, isCanBeConsumed, !name.endsWith("Classpath"), extendsFrom, requested, directResolved, exceptionType, message)'
-  - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.ipc.http.HttpSender$Request$Builder withMultipartFile(java.io.File)'
       replacement: 'withMultipartFile(file.toPath(), "file")'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.java.format.NormalizeTabsOrSpacesVisitor <constructor>(org.openrewrite.java.style.TabsAndIndentsStyle)'
       replacement: 'this(style, null)'
+      imports:
+        - 'org.openrewrite.java.format.NormalizeTabsOrSpacesVisitor'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.java.format.SpacesVisitor <constructor>(org.openrewrite.java.style.SpacesStyle, org.openrewrite.Tree)'
       replacement: 'this(spacesStyle, null, null, stopAfter)'
+      imports:
+        - 'org.openrewrite.java.format.SpacesVisitor'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.java.format.SpacesVisitor <constructor>(org.openrewrite.java.style.SpacesStyle, org.openrewrite.java.style.EmptyForInitializerPadStyle, org.openrewrite.java.style.EmptyForIteratorPadStyle, org.openrewrite.Tree)'
       replacement: 'this(spacesStyle, emptyForInitializerPadStyle, emptyForIteratorPadStyle, IntelliJ.wrappingAndBraces(), stopAfter)'
       imports:
+        - 'org.openrewrite.java.format.SpacesVisitor'
         - 'org.openrewrite.java.style.IntelliJ'
       classpathFromResources:
         - 'rewrite-core-8'
@@ -128,9 +113,13 @@ recipeList:
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.java.format.TabsAndIndentsVisitor <constructor>(org.openrewrite.java.style.TabsAndIndentsStyle, org.openrewrite.java.style.SpacesStyle, org.openrewrite.java.style.WrappingAndBracesStyle)'
       replacement: 'this(style, spacesStyle, wrappingStyle, null)'
+      imports:
+        - 'org.openrewrite.java.format.TabsAndIndentsVisitor'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.java.tree.J$MethodDeclaration <constructor>(java.util.UUID, org.openrewrite.java.tree.Space, org.openrewrite.marker.Markers, java.util.List, java.util.List, org.openrewrite.java.tree.J$TypeParameters, org.openrewrite.java.tree.TypeTree, org.openrewrite.java.tree.J$MethodDeclaration$IdentifierWithAnnotations, org.openrewrite.java.tree.JContainer, org.openrewrite.java.tree.JContainer, org.openrewrite.java.tree.J$Block, org.openrewrite.java.tree.JLeftPadded, org.openrewrite.java.tree.JavaType$Method)'
       replacement: 'this(id, prefix, markers, leadingAnnotations, modifiers, typeParameters, returnTypeExpression, name, parameters, emptyList(), throwz, body, defaultValue, methodType)'
+      imports:
+        - 'org.openrewrite.java.tree.J'
       staticImports:
         - 'java.util.Collections.emptyList'
   - org.openrewrite.java.InlineMethodCalls:
@@ -141,12 +130,18 @@ recipeList:
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.maven.AddManagedDependency <constructor>(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.Boolean, java.lang.String, java.lang.Boolean)'
       replacement: 'this(groupId, artifactId, version, scope, type, classifier, versionPattern, releasesOnly, onlyIfUsing, addToRootPom, null)'
+      imports:
+        - 'org.openrewrite.maven.AddManagedDependency'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.maven.ChangeParentPom <constructor>(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.Boolean)'
       replacement: 'this(oldGroupId, newGroupId, oldArtifactId, newArtifactId, newVersion, oldRelativePath, newRelativePath, versionPattern, allowVersionDowngrades, null)'
+      imports:
+        - 'org.openrewrite.maven.ChangeParentPom'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.maven.UpgradeTransitiveDependencyVersion <constructor>(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.Boolean, java.lang.String, java.lang.Boolean)'
       replacement: 'this(groupId, artifactId, version, scope, type, classifier, versionPattern, releasesOnly, onlyIfUsing, addToRootPom, null)'
+      imports:
+        - 'org.openrewrite.maven.UpgradeTransitiveDependencyVersion'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.maven.tree.Scope asGradleConfigurationName(org.openrewrite.maven.tree.Scope)'
       replacement: 'asConsumableGradleConfigurationName(scope)'
@@ -158,6 +153,7 @@ recipeList:
       imports:
         - 'org.openrewrite.InMemoryExecutionContext'
         - 'org.openrewrite.ipc.http.HttpUrlConnectionSender'
+        - 'org.openrewrite.maven.utilities.MavenArtifactDownloader'
       classpathFromResources:
         - 'rewrite-core-8'
         - 'rewrite-java-8'
@@ -167,6 +163,7 @@ recipeList:
       replacement: 'this(mavenArtifactCache, settings, httpSender, onError, new InMemoryExecutionContext())'
       imports:
         - 'org.openrewrite.InMemoryExecutionContext'
+        - 'org.openrewrite.maven.utilities.MavenArtifactDownloader'
       classpathFromResources:
         - 'rewrite-core-8'
         - 'rewrite-java-8'
@@ -174,9 +171,13 @@ recipeList:
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.maven.utilities.MavenWrapper <constructor>(java.lang.String, java.lang.String, org.openrewrite.Checksum, java.lang.String, org.openrewrite.maven.utilities.MavenWrapper$DistributionType, java.lang.String, java.lang.String, org.openrewrite.Checksum)'
       replacement: 'this(wrapperVersion, wrapperUri, wrapperChecksum, wrapperDistributionUri, wrapperDistributionType, distributionVersion, distributionUri, distributionChecksum, null)'
+      imports:
+        - 'org.openrewrite.maven.utilities.MavenWrapper'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.python.PyProjectTomlParser <constructor>(java.util.Map, java.nio.file.Path)'
       replacement: 'this(installedEnv)'
+      imports:
+        - 'org.openrewrite.python.PyProjectTomlParser'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.python.rpc.PythonRewriteRpc parseProject(java.nio.file.Path, java.util.List, java.nio.file.Path, org.openrewrite.ExecutionContext)'
       replacement: 'parseProject(projectPath, ParseProjectOptions.builder().exclusions(exclusions).relativeTo(relativeTo).build(), ctx)'
@@ -201,15 +202,23 @@ recipeList:
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.yaml.CoalesceProperties <constructor>()'
       replacement: 'this(null, null)'
+      imports:
+        - 'org.openrewrite.yaml.CoalesceProperties'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.yaml.CoalescePropertiesVisitor <constructor>()'
       replacement: 'this(null, null)'
+      imports:
+        - 'org.openrewrite.yaml.CoalescePropertiesVisitor'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.yaml.CopyValue <constructor>(java.lang.String, java.lang.String, java.lang.String, java.lang.String)'
       replacement: 'this(oldKeyPath, oldFilePath, newKey, newFilePath, null)'
+      imports:
+        - 'org.openrewrite.yaml.CopyValue'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.yaml.style.IndentsStyle <constructor>(int)'
       replacement: 'this(indentSize, null)'
+      imports:
+        - 'org.openrewrite.yaml.style.IndentsStyle'
 
   # openrewrite/rewrite-gradle-plugin
   - org.openrewrite.java.InlineMethodCalls:
@@ -220,3 +229,5 @@ recipeList:
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.staticanalysis.RemoveUnusedLocalVariables <constructor>(java.lang.String[], java.lang.Boolean)'
       replacement: 'this(ignoreVariablesNamed, null, withSideEffects)'
+      imports:
+        - 'org.openrewrite.staticanalysis.RemoveUnusedLocalVariables'

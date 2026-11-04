@@ -41,7 +41,9 @@ class FindDeprecatedMethodDelegationsTest implements RewriteTest {
               """
                 - org.openrewrite.java.InlineMethodCalls:
                     methodPattern: 'com.example.Foo <constructor>(java.lang.String)'
-                    replacement: 'this(a, null)'""")),
+                    replacement: 'this(a, null)'
+                    imports:
+                      - 'com.example.Foo'""")),
           java(
             """
               package com.example;
@@ -281,6 +283,54 @@ class FindDeprecatedMethodDelegationsTest implements RewriteTest {
                   /*~~>*/@Deprecated
                   public Timeout(String name) {
                       this(name, emptyList(), Duration.ofSeconds(1), new Timeout.Unit());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void nestedClassConstructorImportsOutermostClass() {
+        rewriteRun(
+          spec -> spec.dataTable(DeprecatedMethodDelegations.Row.class, rows -> assertThat(rows)
+            .singleElement()
+            .extracting(DeprecatedMethodDelegations.Row::getRecipeYaml)
+            .isEqualTo(
+              """
+                - org.openrewrite.java.InlineMethodCalls:
+                    methodPattern: 'com.example.Report$Row <constructor>(java.lang.String)'
+                    replacement: 'this(name, null)'
+                    imports:
+                      - 'com.example.Report'""")),
+          java(
+            """
+              package com.example;
+
+              public class Report {
+                  public static class Row {
+                      public Row(String name, String detail) {
+                      }
+
+                      @Deprecated
+                      public Row(String name) {
+                          this(name, null);
+                      }
+                  }
+              }
+              """,
+            """
+              package com.example;
+
+              public class Report {
+                  public static class Row {
+                      public Row(String name, String detail) {
+                      }
+
+                      /*~~>*/@Deprecated
+                      public Row(String name) {
+                          this(name, null);
+                      }
                   }
               }
               """
@@ -580,6 +630,27 @@ class FindDeprecatedMethodDelegationsTest implements RewriteTest {
                   @Deprecated
                   public void withName(String extra) {
                       withNames(getNames(), extra);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void parameterUsedTwiceIgnored() {
+        rewriteRun(
+          java(
+            """
+              package com.example;
+
+              public class Twice {
+                  public void newMethod(String s, boolean empty) {
+                  }
+
+                  @Deprecated
+                  public void oldMethod(String s) {
+                      newMethod(s, s.isEmpty());
                   }
               }
               """
