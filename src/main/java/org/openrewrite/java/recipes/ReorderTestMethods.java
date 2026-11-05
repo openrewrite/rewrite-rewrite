@@ -35,17 +35,18 @@ public class ReorderTestMethods extends Recipe {
             new AnnotationMatcher("@" + DOCUMENT_EXAMPLE_ANNOTATION_FQN);
     private static final AnnotationMatcher BEFORE_ANNOTATION_MATCHER = new AnnotationMatcher("@org.junit.jupiter.api.Before*");
     private static final AnnotationMatcher AFTER_ANNOTATION_MATCHER = new AnnotationMatcher("@org.junit.jupiter.api.After*");
+    private static final AnnotationMatcher OVERRIDE_ANNOTATION_MATCHER = new AnnotationMatcher("@java.lang.Override");
 
     @Getter
     final String displayName = "Show `@DocumentExample`s first";
 
     @Getter
-    final String description = "Reorders `RewriteTest` methods to place `defaults` first, followed by any `@DocumentExample`s.";
+    final String description = "Reorders `RewriteTest` methods to place `defaults` and other overridden methods first, followed by any `@DocumentExample`s.";
 
     private static final Comparator<J.MethodDeclaration> methodDeclarationComparator = Comparator
             .<J.MethodDeclaration, Boolean>comparing(md -> md.getLeadingAnnotations().stream().anyMatch(BEFORE_ANNOTATION_MATCHER::matches))
             .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(AFTER_ANNOTATION_MATCHER::matches))
-            .thenComparing(md -> "defaults".equals(md.getSimpleName()))
+            .thenComparing(md -> "defaults".equals(md.getSimpleName()) || md.getLeadingAnnotations().stream().anyMatch(OVERRIDE_ANNOTATION_MATCHER::matches))
             .thenComparing(md -> md.getLeadingAnnotations().stream().anyMatch(DOCUMENT_EXAMPLE_ANNOTATION_MATCHER::matches))
             .reversed();
 

@@ -164,4 +164,37 @@ class ReorderTestMethodsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void keepOverriddenMethodsAboveDocumentExample() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.DocumentExample;
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.test.RewriteTest;
+              import org.openrewrite.test.SourceSpec;
+
+              class SomeTest implements RewriteTest {
+
+                  @Override
+                  public ExecutionContext defaultExecutionContext(SourceSpec<?>[] sourceSpecs) {
+                      return RewriteTest.super.defaultExecutionContext(sourceSpecs);
+                  }
+
+                  @DocumentExample
+                  @Test
+                  void first() {
+                  }
+
+                  @Test
+                  void second() {
+                  }
+              }
+              """
+          )
+        );
+    }
 }
