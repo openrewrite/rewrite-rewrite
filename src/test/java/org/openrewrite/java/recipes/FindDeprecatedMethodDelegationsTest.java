@@ -297,17 +297,19 @@ class FindDeprecatedMethodDelegationsTest implements RewriteTest {
         rewriteRun(
           spec -> spec.dataTable(DeprecatedMethodDelegations.Row.class, rows -> assertThat(rows)
             .singleElement()
-            .extracting(DeprecatedMethodDelegations.Row::getRecipeYaml)
-            .isEqualTo(
-              """
-                - org.openrewrite.java.InlineMethodCalls:
-                    methodPattern: 'com.example.Lib <constructor>(java.lang.String)'
-                    replacement: 'this(name, new Label())'
-                    imports:
-                      - 'com.example.Label'
-                      - 'com.example.Lib'
-                    classpathFromResources:
-                      - 'lib-' # com.example:lib""")),
+            .satisfies(row -> {
+                assertThat(row.getClasspath()).isEqualTo("com.example:lib");
+                assertThat(row.getRecipeYaml()).isEqualTo(
+                  """
+                    - org.openrewrite.java.InlineMethodCalls:
+                        methodPattern: 'com.example.Lib <constructor>(java.lang.String)'
+                        replacement: 'this(name, new Label())'
+                        imports:
+                          - 'com.example.Label'
+                          - 'com.example.Lib'
+                        classpathFromResources:
+                          - 'lib-'""");
+            })),
           mavenProject("lib",
             pomXml(
               """

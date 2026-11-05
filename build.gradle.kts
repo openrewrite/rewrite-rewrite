@@ -12,15 +12,16 @@ recipeDependencies {
 }
 
 val inlineRewriteMethods = layout.projectDirectory.file("src/main/resources/META-INF/rewrite/inline-rewrite-methods.yml")
+val inlineMethodsClasspath = layout.buildDirectory.file("inline-methods-classpath.txt")
+val typeTable = layout.projectDirectory.file("src/main/resources/META-INF/rewrite/classpath.tsv.gz")
 tasks.named("createTypeTable") {
     // Read when the task runs, so the type tables follow the artifacts the recipe file was just written to name
     doFirst {
-        InlineMethodsClasspath.coordinates(inlineRewriteMethods.asFile)
+        InlineMethodsClasspath.coordinates(inlineRewriteMethods.asFile, inlineMethodsClasspath.get().asFile, typeTable.asFile)
             .forEach { recipeDependencies.parserClasspath("$it:latest.release") }
     }
     doLast {
-        InlineMethodsClasspath.pinMajorVersions(inlineRewriteMethods.asFile,
-            layout.projectDirectory.file("src/main/resources/META-INF/rewrite/classpath.tsv.gz").asFile)
+        InlineMethodsClasspath.pinMajorVersions(inlineRewriteMethods.asFile, typeTable.asFile)
     }
 }
 
@@ -77,5 +78,6 @@ tasks.register<UpdateInlineRewriteMethods>("updateInlineRewriteMethods") {
         delegations.set(downloadDeprecatedMethodDelegations.flatMap { it.delegations })
     }
     recipeFile.set(inlineRewriteMethods)
+    classpath.set(inlineMethodsClasspath)
     finalizedBy("createTypeTable")
 }

@@ -2,6 +2,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
 abstract class UpdateInlineRewriteMethods : DefaultTask() {
@@ -10,6 +11,9 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
 
     @get:Internal
     abstract val recipeFile: RegularFileProperty
+
+    @get:OutputFile
+    abstract val classpath: RegularFileProperty
 
     @TaskAction
     fun update() {
@@ -21,9 +25,12 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
         val entries = existingEntries(text.substring(recipeListEnd))
         val rows = parseCsv(delegations.get().asFile.readLines().dropWhile { it.startsWith("#") }.joinToString("\n"))
         val header = rows.first()
-        rows.drop(1)
+        val included = rows.drop(1)
             .map { header.zip(it).toMap() }
             .filter { row -> row.getValue("methodPattern").let { it.startsWith(INCLUDED_PACKAGES) && !it.startsWith(EXCLUDED_PACKAGES) } }
+        classpath.get().asFile.writeText(included.flatMap { it.getValue("classpath").split(' ') }
+            .filter { it.isNotBlank() }.toSortedSet().joinToString("\n"))
+        included
             .sortedWith(compareBy({ it.getValue("repositoryPath") }, { it.getValue("methodPattern") }))
             .forEach { row ->
                 entries[row.getValue("methodPattern")] = row.getValue("repositoryPath") to

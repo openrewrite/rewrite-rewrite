@@ -41,6 +41,11 @@ public class DeprecatedMethodDelegations extends DataTable<DeprecatedMethodDeleg
                 description = "The replacement expression to inline.")
         String replacement;
 
+        @Column(displayName = "Classpath",
+                description = "The `groupId:artifactId` of each artifact whose types the replacement imports, " +
+                        "for `parserClasspath` to make the type tables that `classpathFromResources` reads.")
+        String classpath;
+
         @Column(displayName = "Recipe YAML",
                 description = "An `InlineMethodCalls` step, with the imports the replacement needs, to copy into a recipe list.")
         String recipeYaml;

@@ -31,7 +31,7 @@ recipeList:
         - 'io.moderne.jsonrpc.JsonRpc'
         - 'io.moderne.jsonrpc.formatter.JsonMessageFormatter'
       classpathFromResources:
-        - 'jsonrpc-1' # io.moderne:jsonrpc
+        - 'jsonrpc-1'
 
   # moderneinc/rewrite-java-security
   - org.openrewrite.java.InlineMethodCalls:
@@ -60,7 +60,7 @@ recipeList:
       staticImports:
         - 'java.util.Collections.singleton'
       classpathFromResources:
-        - 'rewrite-program-analysis-0' # io.moderne.recipe:rewrite-program-analysis
+        - 'rewrite-program-analysis-0'
 
   # openrewrite/rewrite
   - org.openrewrite.java.InlineMethodCalls:
@@ -105,7 +105,7 @@ recipeList:
         - 'org.openrewrite.java.format.SpacesVisitor'
         - 'org.openrewrite.java.style.IntelliJ'
       classpathFromResources:
-        - 'rewrite-java-8' # org.openrewrite:rewrite-java
+        - 'rewrite-java-8'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.java.format.TabsAndIndentsVisitor <constructor>(org.openrewrite.java.style.TabsAndIndentsStyle, org.openrewrite.java.style.SpacesStyle, org.openrewrite.java.style.WrappingAndBracesStyle)'
       replacement: 'this(style, spacesStyle, wrappingStyle, null)'
@@ -151,7 +151,7 @@ recipeList:
         - 'org.openrewrite.ipc.http.HttpUrlConnectionSender'
         - 'org.openrewrite.maven.utilities.MavenArtifactDownloader'
       classpathFromResources:
-        - 'rewrite-core-8' # org.openrewrite:rewrite-core
+        - 'rewrite-core-8'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.maven.utilities.MavenArtifactDownloader <constructor>(org.openrewrite.maven.cache.MavenArtifactCache, org.openrewrite.maven.MavenSettings, org.openrewrite.ipc.http.HttpSender, java.util.function.Consumer)'
       replacement: 'this(mavenArtifactCache, settings, httpSender, onError, new InMemoryExecutionContext())'
@@ -159,7 +159,7 @@ recipeList:
         - 'org.openrewrite.InMemoryExecutionContext'
         - 'org.openrewrite.maven.utilities.MavenArtifactDownloader'
       classpathFromResources:
-        - 'rewrite-core-8' # org.openrewrite:rewrite-core
+        - 'rewrite-core-8'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.maven.utilities.MavenWrapper <constructor>(java.lang.String, java.lang.String, org.openrewrite.Checksum, java.lang.String, org.openrewrite.maven.utilities.MavenWrapper$DistributionType, java.lang.String, java.lang.String, org.openrewrite.Checksum)'
       replacement: 'this(wrapperVersion, wrapperUri, wrapperChecksum, wrapperDistributionUri, wrapperDistributionType, distributionVersion, distributionUri, distributionChecksum, null)'
@@ -176,14 +176,14 @@ recipeList:
       imports:
         - 'org.openrewrite.python.rpc.ParseProjectOptions'
       classpathFromResources:
-        - 'rewrite-python-8' # org.openrewrite:rewrite-python
+        - 'rewrite-python-8'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.python.rpc.PythonRewriteRpc parseProject(java.nio.file.Path, java.util.List, org.openrewrite.ExecutionContext)'
       replacement: 'parseProject(projectPath, ParseProjectOptions.builder().exclusions(exclusions).build(), ctx)'
       imports:
         - 'org.openrewrite.python.rpc.ParseProjectOptions'
       classpathFromResources:
-        - 'rewrite-python-8' # org.openrewrite:rewrite-python
+        - 'rewrite-python-8'
   - org.openrewrite.java.InlineMethodCalls:
       methodPattern: 'org.openrewrite.semver.VersionComparator compare(java.lang.String, java.lang.String)'
       replacement: 'compare(null, v1, v2)'

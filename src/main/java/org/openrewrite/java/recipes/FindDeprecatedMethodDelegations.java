@@ -124,6 +124,7 @@ public class FindDeprecatedMethodDelegations extends ScanningRecipe<FindDeprecat
                 dataTable.insertRow(ctx, new DeprecatedMethodDelegations.Row(
                         methodPattern,
                         replacement,
+                        String.join(" ", classpath),
                         recipeYaml(methodPattern, replacement, requirements, classpath)));
                 return SearchResult.found(md);
             }
@@ -343,11 +344,10 @@ public class FindDeprecatedMethodDelegations extends ScanningRecipe<FindDeprecat
         appendList(yaml, "imports", requirements.imports);
         appendList(yaml, "staticImports", requirements.staticImports);
         if (!classpath.isEmpty()) {
-            // `classpathFromResources` matches a type table's `artifactId-version` by prefix; the comment names the
-            // artifact for `parserClasspath` to build that type table from, which then pins the prefix's major version
+            // `classpathFromResources` matches a type table's `artifactId-version` by prefix
             yaml.append("\n    classpathFromResources:");
             for (String coordinates : classpath) {
-                yaml.append("\n      - ").append(quote(coordinates.substring(coordinates.indexOf(':') + 1) + "-")).append(" # ").append(coordinates);
+                yaml.append("\n      - ").append(quote(coordinates.substring(coordinates.indexOf(':') + 1) + "-"));
             }
         }
         return yaml.toString();
