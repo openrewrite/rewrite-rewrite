@@ -23,6 +23,7 @@ import org.openrewrite.test.RewriteTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.openrewrite.java.Assertions.*;
+import static org.openrewrite.maven.Assertions.pomXml;
 
 class FindDeprecatedMethodDelegationsTest implements RewriteTest {
 
@@ -287,6 +288,74 @@ class FindDeprecatedMethodDelegationsTest implements RewriteTest {
                   }
               }
               """
+          )
+        );
+    }
+
+    @Test
+    void classpathFromModuleBuildForItsOwnTypes() {
+        rewriteRun(
+          spec -> spec.dataTable(DeprecatedMethodDelegations.Row.class, rows -> assertThat(rows)
+            .singleElement()
+            .extracting(DeprecatedMethodDelegations.Row::getRecipeYaml)
+            .isEqualTo(
+              """
+                - org.openrewrite.java.InlineMethodCalls:
+                    methodPattern: 'com.example.Lib <constructor>(java.lang.String)'
+                    replacement: 'this(name, new Label())'
+                    imports:
+                      - 'com.example.Label'
+                      - 'com.example.Lib'
+                    classpathFromResources:
+                      - 'lib-' # com.example:lib""")),
+          mavenProject("lib",
+            pomXml(
+              """
+                <project>
+                    <groupId>com.example</groupId>
+                    <artifactId>lib</artifactId>
+                    <version>1.2.0</version>
+                </project>
+                """
+            ),
+            srcMainJava(
+              java(
+                """
+                  package com.example;
+
+                  public class Label {
+                  }
+                  """
+              ),
+              java(
+                """
+                  package com.example;
+
+                  public class Lib {
+                      public Lib(String name, Label label) {
+                      }
+
+                      @Deprecated
+                      public Lib(String name) {
+                          this(name, new Label());
+                      }
+                  }
+                  """,
+                """
+                  package com.example;
+
+                  public class Lib {
+                      public Lib(String name, Label label) {
+                      }
+
+                      /*~~>*/@Deprecated
+                      public Lib(String name) {
+                          this(name, new Label());
+                      }
+                  }
+                  """
+              )
+            )
           )
         );
     }

@@ -1,17 +1,12 @@
 import org.gradle.api.DefaultTask
-import org.gradle.api.GradleException
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
-import java.util.zip.GZIPInputStream
 
 abstract class UpdateInlineRewriteMethods : DefaultTask() {
     @get:InputFile
     abstract val delegations: RegularFileProperty
-
-    @get:InputFile
-    abstract val typeTable: RegularFileProperty
 
     @get:Internal
     abstract val recipeFile: RegularFileProperty
@@ -22,7 +17,6 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
         val text = yaml.readText()
         val recipeListEnd = text.indexOf("recipeList:\n") + "recipeList:\n".length
 
-        val typeTableVersions = typeTableVersions()
         // Keep entries the scan no longer finds, as callers often build against releases from before a method was removed
         val entries = existingEntries(text.substring(recipeListEnd))
         val rows = parseCsv(delegations.get().asFile.readLines().dropWhile { it.startsWith("#") }.joinToString("\n"))
@@ -32,53 +26,15 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
             .filter { row -> row.getValue("methodPattern").let { it.startsWith(INCLUDED_PACKAGES) && !it.startsWith(EXCLUDED_PACKAGES) } }
             .sortedWith(compareBy({ it.getValue("repositoryPath") }, { it.getValue("methodPattern") }))
             .forEach { row ->
-                val repository = row.getValue("repositoryPath")
-                val methodPattern = row.getValue("methodPattern")
-                var entry = row.getValue("recipeYaml")
-                // Without the types of what a replacement imports, `InlineMethodCalls` does not add those imports;
-                // the class a constructor call names is already imported, and the JDK is always on the classpath
-                val constructedClass = methodPattern.substringBefore(" ").substringBefore('$').takeIf { " <constructor>(" in methodPattern }
-                if (yamlList(entry, "imports").any { !it.startsWith("java.") && it != constructedClass }) {
-                    val artifacts = InlineMethodsClasspath.ARTIFACTS[repository]
-                        ?: throw GradleException("Add the artifacts that replacements from $repository import to InlineMethodsClasspath")
-                    entry += "\n    classpathFromResources:" + artifacts.joinToString("") { "\n      - '${typeTablePrefix(it, typeTableVersions)}'" }
-                }
-                entries[methodPattern] = repository to entry.lines().joinToString("\n") { "  $it" }
+                entries[row.getValue("methodPattern")] = row.getValue("repositoryPath") to
+                        row.getValue("recipeYaml").lines().joinToString("\n") { "  $it" }
             }
-
-        val typeTables = typeTableVersions.map { (artifactId, version) -> "$artifactId-$version" }
-        val missing = entries.values.flatMap { yamlList(it.second, "classpathFromResources") }.toSortedSet()
-            .filter { prefix -> typeTables.none { it.startsWith(prefix) } }
-        if (missing.isNotEmpty()) {
-            throw GradleException("No type table in ${typeTable.get().asFile.name} begins with ${missing.joinToString()}, " +
-                    "kept from an earlier run; add its artifact to InlineMethodsClasspath")
-        }
 
         val byRepository = entries.entries.groupBy({ it.value.first }, { it.key to it.value.second }).toSortedMap()
         yaml.writeText(text.substring(0, recipeListEnd) + byRepository.entries.joinToString("") { (repository, patternEntries) ->
             "\n  # $repository\n" + patternEntries.sortedBy { it.first }.joinToString("") { it.second + "\n" }
         })
         logger.lifecycle("Wrote ${entries.size} entries from ${byRepository.size} repositories to $yaml")
-    }
-
-    private fun yamlList(entry: String, key: String): List<String> =
-        entry.lines()
-            .dropWhile { it.trimStart() != "$key:" }
-            .drop(1)
-            .takeWhile { it.trimStart().startsWith("- ") }
-            .map { it.trimStart().removePrefix("- ").trim('\'') }
-
-    private fun typeTableVersions(): Map<String, String> =
-        GZIPInputStream(typeTable.get().asFile.inputStream()).bufferedReader().useLines { lines ->
-            lines.drop(1).map { it.split('\t') }.associate { it[1] to it[2] }
-        }
-
-    // `classpathFromResources` matches `artifactId-version` by prefix; the major version keeps
-    // `rewrite-java-8` from also matching a `rewrite-java-dependencies` type table
-    private fun typeTablePrefix(coordinates: String, versions: Map<String, String>): String {
-        val artifactId = coordinates.substringAfter(':')
-        val version = versions[artifactId] ?: throw GradleException("No type table for $coordinates in ${typeTable.get().asFile.name}")
-        return "$artifactId-${version.substringBefore('.')}"
     }
 
     private fun existingEntries(recipeList: String): MutableMap<String, Pair<String, String>> {

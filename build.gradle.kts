@@ -7,10 +7,21 @@ group = "org.openrewrite.recipe"
 description = "A rewrite module automating best practices and major version migrations for OpenRewrite recipes"
 
 recipeDependencies {
-    // rewrite-core and rewrite-java for the Refaster templates, the others for generated `InlineMethods` steps
-    (listOf("org.openrewrite:rewrite-core", "org.openrewrite:rewrite-java") + InlineMethodsClasspath.ARTIFACTS.values.flatten())
-        .distinct()
-        .forEach { parserClasspath("$it:latest.release") }
+    parserClasspath("org.openrewrite:rewrite-core:latest.release")
+    parserClasspath("org.openrewrite:rewrite-java:latest.release")
+}
+
+val inlineRewriteMethods = layout.projectDirectory.file("src/main/resources/META-INF/rewrite/inline-rewrite-methods.yml")
+tasks.named("createTypeTable") {
+    // Read when the task runs, so the type tables follow the artifacts the recipe file was just written to name
+    doFirst {
+        InlineMethodsClasspath.coordinates(inlineRewriteMethods.asFile)
+            .forEach { recipeDependencies.parserClasspath("$it:latest.release") }
+    }
+    doLast {
+        InlineMethodsClasspath.pinMajorVersions(inlineRewriteMethods.asFile,
+            layout.projectDirectory.file("src/main/resources/META-INF/rewrite/classpath.tsv.gz").asFile)
+    }
 }
 
 val rewriteVersion = rewriteRecipe.rewriteVersion.get()
@@ -57,14 +68,14 @@ val downloadDeprecatedMethodDelegations = tasks.register<DownloadDeprecatedMetho
 tasks.register<UpdateInlineRewriteMethods>("updateInlineRewriteMethods") {
     group = "generation"
     description = "Merges an export of the `DeprecatedMethodDelegations` data table into `inline-rewrite-methods.yml`, " +
-            "passed as `-PdelegationsCsv=<file>`, or else downloaded by `downloadDeprecatedMethodDelegations`."
+            "passed as `-PdelegationsCsv=<file>`, or else downloaded by `downloadDeprecatedMethodDelegations`, " +
+            "then regenerates the type tables its `classpathFromResources` name."
     val delegationsCsv = providers.gradleProperty("delegationsCsv")
     if (delegationsCsv.isPresent) {
         delegations.set(layout.projectDirectory.file(delegationsCsv.get()))
     } else {
         delegations.set(downloadDeprecatedMethodDelegations.flatMap { it.delegations })
     }
-    dependsOn("createTypeTable")
-    typeTable.set(layout.projectDirectory.file("src/main/resources/META-INF/rewrite/classpath.tsv.gz"))
-    recipeFile.set(layout.projectDirectory.file("src/main/resources/META-INF/rewrite/inline-rewrite-methods.yml"))
+    recipeFile.set(inlineRewriteMethods)
+    finalizedBy("createTypeTable")
 }
