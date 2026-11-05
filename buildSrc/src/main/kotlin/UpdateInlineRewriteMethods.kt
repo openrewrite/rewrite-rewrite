@@ -1,12 +1,17 @@
 import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
+import java.util.zip.GZIPInputStream
 
 abstract class UpdateInlineRewriteMethods : DefaultTask() {
     @get:InputFile
     abstract val delegations: RegularFileProperty
+
+    @get:InputFile
+    abstract val typeTable: RegularFileProperty
 
     @get:Internal
     abstract val recipeFile: RegularFileProperty
@@ -32,13 +37,21 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
                 // Without the types of what a replacement imports, `InlineMethodCalls` does not add those imports;
                 // the class a constructor call names is already imported, and the JDK is always on the classpath
                 val constructedClass = methodPattern.substringBefore(" ").substringBefore('$').takeIf { " <constructor>(" in methodPattern }
-                if (importsOf(entry).any { !it.startsWith("java.") && it != constructedClass }) {
+                if (yamlList(entry, "imports").any { !it.startsWith("java.") && it != constructedClass }) {
                     val classpath = CLASSPATH_FROM_RESOURCES[repository]
                         ?: error("Add `parserClasspath` type tables for $repository to CLASSPATH_FROM_RESOURCES")
                     entry += "\n    classpathFromResources:" + classpath.joinToString("") { "\n      - '$it'" }
                 }
                 entries[methodPattern] = repository to entry.lines().joinToString("\n") { "  $it" }
             }
+
+        val typeTables = typeTables()
+        val missing = entries.values.flatMap { yamlList(it.second, "classpathFromResources") }.toSortedSet()
+            .filter { prefix -> typeTables.none { it.startsWith(prefix) } }
+        if (missing.isNotEmpty()) {
+            throw GradleException("No type table in ${typeTable.get().asFile.name} begins with ${missing.joinToString()}; " +
+                    "add it to `parserClasspath` and run `./gradlew createTypeTable`")
+        }
 
         val byRepository = entries.entries.groupBy({ it.value.first }, { it.key to it.value.second }).toSortedMap()
         yaml.writeText(text.substring(0, recipeListEnd) + byRepository.entries.joinToString("") { (repository, patternEntries) ->
@@ -47,10 +60,18 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
         logger.lifecycle("Wrote ${entries.size} entries from ${byRepository.size} repositories to $yaml")
     }
 
-    private fun importsOf(entry: String): List<String> =
-        entry.substringAfter("\n    imports:", "").lines().drop(1)
-            .takeWhile { it.startsWith("      - ") }
-            .map { it.removePrefix("      - ").trim('\'') }
+    private fun yamlList(entry: String, key: String): List<String> =
+        entry.lines()
+            .dropWhile { it.trimStart() != "$key:" }
+            .drop(1)
+            .takeWhile { it.trimStart().startsWith("- ") }
+            .map { it.trimStart().removePrefix("- ").trim('\'') }
+
+    // The `artifactId-version` names that `classpathFromResources` prefixes match
+    private fun typeTables(): Set<String> =
+        GZIPInputStream(typeTable.get().asFile.inputStream()).bufferedReader().useLines { lines ->
+            lines.drop(1).map { it.split('\t') }.map { "${it[1]}-${it[2]}" }.toSet()
+        }
 
     private fun existingEntries(recipeList: String): MutableMap<String, Pair<String, String>> {
         val entries = mutableMapOf<String, Pair<String, String>>()

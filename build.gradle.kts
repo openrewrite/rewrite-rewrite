@@ -65,5 +65,6 @@ tasks.register<UpdateInlineRewriteMethods>("updateInlineRewriteMethods") {
     } else {
         delegations.set(downloadDeprecatedMethodDelegations.flatMap { it.delegations })
     }
+    typeTable.set(layout.projectDirectory.file("src/main/resources/META-INF/rewrite/classpath.tsv.gz"))
     recipeFile.set(layout.projectDirectory.file("src/main/resources/META-INF/rewrite/inline-rewrite-methods.yml"))
 }
