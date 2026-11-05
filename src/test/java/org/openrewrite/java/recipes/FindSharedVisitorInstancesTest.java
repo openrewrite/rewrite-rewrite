@@ -326,7 +326,7 @@ class FindSharedVisitorInstancesTest implements RewriteTest {
     }
 
     @Test
-    void statelessPreconditions() {
+    void usesTypePreconditions() {
         rewriteRun(
           java(
             """
@@ -340,15 +340,49 @@ class FindSharedVisitorInstancesTest implements RewriteTest {
               import java.util.stream.Stream;
 
               class A {
-                  static final List<String> TYPES = List.of("org.junit.jupiter.api.Test", "org.junit.Test");
-                  static final TreeVisitor<?, ExecutionContext> MAPPED_BY_LAMBDA = Preconditions.or(TYPES.stream().map(t -> new UsesType<>(t, false)).toArray(UsesType[]::new));
+                  static final List<String> TYPES = List.of("org.jooq.ExecuteListenerProvider", "org.jooq.VisitListenerProvider");
+                  static final TreeVisitor<?, ExecutionContext> OR = Preconditions.or(
+                          new UsesType<>("java.lang.CharSequence", false),
+                          new UsesType<>("java.lang.StringBuilder", false)
+                  );
+                  static final TreeVisitor<?, ExecutionContext> MAPPED_TO_USES_TYPE_ARRAY = Preconditions.or(TYPES.stream().map(t -> new UsesType<>(t, false)).toArray(UsesType[]::new));
+                  static final TreeVisitor<?, ExecutionContext> MAPPED_TO_TREE_VISITOR_ARRAY = Preconditions.or(TYPES.stream().map(fqn -> new UsesType<>(fqn, false)).toArray(TreeVisitor[]::new));
                   static final TreeVisitor<?, ExecutionContext> MAPPED_BY_CONSTRUCTOR_REFERENCE = Preconditions.or(Stream.of(17, 21).map(UsesJavaVersion::new).toArray(TreeVisitor[]::new));
                   static final UsesType<ExecutionContext> USES_ID = new UsesType<>("jakarta.persistence.Id", false);
-                  static final TreeVisitor<?, ExecutionContext> OR = Preconditions.or(
+                  static final TreeVisitor<?, ExecutionContext> NESTED = Preconditions.or(
                           new UsesType<>("org.junit.jupiter.api.Test", false),
                           Preconditions.and(new UsesJavaVersion<>(17), Preconditions.not(new UsesType<>("org.junit.Test", false))));
-                  static final TreeVisitor<?, ExecutionContext>[] ARRAY = new TreeVisitor[]{new UsesType<>("java.util.List", false)};
                   static final TreeVisitor<?, ExecutionContext> ASSIGNED_IN_STATIC_BLOCK;
+
+                  static {
+                      ASSIGNED_IN_STATIC_BLOCK = Preconditions.or(new UsesType<>("java.util.List", false));
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.Preconditions;
+              import org.openrewrite.TreeVisitor;
+              import org.openrewrite.java.search.UsesJavaVersion;
+              import org.openrewrite.java.search.UsesType;
+
+              import java.util.List;
+              import java.util.stream.Stream;
+
+              class A {
+                  static final List<String> TYPES = List.of("org.jooq.ExecuteListenerProvider", "org.jooq.VisitListenerProvider");
+                  static final TreeVisitor<?, ExecutionContext> /*~~(Visitor instance shared across concurrent visits)~~>*/OR = Preconditions.or(
+                          new UsesType<>("java.lang.CharSequence", false),
+                          new UsesType<>("java.lang.StringBuilder", false)
+                  );
+                  static final TreeVisitor<?, ExecutionContext> /*~~(Visitor instance shared across concurrent visits)~~>*/MAPPED_TO_USES_TYPE_ARRAY = Preconditions.or(TYPES.stream().map(t -> new UsesType<>(t, false)).toArray(UsesType[]::new));
+                  static final TreeVisitor<?, ExecutionContext> /*~~(Visitor instance shared across concurrent visits)~~>*/MAPPED_TO_TREE_VISITOR_ARRAY = Preconditions.or(TYPES.stream().map(fqn -> new UsesType<>(fqn, false)).toArray(TreeVisitor[]::new));
+                  static final TreeVisitor<?, ExecutionContext> /*~~(Visitor instance shared across concurrent visits)~~>*/MAPPED_BY_CONSTRUCTOR_REFERENCE = Preconditions.or(Stream.of(17, 21).map(UsesJavaVersion::new).toArray(TreeVisitor[]::new));
+                  static final UsesType<ExecutionContext> /*~~(Visitor instance shared across concurrent visits)~~>*/USES_ID = new UsesType<>("jakarta.persistence.Id", false);
+                  static final TreeVisitor<?, ExecutionContext> /*~~(Visitor instance shared across concurrent visits)~~>*/NESTED = Preconditions.or(
+                          new UsesType<>("org.junit.jupiter.api.Test", false),
+                          Preconditions.and(new UsesJavaVersion<>(17), Preconditions.not(new UsesType<>("org.junit.Test", false))));
+                  static final TreeVisitor<?, ExecutionContext> /*~~(Visitor instance shared across concurrent visits)~~>*/ASSIGNED_IN_STATIC_BLOCK;
 
                   static {
                       ASSIGNED_IN_STATIC_BLOCK = Preconditions.or(new UsesType<>("java.util.List", false));
