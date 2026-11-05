@@ -31,7 +31,7 @@ recipeList:
         - 'io.moderne.jsonrpc.JsonRpc'
         - 'io.moderne.jsonrpc.formatter.JsonMessageFormatter'
       classpathFromResources:
-        - 'jsonrpc-'
+        - 'jsonrpc-1'
 
   # moderneinc/rewrite-java-security
   - org.openrewrite.java.InlineMethodCalls:
@@ -61,7 +61,7 @@ recipeList:
         - 'java.util.Collections.singleton'
       classpathFromResources:
         - 'rewrite-core-8'
-        - 'rewrite-program-analysis-'
+        - 'rewrite-program-analysis-0'
 
   # openrewrite/rewrite
   - org.openrewrite.java.InlineMethodCalls:

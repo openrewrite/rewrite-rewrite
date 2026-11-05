@@ -7,11 +7,10 @@ group = "org.openrewrite.recipe"
 description = "A rewrite module automating best practices and major version migrations for OpenRewrite recipes"
 
 recipeDependencies {
-    parserClasspath("org.openrewrite:rewrite-core:latest.release")
-    parserClasspath("org.openrewrite:rewrite-java:latest.release")
-    parserClasspath("org.openrewrite:rewrite-python:latest.release")
-    parserClasspath("io.moderne:jsonrpc:latest.release")
-    parserClasspath("io.moderne.recipe:rewrite-program-analysis:latest.release")
+    // rewrite-core and rewrite-java for the Refaster templates, the others for generated `InlineMethods` steps
+    (listOf("org.openrewrite:rewrite-core", "org.openrewrite:rewrite-java") + InlineMethodsClasspath.ARTIFACTS.values.flatten())
+        .distinct()
+        .forEach { parserClasspath("$it:latest.release") }
 }
 
 val rewriteVersion = rewriteRecipe.rewriteVersion.get()
@@ -65,6 +64,7 @@ tasks.register<UpdateInlineRewriteMethods>("updateInlineRewriteMethods") {
     } else {
         delegations.set(downloadDeprecatedMethodDelegations.flatMap { it.delegations })
     }
+    dependsOn("createTypeTable")
     typeTable.set(layout.projectDirectory.file("src/main/resources/META-INF/rewrite/classpath.tsv.gz"))
     recipeFile.set(layout.projectDirectory.file("src/main/resources/META-INF/rewrite/inline-rewrite-methods.yml"))
 }

@@ -22,6 +22,7 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
         val text = yaml.readText()
         val recipeListEnd = text.indexOf("recipeList:\n") + "recipeList:\n".length
 
+        val typeTableVersions = typeTableVersions()
         // Keep entries the scan no longer finds, as callers often build against releases from before a method was removed
         val entries = existingEntries(text.substring(recipeListEnd))
         val rows = parseCsv(delegations.get().asFile.readLines().dropWhile { it.startsWith("#") }.joinToString("\n"))
@@ -38,19 +39,19 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
                 // the class a constructor call names is already imported, and the JDK is always on the classpath
                 val constructedClass = methodPattern.substringBefore(" ").substringBefore('$').takeIf { " <constructor>(" in methodPattern }
                 if (yamlList(entry, "imports").any { !it.startsWith("java.") && it != constructedClass }) {
-                    val classpath = CLASSPATH_FROM_RESOURCES[repository]
-                        ?: error("Add `parserClasspath` type tables for $repository to CLASSPATH_FROM_RESOURCES")
-                    entry += "\n    classpathFromResources:" + classpath.joinToString("") { "\n      - '$it'" }
+                    val artifacts = InlineMethodsClasspath.ARTIFACTS[repository]
+                        ?: throw GradleException("Add the artifacts that replacements from $repository import to InlineMethodsClasspath")
+                    entry += "\n    classpathFromResources:" + artifacts.joinToString("") { "\n      - '${typeTablePrefix(it, typeTableVersions)}'" }
                 }
                 entries[methodPattern] = repository to entry.lines().joinToString("\n") { "  $it" }
             }
 
-        val typeTables = typeTables()
+        val typeTables = typeTableVersions.map { (artifactId, version) -> "$artifactId-$version" }
         val missing = entries.values.flatMap { yamlList(it.second, "classpathFromResources") }.toSortedSet()
             .filter { prefix -> typeTables.none { it.startsWith(prefix) } }
         if (missing.isNotEmpty()) {
-            throw GradleException("No type table in ${typeTable.get().asFile.name} begins with ${missing.joinToString()}; " +
-                    "add it to `parserClasspath` and run `./gradlew createTypeTable`")
+            throw GradleException("No type table in ${typeTable.get().asFile.name} begins with ${missing.joinToString()}, " +
+                    "kept from an earlier run; add its artifact to InlineMethodsClasspath")
         }
 
         val byRepository = entries.entries.groupBy({ it.value.first }, { it.key to it.value.second }).toSortedMap()
@@ -67,11 +68,18 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
             .takeWhile { it.trimStart().startsWith("- ") }
             .map { it.trimStart().removePrefix("- ").trim('\'') }
 
-    // The `artifactId-version` names that `classpathFromResources` prefixes match
-    private fun typeTables(): Set<String> =
+    private fun typeTableVersions(): Map<String, String> =
         GZIPInputStream(typeTable.get().asFile.inputStream()).bufferedReader().useLines { lines ->
-            lines.drop(1).map { it.split('\t') }.map { "${it[1]}-${it[2]}" }.toSet()
+            lines.drop(1).map { it.split('\t') }.associate { it[1] to it[2] }
         }
+
+    // `classpathFromResources` matches `artifactId-version` by prefix; the major version keeps
+    // `rewrite-java-8` from also matching a `rewrite-java-dependencies` type table
+    private fun typeTablePrefix(coordinates: String, versions: Map<String, String>): String {
+        val artifactId = coordinates.substringAfter(':')
+        val version = versions[artifactId] ?: throw GradleException("No type table for $coordinates in ${typeTable.get().asFile.name}")
+        return "$artifactId-${version.substringBefore('.')}"
+    }
 
     private fun existingEntries(recipeList: String): MutableMap<String, Pair<String, String>> {
         val entries = mutableMapOf<String, Pair<String, String>>()
@@ -126,11 +134,6 @@ abstract class UpdateInlineRewriteMethods : DefaultTask() {
         val INCLUDED_PACKAGES = listOf("org.openrewrite.", "io.moderne.")
         // Forks of third party projects keep their own deprecations
         val EXCLUDED_PACKAGES = listOf("org.openrewrite.jgit.")
-        val CLASSPATH_FROM_RESOURCES = mapOf(
-            "moderneinc/jsonrpc" to listOf("jsonrpc-"),
-            "moderneinc/rewrite-program-analysis" to listOf("rewrite-core-8", "rewrite-program-analysis-"),
-            "openrewrite/rewrite" to listOf("rewrite-core-8", "rewrite-java-8", "rewrite-python-8"),
-        )
         val METHOD_PATTERN = Regex("""^\s+methodPattern: '((?:[^']|'')*)'$""", RegexOption.MULTILINE)
     }
 }
