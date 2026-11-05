@@ -36,6 +36,8 @@ dependencies {
 
     testImplementation("org.openrewrite:rewrite-test")
     testImplementation("org.openrewrite:rewrite-kotlin")
+    testImplementation("org.openrewrite.gradle.tooling:model:$rewriteVersion")
+    testRuntimeOnly(gradleApi())
     testImplementation("org.junit-pioneer:junit-pioneer:2.3.0")
 }
 
