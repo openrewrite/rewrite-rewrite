@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.test.RecipeSpec;
@@ -464,220 +465,224 @@ class FindDeprecatedMethodDelegationsTest implements RewriteTest {
         );
     }
 
-    @Test
-    void nonDeprecatedMethodIgnored() {
-        rewriteRun(
-          java(
-            """
-              package com.example;
+    @Nested
+    class NoChange {
 
-              public class Baz {
-                  public void newMethod(String s) {
-                  }
-
-                  public void oldMethod(String s) {
-                      newMethod(s);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void complexBodyIgnored() {
-        rewriteRun(
-          java(
-            """
-              package com.example;
-
-              public class Qux {
-                  public void newMethod(String s) {
-                  }
-
-                  @Deprecated
-                  public void oldMethod(String s) {
-                      System.out.println("logging");
-                      newMethod(s);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void delegationToOtherClassIgnored() {
-        rewriteRun(
-          java(
-            """
-              package com.example;
-
-              public class External {
-                  @Deprecated
-                  public void oldMethod(String s) {
-                      System.out.println(s);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void privateDeprecatedMethodIgnored() {
-        rewriteRun(
-          java(
-            """
-              package com.example;
-
-              public class Priv {
-                  public void newMethod(String s, int n) {
-                  }
-
-                  @Deprecated
-                  void oldMethod(String s) {
-                      newMethod(s, 0);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void packagePrivateClassIgnored() {
-        rewriteRun(
-          java(
-            """
-              package com.example;
-
-              class Hidden {
-                  public void newMethod(String s, int n) {
-                  }
-
-                  @Deprecated
-                  public void oldMethod(String s) {
-                      newMethod(s, 0);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void delegationToPrivateConstructorIgnored() {
-        rewriteRun(
-          java(
-            """
-              package com.example;
-
-              public class Ctor {
-                  private Ctor(String a, String b) {
-                  }
-
-                  @Deprecated
-                  public Ctor(String a) {
-                      this(a, null);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void replacementReferencingPrivateFieldIgnored() {
-        rewriteRun(
-          java(
-            """
-              package com.example;
-
-              public class Field {
-                  private static final int DEFAULT = 0;
-
-                  public void newMethod(String s, int n) {
-                  }
-
-                  @Deprecated
-                  public void oldMethod(String s) {
-                      newMethod(s, DEFAULT);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void replacementWithUnqualifiedInstanceCallIgnored() {
-        rewriteRun(
-          java(
-            """
-              package com.example;
-
-              import java.util.List;
-
-              public class Inst {
-                  public List<String> getNames() {
-                      return null;
-                  }
-
-                  public void withNames(List<String> names, String extra) {
-                  }
-
-                  @Deprecated
-                  public void withName(String extra) {
-                      withNames(getNames(), extra);
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void parameterUsedTwiceIgnored() {
-        rewriteRun(
-          java(
-            """
-              package com.example;
-
-              public class Twice {
-                  public void newMethod(String s, boolean empty) {
-                  }
-
-                  @Deprecated
-                  public void oldMethod(String s) {
-                      newMethod(s, s.isEmpty());
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void testSourcesIgnored() {
-        rewriteRun(
-          srcTestJava(
-            java(
-              """
-                package com.example;
-
-                public class Fixture {
-                    public void newMethod(String s, int n) {
-                    }
-
-                    @Deprecated
-                    public void oldMethod(String s) {
-                        newMethod(s, 0);
-                    }
-                }
+        @Test
+        void nonDeprecatedMethod() {
+            rewriteRun(
+              java(
                 """
-            )
-          )
-        );
+                  package com.example;
+
+                  public class Baz {
+                      public void newMethod(String s) {
+                      }
+
+                      public void oldMethod(String s) {
+                          newMethod(s);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void complexBody() {
+            rewriteRun(
+              java(
+                """
+                  package com.example;
+
+                  public class Qux {
+                      public void newMethod(String s) {
+                      }
+
+                      @Deprecated
+                      public void oldMethod(String s) {
+                          System.out.println("logging");
+                          newMethod(s);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void delegationToOtherClass() {
+            rewriteRun(
+              java(
+                """
+                  package com.example;
+
+                  public class External {
+                      @Deprecated
+                      public void oldMethod(String s) {
+                          System.out.println(s);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void privateDeprecatedMethod() {
+            rewriteRun(
+              java(
+                """
+                  package com.example;
+
+                  public class Priv {
+                      public void newMethod(String s, int n) {
+                      }
+
+                      @Deprecated
+                      void oldMethod(String s) {
+                          newMethod(s, 0);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void packagePrivateClass() {
+            rewriteRun(
+              java(
+                """
+                  package com.example;
+
+                  class Hidden {
+                      public void newMethod(String s, int n) {
+                      }
+
+                      @Deprecated
+                      public void oldMethod(String s) {
+                          newMethod(s, 0);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void delegationToPrivateConstructor() {
+            rewriteRun(
+              java(
+                """
+                  package com.example;
+
+                  public class Ctor {
+                      private Ctor(String a, String b) {
+                      }
+
+                      @Deprecated
+                      public Ctor(String a) {
+                          this(a, null);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void replacementReferencingPrivateField() {
+            rewriteRun(
+              java(
+                """
+                  package com.example;
+
+                  public class Field {
+                      private static final int DEFAULT = 0;
+
+                      public void newMethod(String s, int n) {
+                      }
+
+                      @Deprecated
+                      public void oldMethod(String s) {
+                          newMethod(s, DEFAULT);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void replacementWithUnqualifiedInstanceCall() {
+            rewriteRun(
+              java(
+                """
+                  package com.example;
+
+                  import java.util.List;
+
+                  public class Inst {
+                      public List<String> getNames() {
+                          return null;
+                      }
+
+                      public void withNames(List<String> names, String extra) {
+                      }
+
+                      @Deprecated
+                      public void withName(String extra) {
+                          withNames(getNames(), extra);
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void parameterUsedTwice() {
+            rewriteRun(
+              java(
+                """
+                  package com.example;
+
+                  public class Twice {
+                      public void newMethod(String s, boolean empty) {
+                      }
+
+                      @Deprecated
+                      public void oldMethod(String s) {
+                          newMethod(s, s.isEmpty());
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void testSources() {
+            rewriteRun(
+              srcTestJava(
+                java(
+                  """
+                    package com.example;
+
+                    public class Fixture {
+                        public void newMethod(String s, int n) {
+                        }
+
+                        @Deprecated
+                        public void oldMethod(String s) {
+                            newMethod(s, 0);
+                        }
+                    }
+                    """
+                )
+              )
+            );
+        }
     }
 }

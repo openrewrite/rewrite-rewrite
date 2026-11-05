@@ -46,10 +46,24 @@ tasks.withType<JavaCompile> {
     options.compilerArgs.add("-Arewrite.javaParserClasspathFrom=resources")
 }
 
+val downloadDeprecatedMethodDelegations = tasks.register<DownloadDeprecatedMethodDelegations>("downloadDeprecatedMethodDelegations") {
+    group = "generation"
+    description = "Runs `FindDeprecatedMethodDelegations` in Moderne on `-PmoderneOrganization`, by default Moderne + OpenRewrite, " +
+            "optionally from a `-PmoderneBundle` that `mod config recipes bundle push .` printed, and downloads its data table."
+    organization.set(providers.gradleProperty("moderneOrganization").orElse("Moderne + OpenRewrite"))
+    bundle.set(providers.gradleProperty("moderneBundle"))
+    delegations.set(layout.buildDirectory.file("deprecated-method-delegations.csv"))
+}
+
 tasks.register<UpdateInlineRewriteMethods>("updateInlineRewriteMethods") {
     group = "generation"
-    description = "Merges an export of the `DeprecatedMethodDelegations` data table, " +
-            "passed as `-PdelegationsCsv=<file>`, into `inline-rewrite-methods.yml`."
-    delegations.set(providers.gradleProperty("delegationsCsv").map { layout.projectDirectory.file(it) })
+    description = "Merges an export of the `DeprecatedMethodDelegations` data table into `inline-rewrite-methods.yml`, " +
+            "passed as `-PdelegationsCsv=<file>`, or else downloaded by `downloadDeprecatedMethodDelegations`."
+    val delegationsCsv = providers.gradleProperty("delegationsCsv")
+    if (delegationsCsv.isPresent) {
+        delegations.set(layout.projectDirectory.file(delegationsCsv.get()))
+    } else {
+        delegations.set(downloadDeprecatedMethodDelegations.flatMap { it.delegations })
+    }
     recipeFile.set(layout.projectDirectory.file("src/main/resources/META-INF/rewrite/inline-rewrite-methods.yml"))
 }
