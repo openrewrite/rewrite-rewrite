@@ -11,6 +11,20 @@ recipeDependencies {
     parserClasspath("org.openrewrite:rewrite-java:latest.release")
 }
 
+val inlineRewriteMethods = layout.projectDirectory.file("src/main/resources/META-INF/rewrite/inline-rewrite-methods.yml")
+val inlineMethodsClasspath = layout.buildDirectory.file("inline-methods-classpath.txt")
+val typeTable = layout.projectDirectory.file("src/main/resources/META-INF/rewrite/classpath.tsv.gz")
+tasks.named("createTypeTable") {
+    // Read when the task runs, so the type tables follow the artifacts the recipe file was just written to name
+    doFirst {
+        InlineMethodsClasspath.coordinates(inlineRewriteMethods.asFile, inlineMethodsClasspath.get().asFile, typeTable.asFile)
+            .forEach { recipeDependencies.parserClasspath("$it:latest.release") }
+    }
+    doLast {
+        InlineMethodsClasspath.pinMajorVersions(inlineRewriteMethods.asFile, typeTable.asFile)
+    }
+}
+
 val rewriteVersion = rewriteRecipe.rewriteVersion.get()
 dependencies {
     implementation(platform("org.openrewrite:rewrite-bom:$rewriteVersion"))
@@ -41,4 +55,29 @@ dependencies {
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-Arewrite.javaParserClasspathFrom=resources")
+}
+
+val downloadDeprecatedMethodDelegations = tasks.register<DownloadDeprecatedMethodDelegations>("downloadDeprecatedMethodDelegations") {
+    group = "generation"
+    description = "Runs `FindDeprecatedMethodDelegations` in Moderne on `-PmoderneOrganization`, by default Moderne + OpenRewrite, " +
+            "optionally from a `-PmoderneBundle` that `mod config recipes bundle push .` printed, and downloads its data table."
+    organization.set(providers.gradleProperty("moderneOrganization").orElse("Moderne + OpenRewrite"))
+    bundle.set(providers.gradleProperty("moderneBundle"))
+    delegations.set(layout.buildDirectory.file("deprecated-method-delegations.csv"))
+}
+
+tasks.register<UpdateInlineRewriteMethods>("updateInlineRewriteMethods") {
+    group = "generation"
+    description = "Merges an export of the `DeprecatedMethodDelegations` data table into `inline-rewrite-methods.yml`, " +
+            "passed as `-PdelegationsCsv=<file>`, or else downloaded by `downloadDeprecatedMethodDelegations`, " +
+            "then regenerates the type tables its `classpathFromResources` name."
+    val delegationsCsv = providers.gradleProperty("delegationsCsv")
+    if (delegationsCsv.isPresent) {
+        delegations.set(layout.projectDirectory.file(delegationsCsv.get()))
+    } else {
+        delegations.set(downloadDeprecatedMethodDelegations.flatMap { it.delegations })
+    }
+    recipeFile.set(inlineRewriteMethods)
+    classpath.set(inlineMethodsClasspath)
+    finalizedBy("createTypeTable")
 }

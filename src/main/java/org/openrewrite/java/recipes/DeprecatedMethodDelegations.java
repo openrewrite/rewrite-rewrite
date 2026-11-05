@@ -27,8 +27,8 @@ public class DeprecatedMethodDelegations extends DataTable<DeprecatedMethodDeleg
     public DeprecatedMethodDelegations(Recipe recipe) {
         super(recipe,
                 "Deprecated method delegations",
-                "Deprecated methods that delegate to another method in the same class, " +
-                        "suitable for inlining via `InlineMethodCalls`.");
+                "Deprecated methods that delegate to another member of the same class, " +
+                        "with the `InlineMethodCalls` step that inlines them.");
     }
 
     @Value
@@ -41,8 +41,13 @@ public class DeprecatedMethodDelegations extends DataTable<DeprecatedMethodDeleg
                 description = "The replacement expression to inline.")
         String replacement;
 
+        @Column(displayName = "Classpath",
+                description = "The `groupId:artifactId` of each artifact whose types the replacement imports, " +
+                        "for `parserClasspath` to make the type tables that `classpathFromResources` reads.")
+        String classpath;
+
         @Column(displayName = "Recipe YAML",
-                description = "A YAML snippet that can be copied into a recipe list.")
+                description = "An `InlineMethodCalls` step, with the imports the replacement needs, to copy into a recipe list.")
         String recipeYaml;
     }
 }
