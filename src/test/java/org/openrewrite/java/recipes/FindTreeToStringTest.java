@@ -149,6 +149,116 @@ class FindTreeToStringTest implements RewriteTest {
     }
 
     @Test
+    void printingAndInsertingMethods() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.java.tree.J;
+
+              import java.text.MessageFormat;
+
+              class A {
+                  String m(J.Identifier id, StringBuilder sb) {
+                      System.out.println(id);
+                      System.out.printf("%s%n", id);
+                      sb.insert(0, id);
+                      return MessageFormat.format("{0}", id);
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.java.tree.J;
+
+              import java.text.MessageFormat;
+
+              class A {
+                  String m(J.Identifier id, StringBuilder sb) {
+                      System.out.println(/*~~(LST element printed by `toString()`)~~>*/id);
+                      System.out.printf("%s%n", /*~~(LST element printed by `toString()`)~~>*/id);
+                      sb.insert(0, /*~~(LST element printed by `toString()`)~~>*/id);
+                      return MessageFormat.format("{0}", /*~~(LST element printed by `toString()`)~~>*/id);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void conversionMethodReferencesOnTreeStreams() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.java.tree.J;
+
+              import java.util.List;
+              import java.util.Objects;
+              import java.util.stream.Collectors;
+
+              class A {
+                  String m(List<J.Identifier> ids, List<String> names) {
+                      return ids.stream().map(Object::toString).collect(Collectors.joining()) +
+                             ids.stream().map(String::valueOf).collect(Collectors.joining()) +
+                             ids.stream().map(Objects::toString).collect(Collectors.joining()) +
+                             names.stream().map(Object::toString).collect(Collectors.joining());
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.java.tree.J;
+
+              import java.util.List;
+              import java.util.Objects;
+              import java.util.stream.Collectors;
+
+              class A {
+                  String m(List<J.Identifier> ids, List<String> names) {
+                      return ids.stream().map(/*~~(LST element printed by `toString()`)~~>*/Object::toString).collect(Collectors.joining()) +
+                             ids.stream().map(/*~~(LST element printed by `toString()`)~~>*/String::valueOf).collect(Collectors.joining()) +
+                             ids.stream().map(/*~~(LST element printed by `toString()`)~~>*/Objects::toString).collect(Collectors.joining()) +
+                             names.stream().map(Object::toString).collect(Collectors.joining());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void collectionsOfTrees() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.java.tree.J;
+
+              import java.util.List;
+              import java.util.Map;
+              import java.util.Optional;
+
+              class A {
+                  String m(List<J.Identifier> ids, Map<String, ? extends J> byName, Optional<J> maybe, List<String> names, Map<String, Integer> counts) {
+                      return ids.toString() + byName + String.valueOf(maybe) + names + counts.toString();
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.java.tree.J;
+
+              import java.util.List;
+              import java.util.Map;
+              import java.util.Optional;
+
+              class A {
+                  String m(List<J.Identifier> ids, Map<String, ? extends J> byName, Optional<J> maybe, List<String> names, Map<String, Integer> counts) {
+                      return /*~~(LST element printed by `toString()`)~~>*/ids.toString() + /*~~(LST element printed by `toString()`)~~>*/byName + String.valueOf(/*~~(LST element printed by `toString()`)~~>*/maybe) + names + counts.toString();
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void typeVariableBoundByTree() {
         rewriteRun(
           java(

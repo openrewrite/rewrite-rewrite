@@ -16,6 +16,7 @@
 package org.openrewrite.java.recipes;
 
 import lombok.Getter;
+import org.jspecify.annotations.Nullable;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -27,6 +28,7 @@ import org.openrewrite.java.search.IsLikelyNotTest;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 import org.openrewrite.marker.SearchResult;
 
@@ -46,7 +48,20 @@ public class FindTreeToString extends Recipe {
             new MethodMatcher("java.lang.String formatted(..)"),
             new MethodMatcher("java.util.Objects toString(..)"),
             new MethodMatcher("java.lang.StringBuilder append(java.lang.Object)"),
-            new MethodMatcher("java.lang.StringBuffer append(java.lang.Object)")
+            new MethodMatcher("java.lang.StringBuffer append(java.lang.Object)"),
+            new MethodMatcher("java.lang.StringBuilder insert(int, java.lang.Object)"),
+            new MethodMatcher("java.lang.StringBuffer insert(int, java.lang.Object)"),
+            new MethodMatcher("java.io.PrintStream print*(..)"),
+            new MethodMatcher("java.io.PrintStream format(..)"),
+            new MethodMatcher("java.io.PrintWriter print*(..)"),
+            new MethodMatcher("java.io.PrintWriter format(..)"),
+            new MethodMatcher("java.text.MessageFormat format(..)")
+    );
+
+    private static final List<MethodMatcher> CONVERTING_REFERENCES = Arrays.asList(
+            new MethodMatcher("java.lang.Object toString()"),
+            new MethodMatcher("java.lang.String valueOf(java.lang.Object)"),
+            new MethodMatcher("java.util.Objects toString(java.lang.Object)")
     );
 
     @Getter
@@ -54,7 +69,8 @@ public class FindTreeToString extends Recipe {
 
     @Getter
     final String description = "Find `toString()`, `String.valueOf(..)`, `Objects.toString(..)`, `String.format(..)`, " +
-            "`StringBuilder.append(..)` and string concatenation on `org.openrewrite.Tree` subtypes outside of tests. " +
+            "`StringBuilder.append(..)`, `PrintStream.println(..)`, string concatenation and method references such as `Object::toString` " +
+            "on `org.openrewrite.Tree` subtypes, and on collections of them, outside of tests. " +
             "`toString()` prints the element without a cursor, so `J` elements print as Java also in Kotlin, Groovy or C# sources, " +
             "and other trees print whatever their class happens to implement. " +
             "Searching the printed text also matches comments and string literals, and misses differently spelled forms. " +
@@ -85,7 +101,8 @@ public class FindTreeToString extends Recipe {
                     @Override
                     public J.MemberReference visitMemberReference(J.MemberReference memberRef, ExecutionContext ctx) {
                         J.MemberReference m = super.visitMemberReference(memberRef, ctx);
-                        if ("toString".equals(m.getReference().getSimpleName()) && isTree(m.getContaining())) {
+                        if ("toString".equals(m.getReference().getSimpleName()) && isTree(m.getContaining()) ||
+                            convertsFunctionInput(m)) {
                             return SearchResult.found(m, MESSAGE);
                         }
                         return m;
@@ -116,7 +133,33 @@ public class FindTreeToString extends Recipe {
         return isTree(expression) ? SearchResult.found(expression, MESSAGE) : expression;
     }
 
+    private static boolean convertsFunctionInput(J.MemberReference memberRef) {
+        if (CONVERTING_REFERENCES.stream().noneMatch(matcher -> matcher.matches(memberRef.getMethodType()))) {
+            return false;
+        }
+        JavaType.Parameterized function = TypeUtils.asParameterized(memberRef.getType());
+        return function != null && !function.getTypeParameters().isEmpty() &&
+               isTreeOrTrees(function.getTypeParameters().get(0));
+    }
+
     private static boolean isTree(Expression expression) {
-        return TypeUtils.isAssignableTo(TREE, expression.getType());
+        return isTreeOrTrees(expression.getType());
+    }
+
+    private static boolean isTreeOrTrees(@Nullable JavaType type) {
+        if (TypeUtils.isAssignableTo(TREE, type)) {
+            return true;
+        }
+        JavaType.Parameterized parameterized = TypeUtils.asParameterized(type);
+        if (parameterized != null && (TypeUtils.isAssignableTo("java.util.Collection", parameterized) ||
+                                      TypeUtils.isAssignableTo("java.util.Map", parameterized) ||
+                                      TypeUtils.isAssignableTo("java.util.Optional", parameterized))) {
+            for (JavaType typeParameter : parameterized.getTypeParameters()) {
+                if (isTreeOrTrees(typeParameter)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
