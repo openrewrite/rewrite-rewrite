@@ -38,6 +38,8 @@ recipeList:
   - org.openrewrite.recipes.rewrite.InlineMethods
   # Visitors walking the tree must not be shared, as source files can be visited concurrently
   - org.openrewrite.java.recipes.FindSharedVisitorInstances
+  # Printing LST elements with `toString()` loses the cursor and the source language's printer
+  - org.openrewrite.java.recipes.FindTreeToString
   - org.openrewrite.java.recipes.JavaRecipeBestPractices
   - org.openrewrite.java.recipes.RecipeTestingBestPractices
   - org.openrewrite.java.recipes.RecipeNullabilityBestPractices
