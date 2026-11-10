@@ -63,8 +63,8 @@ class FindTreeToStringTest implements RewriteTest {
               class A extends JavaIsoVisitor<ExecutionContext> {
                   @Override
                   public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
-                      if (method.getSelect() != null && /*~~(LST element printed by `toString()`)~~>*/method.getSelect().toString().startsWith("Foo")) {
-                          return SearchResult.found(method, "Called on " + /*~~(LST element printed by `toString()`)~~>*/method.getSelect());
+                      if (method.getSelect() != null && /*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/method.getSelect().toString().startsWith("Foo")) {
+                          return SearchResult.found(method, "Called on " + /*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/method.getSelect());
                       }
                       return method;
                   }
@@ -100,11 +100,11 @@ class FindTreeToStringTest implements RewriteTest {
 
               class A {
                   void m(J.Identifier id, StringBuilder sb) {
-                      String a = String.valueOf(/*~~(LST element printed by `toString()`)~~>*/id);
-                      String b = Objects.toString(/*~~(LST element printed by `toString()`)~~>*/id, "");
-                      String c = String.format("%s and %s", /*~~(LST element printed by `toString()`)~~>*/id, id.getSimpleName());
-                      String d = "%s".formatted(/*~~(LST element printed by `toString()`)~~>*/id);
-                      sb.append(/*~~(LST element printed by `toString()`)~~>*/id).append(id.getSimpleName());
+                      String a = String.valueOf(/*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/id);
+                      String b = Objects.toString(/*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/id, "");
+                      String c = String.format("%s and %s", /*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/id, id.getSimpleName());
+                      String d = "%s".formatted(/*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/id);
+                      sb.append(/*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/id).append(id.getSimpleName());
                   }
               }
               """
@@ -138,8 +138,8 @@ class FindTreeToStringTest implements RewriteTest {
 
               class A {
                   String m(List<J.Identifier> ids, J.Literal literal) {
-                      String s = ids.stream().map(/*~~(LST element printed by `toString()`)~~>*/J.Identifier::toString).collect(Collectors.joining());
-                      s += /*~~(LST element printed by `toString()`)~~>*/literal;
+                      String s = ids.stream().map(/*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/J.Identifier::toString).collect(Collectors.joining());
+                      s += /*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/literal;
                       return s;
                   }
               }
@@ -173,10 +173,10 @@ class FindTreeToStringTest implements RewriteTest {
 
               class A {
                   String m(J.Identifier id, StringBuilder sb) {
-                      System.out.println(/*~~(LST element printed by `toString()`)~~>*/id);
-                      System.out.printf("%s%n", /*~~(LST element printed by `toString()`)~~>*/id);
-                      sb.insert(0, /*~~(LST element printed by `toString()`)~~>*/id);
-                      return MessageFormat.format("{0}", /*~~(LST element printed by `toString()`)~~>*/id);
+                      System.out.println(/*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/id);
+                      System.out.printf("%s%n", /*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/id);
+                      sb.insert(0, /*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/id);
+                      return MessageFormat.format("{0}", /*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/id);
                   }
               }
               """
@@ -213,9 +213,9 @@ class FindTreeToStringTest implements RewriteTest {
 
               class A {
                   String m(List<J.Identifier> ids, List<String> names) {
-                      return ids.stream().map(/*~~(LST element printed by `toString()`)~~>*/Object::toString).collect(Collectors.joining()) +
-                             ids.stream().map(/*~~(LST element printed by `toString()`)~~>*/String::valueOf).collect(Collectors.joining()) +
-                             ids.stream().map(/*~~(LST element printed by `toString()`)~~>*/Objects::toString).collect(Collectors.joining()) +
+                      return ids.stream().map(/*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/Object::toString).collect(Collectors.joining()) +
+                             ids.stream().map(/*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/String::valueOf).collect(Collectors.joining()) +
+                             ids.stream().map(/*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/Objects::toString).collect(Collectors.joining()) +
                              names.stream().map(Object::toString).collect(Collectors.joining());
                   }
               }
@@ -250,7 +250,7 @@ class FindTreeToStringTest implements RewriteTest {
 
               class A {
                   String m(List<J.Identifier> ids, Map<String, ? extends J> byName, Optional<J> maybe, List<String> names, Map<String, Integer> counts) {
-                      return /*~~(LST element printed by `toString()`)~~>*/ids.toString() + /*~~(LST element printed by `toString()`)~~>*/byName + String.valueOf(/*~~(LST element printed by `toString()`)~~>*/maybe) + names + counts.toString();
+                      return /*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/ids.toString() + /*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/byName + String.valueOf(/*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/maybe) + names + counts.toString();
                   }
               }
               """
@@ -276,7 +276,7 @@ class FindTreeToStringTest implements RewriteTest {
 
               class A {
                   <T extends SourceFile> String m(T sourceFile) {
-                      return /*~~(LST element printed by `toString()`)~~>*/sourceFile.toString();
+                      return /*~~(LST converted to text. For matching, use node accessors (`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; for expression comparison, consider `SemanticallyEqual`. Reuse trees directly or through `JavaTemplate` parameters. If source text is required, use `print(Cursor)` on each tree.)~~>*/sourceFile.toString();
                   }
               }
               """
