@@ -38,7 +38,11 @@ import java.util.List;
 public class FindTreeToString extends Recipe {
 
     private static final String TREE = "org.openrewrite.Tree";
-    private static final String MESSAGE = "LST element printed by `toString()`";
+    private static final String MESSAGE = "LST converted to text. For matching, use node accessors " +
+            "(`getSimpleName()`, `J.Literal.getValue()`), `TypeUtils`, `MethodMatcher` or a visitor; " +
+            "for expression comparison, consider `SemanticallyEqual`. " +
+            "Reuse trees directly or through `JavaTemplate` parameters. " +
+            "If source text is required, use `print(Cursor)` on each tree.";
 
     private static final MethodMatcher TO_STRING = new MethodMatcher("*..* toString()");
 
