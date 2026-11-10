@@ -147,7 +147,7 @@ recipeList:
       advice: Keep state across source files in a `ScanningRecipe` accumulator, and within one source file in cursor messages, rather than on the `ExecutionContext` a run shares
   - org.openrewrite.java.recipes.FindMethodsWithAdvice:
       methodPattern: org.openrewrite.marker.AlreadyReplaced <constructor>(..)
-      advice: Check the tree for the change already made, rather than reusing the marker rewrite's own `FindAndReplace` uses to carry information
+      advice: Check the tree for the change already made, or return `1` from `maxCycles()` so the recipe runs only in the first cycle; `AlreadyReplaced` is deprecated and fails the added-markers check in `rewriteRun`
   - org.openrewrite.java.recipes.FindMethodsWithAdvice:
       methodPattern: org.openrewrite.java.marker.JavaSourceSet build(..)
       advice: Derive the new `JavaSourceSet` from the existing marker with its `with` methods, so it keeps the classpath and type information it already carries
