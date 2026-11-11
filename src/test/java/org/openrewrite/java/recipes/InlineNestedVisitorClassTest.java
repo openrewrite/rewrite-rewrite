@@ -18,6 +18,7 @@ package org.openrewrite.java.recipes;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.test.RecipeQualityValidation;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -35,6 +36,8 @@ class InlineNestedVisitorClassTest implements RewriteTest {
     @Test
     void inlineNestedVisitorClass() {
         rewriteRun(
+          // the inlined anonymous visitor keeps the type of the nested class it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.openrewrite.ExecutionContext;
@@ -109,6 +112,8 @@ class InlineNestedVisitorClassTest implements RewriteTest {
     @Test
     void inlineVisitorWithInstanceFields() {
         rewriteRun(
+          // the inlined anonymous visitor keeps the type of the nested class it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.openrewrite.ExecutionContext;
@@ -183,6 +188,8 @@ class InlineNestedVisitorClassTest implements RewriteTest {
     @Test
     void shiftMultiLineCommentsAlongWithTheCode() {
         rewriteRun(
+          // the inlined anonymous visitor keeps the type of the nested class it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.openrewrite.ExecutionContext;
@@ -375,6 +382,8 @@ class InlineNestedVisitorClassTest implements RewriteTest {
     @Test
     void hoistConstantsOntoTheRecipeClass() {
         rewriteRun(
+          // the inlined anonymous visitor keeps the type of the nested class it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.openrewrite.ExecutionContext;
@@ -458,6 +467,8 @@ class InlineNestedVisitorClassTest implements RewriteTest {
     @Test
     void hoistConstantsAfterTheFieldsTheyReferTo() {
         rewriteRun(
+          // the inlined anonymous visitor keeps the type of the nested class it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.openrewrite.ExecutionContext;
@@ -710,6 +721,8 @@ class InlineNestedVisitorClassTest implements RewriteTest {
     @Test
     void hoistConstantsAfterAFieldDeclaredLast() {
         rewriteRun(
+          // the inlined anonymous visitor keeps the type of the nested class it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.openrewrite.ExecutionContext;

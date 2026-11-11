@@ -18,6 +18,7 @@ package org.openrewrite.java.recipes;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.test.RecipeQualityValidation;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -35,6 +36,8 @@ class UseVisitWithParentCursorTest implements RewriteTest {
     @Test
     void replaceDirectVisitMethodCallWithVisit() {
         rewriteRun(
+          // the recipe types the `visit` call as the `visitXxx` method it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.openrewrite.ExecutionContext;
@@ -77,6 +80,8 @@ class UseVisitWithParentCursorTest implements RewriteTest {
     @Test
     void replaceCallOnLocalVariable() {
         rewriteRun(
+          // the recipe types the `visit` call as the `visitXxx` method it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.openrewrite.ExecutionContext;
@@ -115,6 +120,8 @@ class UseVisitWithParentCursorTest implements RewriteTest {
     @Test
     void replaceCallInAnonymousVisitorInsideRecipe() {
         rewriteRun(
+          // the recipe types the `visit` call as the `visitXxx` method it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.openrewrite.*;
@@ -174,6 +181,8 @@ class UseVisitWithParentCursorTest implements RewriteTest {
     @Test
     void addCastWhenCalledOnIsoVisitor() {
         rewriteRun(
+          // the recipe types the `visit` call as the `visitXxx` method it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.openrewrite.*;
@@ -235,6 +244,8 @@ class UseVisitWithParentCursorTest implements RewriteTest {
         // statement, causing the template to generate 0 statements. In this case, emit
         // the invocation without a cast.
         rewriteRun(
+          // the recipe types the `visit` call as the `visitXxx` method it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.openrewrite.*;

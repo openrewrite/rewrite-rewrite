@@ -18,6 +18,7 @@ package org.openrewrite.java.recipes;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.test.RecipeQualityValidation;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -149,6 +150,8 @@ class SimplifyRecipeSpecCyclesTest implements RewriteTest {
     @Test
     void classLevelSettingsDecideTheDerivedCount() {
         rewriteRun(
+          // the recipe drops the spec from a `rewriteRun` call but keeps the type of the overload that takes one
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.junit.jupiter.api.Test;
@@ -298,6 +301,8 @@ class SimplifyRecipeSpecCyclesTest implements RewriteTest {
     @Test
     void removesWhatIsLeftEmpty() {
         rewriteRun(
+          // the recipe drops the spec from a `rewriteRun` call but keeps the type of the overload that takes one
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.junit.jupiter.api.Test;
