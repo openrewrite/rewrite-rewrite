@@ -18,6 +18,7 @@ package org.openrewrite.java.recipes;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
+import org.openrewrite.test.RecipeQualityValidation;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -35,6 +36,8 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     @Test
     void shouldRefactorWhenAllTestsUseSameRecipe() {
         rewriteRun(
+          // the recipe drops the spec from a `rewriteRun` call but keeps the type of the overload that takes one
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.junit.jupiter.api.Test;
@@ -144,6 +147,8 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     @Test
     void shouldHandleComplexRecipeSpec() {
         rewriteRun(
+          // the recipe drops the spec from a `rewriteRun` call but keeps the type of the overload that takes one
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.junit.jupiter.api.Test;
@@ -304,6 +309,8 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     @Test
     void shouldHandleNestedClasses() {
         rewriteRun(
+          // the recipe drops the spec from a `rewriteRun` call but keeps the type of the overload that takes one
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.junit.jupiter.api.Nested;
@@ -401,6 +408,8 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     @Test
     void shouldPreserveOtherRewriteRunOverloads() {
         rewriteRun(
+          // the recipe drops the spec from a `rewriteRun` call but keeps the type of the overload that takes one
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.junit.jupiter.api.Test;
@@ -475,6 +484,8 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     @Test
     void shouldHandleClassWithFieldInitializedByMethodCall() {
         rewriteRun(
+          // the recipe drops the spec from a `rewriteRun` call but keeps the type of the overload that takes one
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.junit.jupiter.api.Test;
@@ -551,6 +562,8 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     @Test
     void shouldHandleMethodReference() {
         rewriteRun(
+          // the recipe drops the spec from a `rewriteRun` call but keeps the type of the overload that takes one
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
           java(
             """
               import org.junit.jupiter.api.Test;
