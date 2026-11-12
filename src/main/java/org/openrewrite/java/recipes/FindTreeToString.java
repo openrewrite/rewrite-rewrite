@@ -17,6 +17,7 @@ package org.openrewrite.java.recipes;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
+import org.openrewrite.Cursor;
 import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
@@ -51,6 +52,9 @@ public class FindTreeToString extends Recipe {
             "(`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. " +
             "Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.";
 
+    private static final String JS_PRINT_MESSAGE = "Printed LST used for matching. " +
+            "Compare tree structure and types instead of source text.";
+
     private static final MethodMatcher TO_STRING = new MethodMatcher("*..* toString()");
 
     private static final List<MethodMatcher> CONVERTING_METHODS = Arrays.asList(
@@ -83,7 +87,8 @@ public class FindTreeToString extends Recipe {
             "`StringBuilder.append(..)`, `PrintStream.println(..)`, string concatenation and method references such as `Object::toString` " +
             "on `org.openrewrite.Tree` subtypes, and on collections of them, outside of tests. " +
             "Also finds `toString()`, `String(..)`, string concatenation and template interpolation of " +
-            "`@openrewrite/rewrite` trees in JavaScript and TypeScript recipes. " +
+            "`@openrewrite/rewrite` trees in JavaScript and TypeScript recipes, as well as direct comparisons " +
+            "between printed trees and word-based regular expression tests of printer output. " +
             "`toString()` prints the element without a cursor, so `J` elements print as Java also in Kotlin, Groovy or C# sources, " +
             "and other trees print whatever their class happens to implement. " +
             "Searching the printed text also matches comments and string literals, and misses differently spelled forms. " +
@@ -169,6 +174,9 @@ public class FindTreeToString extends Recipe {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 J.MethodInvocation m = super.visitMethodInvocation(method, ctx);
+                if (isPrintedJavaScriptTree(m) && usedForMatching(getCursor())) {
+                    return SearchResult.found(m, JS_PRINT_MESSAGE);
+                }
                 if ("toString".equals(m.getSimpleName()) && m.getSelect() != null &&
                     (m.getArguments().isEmpty() || m.getArguments().size() == 1 && m.getArguments().get(0) instanceof J.Empty) &&
                     isJavaScriptTree(m.getSelect().getType())) {
@@ -209,6 +217,60 @@ public class FindTreeToString extends Recipe {
                         span.withExpression(markJavaScriptTree((Expression) span.getExpression())) : span));
             }
         };
+    }
+
+    private static boolean usedForMatching(Cursor cursor) {
+        Cursor parent = cursor.getParentTreeCursor();
+        while (parent.getValue() instanceof JS.Await || parent.getValue() instanceof J.Parentheses) {
+            parent = parent.getParentTreeCursor();
+        }
+        Object value = parent.getValue();
+        if (value instanceof J.Binary) {
+            J.Binary binary = (J.Binary) value;
+            return (binary.getOperator() == J.Binary.Type.Equal || binary.getOperator() == J.Binary.Type.NotEqual) &&
+                   isPrintedJavaScriptTree(binary.getLeft()) && isPrintedJavaScriptTree(binary.getRight());
+        }
+        if (value instanceof JS.Binary) {
+            JS.Binary binary = (JS.Binary) value;
+            return (binary.getOperator() == JS.Binary.Type.IdentityEquals || binary.getOperator() == JS.Binary.Type.IdentityNotEquals) &&
+                   isPrintedJavaScriptTree(binary.getLeft()) && isPrintedJavaScriptTree(binary.getRight());
+        }
+        if (value instanceof J.MethodInvocation) {
+            J.MethodInvocation method = (J.MethodInvocation) value;
+            if ("startsWith".equals(method.getSimpleName()) && method.getSelect() != null &&
+                isPrintedJavaScriptTree(method.getSelect()) && !method.getArguments().isEmpty() &&
+                isPrintedJavaScriptTree(method.getArguments().get(0))) {
+                return true;
+            }
+            if ("test".equals(method.getSimpleName()) && method.getSelect() instanceof J.Literal) {
+                String source = ((J.Literal) method.getSelect()).getValueSource();
+                if (source == null || !source.startsWith("/") || source.lastIndexOf('/') <= 0) {
+                    return false;
+                }
+                return source.substring(1, source.lastIndexOf('/')).replaceAll("\\\\.", "")
+                        .replaceAll("\\[[^]]*]", "").matches(".*[a-zA-Z_$]{2,}.*");
+            }
+        }
+        return false;
+    }
+
+    private static boolean isPrintedJavaScriptTree(Expression expression) {
+        Expression e = expression;
+        while (e instanceof J.Parentheses || e instanceof JS.Await) {
+            e = e instanceof JS.Await ? ((JS.Await) e).getExpression() :
+                    (Expression) ((J.Parentheses<?>) e).getTree();
+        }
+        if (!(e instanceof J.MethodInvocation)) {
+            return false;
+        }
+        J.MethodInvocation method = (J.MethodInvocation) e;
+        if (!"print".equals(method.getSimpleName()) || method.getMethodType() == null ||
+            method.getArguments().isEmpty() || !isJavaScriptTree(method.getArguments().get(0).getType())) {
+            return false;
+        }
+        JavaType declaringType = method.getMethodType().getDeclaringType();
+        return TypeUtils.isAssignableTo("@openrewrite/rewrite.TreePrinter", declaringType) ||
+               TypeUtils.isOfClassType(declaringType, "@openrewrite/rewrite.TreePrinters");
     }
 
     private static Expression markJavaScriptTree(Expression expression) {

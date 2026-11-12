@@ -159,6 +159,64 @@ class FindTreeToStringTest implements RewriteTest {
         );
     }
 
+    @Test
+    void printedTreeComparisons() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { Tree, printer, TreePrinters } from "@openrewrite/rewrite";
+
+              async function matches(left: Tree, right: Tree) {
+                  const p = printer("javascript");
+                  const equal = await p.print(left) === await p.print(right);
+                  const different = (await TreePrinters.print(left)) != (await p.print(right));
+                  const prefix = (await p.print(left)).startsWith(await p.print(right));
+                  const exports = /\\b(module\\.)?exports\\b/.test(await p.print(left));
+                  return equal || different || prefix || exports;
+              }
+              """,
+            """
+              import { Tree, printer, TreePrinters } from "@openrewrite/rewrite";
+
+              async function matches(left: Tree, right: Tree) {
+                  const p = printer("javascript");
+                  const equal = await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(left) === await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(right);
+                  const different = (await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/TreePrinters.print(left)) != (await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(right));
+                  const prefix = (await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(left)).startsWith(await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(right));
+                  const exports = /\\b(module\\.)?exports\\b/.test(await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(left));
+                  return equal || different || prefix || exports;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void printingForFormattingIsIgnored() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { Tree, printer } from "@openrewrite/rewrite";
+
+              async function formatting(tree: Tree) {
+                  const p = printer("javascript");
+                  const text = await p.print(tree);
+                  const first = (await p.print(tree)).trimStart().charAt(0);
+                  const semi = (await p.print(tree)).trimEnd().endsWith(";");
+                  const newline = (await p.print(tree)).includes("\\n");
+                  const starts = (await p.print(tree)).startsWith("(");
+                  const whitespace = /\\s/gim.test(await p.print(tree));
+                  const identifier = /[a-zA-Z_$]/.test((await p.print(tree)).charAt(0));
+                  const equal = await p.print(tree) === ";";
+                  return text;
+              }
+              """
+          )
+        );
+    }
+
     private static SourceSpecs rewriteTypes() {
         return typescript(
             """
@@ -167,6 +225,13 @@ class FindTreeToStringTest implements RewriteTest {
                       readonly id: string;
                   }
                   export function tree(): Tree;
+                  export interface TreePrinter {
+                      print(tree: Tree): Promise<string>;
+                  }
+                  export function printer(kind: string): TreePrinter;
+                  export class TreePrinters {
+                      static print(tree: Tree): Promise<string>;
+                  }
               }
               declare module "@openrewrite/rewrite/javascript" {
                   import { J } from "@openrewrite/rewrite/java";
