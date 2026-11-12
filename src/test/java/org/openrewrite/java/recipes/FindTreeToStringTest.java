@@ -20,9 +20,12 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpecs;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.srcTestJava;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.javascript.Assertions.javascript;
 
 class FindTreeToStringTest implements RewriteTest {
 
@@ -31,6 +34,158 @@ class FindTreeToStringTest implements RewriteTest {
         spec
           .recipe(new FindTreeToString())
           .parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()));
+    }
+
+    @Test
+    void typescriptTreeToString() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { J } from "@openrewrite/rewrite/java";
+              import { JS } from "@openrewrite/rewrite/javascript";
+
+              function matches(node: J.Identifier, jsNode: JS.Binary, name: string) {
+                  return node.toString() === name && jsNode.toString() === name && name.toString() === "test";
+              }
+              """,
+            """
+              import { J } from "@openrewrite/rewrite/java";
+              import { JS } from "@openrewrite/rewrite/javascript";
+
+              function matches(node: J.Identifier, jsNode: JS.Binary, name: string) {
+                  return /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/node.toString() === name && /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/jsNode.toString() === name && name.toString() === "test";
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typescriptStringConversions() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { Tree } from "@openrewrite/rewrite";
+
+              function text(tree: Tree, trees: Tree[], name: string) {
+                  const a = String(tree);
+                  const b = "Tree: " + tree;
+                  let c = "";
+                  c += tree;
+                  const d = `Tree: ${tree}`;
+                  const e = trees.toString();
+                  const f = `${name}`;
+                  const g = String(name);
+              }
+              """,
+            """
+              import { Tree } from "@openrewrite/rewrite";
+
+              function text(tree: Tree, trees: Tree[], name: string) {
+                  const a = String(/*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/tree);
+                  const b = "Tree: " + /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/tree;
+                  let c = "";
+                  c += /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/tree;
+                  const d = `Tree: ${/*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/tree}`;
+                  const e = /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/trees.toString();
+                  const f = `${name}`;
+                  const g = String(name);
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typescriptNonConversions() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { Tree } from "@openrewrite/rewrite";
+
+              declare function template(strings: TemplateStringsArray, ...trees: Tree[]): Tree;
+              function preserveTree(tree: Tree) {
+                  return template`${tree}`;
+              }
+              function unrelated(value: { toString(): string }, name: string) {
+                  return value.toString() === name.toString();
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typescriptTestSourcesAreIgnored() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { J } from "@openrewrite/rewrite/java";
+
+              function matches(node: J.Identifier) {
+                  return node.toString() === "test";
+              }
+              """,
+            spec -> spec.path("src/recipe.test.ts")
+          )
+        );
+    }
+
+    @Test
+    void javaScriptTreeToString() {
+        rewriteRun(
+          rewriteTypes(),
+          javascript(
+            """
+              import { tree } from "@openrewrite/rewrite";
+
+              function matches() {
+                  return tree().toString() === "test";
+              }
+              """,
+            """
+              import { tree } from "@openrewrite/rewrite";
+
+              function matches() {
+                  return /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/tree().toString() === "test";
+              }
+              """,
+            spec -> spec.path("recipe.js")
+          )
+        );
+    }
+
+    private static SourceSpecs rewriteTypes() {
+        return typescript(
+            """
+              declare module "@openrewrite/rewrite" {
+                  export interface Tree {
+                      readonly id: string;
+                  }
+                  export function tree(): Tree;
+              }
+              declare module "@openrewrite/rewrite/javascript" {
+                  import { J } from "@openrewrite/rewrite/java";
+                  export namespace JS {
+                      export interface Binary extends J {}
+                  }
+              }
+              declare module "@openrewrite/rewrite/java" {
+                  import { Tree } from "@openrewrite/rewrite";
+                  export interface J extends Tree {}
+                  export namespace J {
+                      export interface Identifier extends J {
+                          readonly simpleName: string;
+                      }
+                  }
+              }
+              """,
+            spec -> spec.path("rewrite.d.ts")
+          );
     }
 
     @DocumentExample
