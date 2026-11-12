@@ -20,9 +20,12 @@ import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
+import org.openrewrite.test.SourceSpecs;
 
 import static org.openrewrite.java.Assertions.java;
 import static org.openrewrite.java.Assertions.srcTestJava;
+import static org.openrewrite.javascript.Assertions.typescript;
+import static org.openrewrite.javascript.Assertions.javascript;
 
 class FindTreeToStringTest implements RewriteTest {
 
@@ -31,6 +34,223 @@ class FindTreeToStringTest implements RewriteTest {
         spec
           .recipe(new FindTreeToString())
           .parser(JavaParser.fromJavaVersion().classpath(JavaParser.runtimeClasspath()));
+    }
+
+    @Test
+    void typescriptTreeToString() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { J } from "@openrewrite/rewrite/java";
+              import { JS } from "@openrewrite/rewrite/javascript";
+
+              function matches(node: J.Identifier, jsNode: JS.Binary, name: string) {
+                  return node.toString() === name && jsNode.toString() === name && name.toString() === "test";
+              }
+              """,
+            """
+              import { J } from "@openrewrite/rewrite/java";
+              import { JS } from "@openrewrite/rewrite/javascript";
+
+              function matches(node: J.Identifier, jsNode: JS.Binary, name: string) {
+                  return /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/node.toString() === name && /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/jsNode.toString() === name && name.toString() === "test";
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typescriptStringConversions() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { Tree } from "@openrewrite/rewrite";
+
+              function text(tree: Tree, trees: Tree[], name: string) {
+                  const a = String(tree);
+                  const b = "Tree: " + tree;
+                  let c = "";
+                  c += tree;
+                  const d = `Tree: ${tree}`;
+                  const e = trees.toString();
+                  const f = `${name}`;
+                  const g = String(name);
+              }
+              """,
+            """
+              import { Tree } from "@openrewrite/rewrite";
+
+              function text(tree: Tree, trees: Tree[], name: string) {
+                  const a = String(/*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/tree);
+                  const b = "Tree: " + /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/tree;
+                  let c = "";
+                  c += /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/tree;
+                  const d = `Tree: ${/*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/tree}`;
+                  const e = /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/trees.toString();
+                  const f = `${name}`;
+                  const g = String(name);
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typescriptNonConversions() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { Tree } from "@openrewrite/rewrite";
+
+              declare function template(strings: TemplateStringsArray, ...trees: Tree[]): Tree;
+              function preserveTree(tree: Tree) {
+                  return template`${tree}`;
+              }
+              function unrelated(value: { toString(): string }, name: string) {
+                  return value.toString() === name.toString();
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void typescriptTestSourcesAreIgnored() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { J } from "@openrewrite/rewrite/java";
+
+              function matches(node: J.Identifier) {
+                  return node.toString() === "test";
+              }
+              """,
+            spec -> spec.path("src/recipe.test.ts")
+          )
+        );
+    }
+
+    @Test
+    void javaScriptTreeToString() {
+        rewriteRun(
+          rewriteTypes(),
+          javascript(
+            """
+              import { tree } from "@openrewrite/rewrite";
+
+              function matches() {
+                  return tree().toString() === "test";
+              }
+              """,
+            """
+              import { tree } from "@openrewrite/rewrite";
+
+              function matches() {
+                  return /*~~(LST converted to text. For matching, use node properties (`simpleName`, `J.Literal.value`), type utilities, a method matcher or a visitor. Reuse trees directly or through template parameters. If source text is required, use a printer with a cursor.)~~>*/tree().toString() === "test";
+              }
+              """,
+            spec -> spec.path("recipe.js")
+          )
+        );
+    }
+
+    @Test
+    void printedTreeComparisons() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { Tree, printer, TreePrinters } from "@openrewrite/rewrite";
+
+              async function matches(left: Tree, right: Tree) {
+                  const p = printer("javascript");
+                  const equal = await p.print(left) === await p.print(right);
+                  const different = (await TreePrinters.print(left)) != (await p.print(right));
+                  const prefix = (await p.print(left)).startsWith(await p.print(right));
+                  const exports = /\\b(module\\.)?exports\\b/.test(await p.print(left));
+                  return equal || different || prefix || exports;
+              }
+              """,
+            """
+              import { Tree, printer, TreePrinters } from "@openrewrite/rewrite";
+
+              async function matches(left: Tree, right: Tree) {
+                  const p = printer("javascript");
+                  const equal = await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(left) === await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(right);
+                  const different = (await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/TreePrinters.print(left)) != (await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(right));
+                  const prefix = (await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(left)).startsWith(await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(right));
+                  const exports = /\\b(module\\.)?exports\\b/.test(await /*~~(Printed LST used for matching. Compare tree structure and types instead of source text.)~~>*/p.print(left));
+                  return equal || different || prefix || exports;
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void printingForFormattingIsIgnored() {
+        rewriteRun(
+          rewriteTypes(),
+          typescript(
+            """
+              import { Tree, printer } from "@openrewrite/rewrite";
+
+              async function formatting(tree: Tree) {
+                  const p = printer("javascript");
+                  const text = await p.print(tree);
+                  const first = (await p.print(tree)).trimStart().charAt(0);
+                  const semi = (await p.print(tree)).trimEnd().endsWith(";");
+                  const newline = (await p.print(tree)).includes("\\n");
+                  const starts = (await p.print(tree)).startsWith("(");
+                  const whitespace = /\\s/gim.test(await p.print(tree));
+                  const identifier = /[a-zA-Z_$]/.test((await p.print(tree)).charAt(0));
+                  const equal = await p.print(tree) === ";";
+                  return text;
+              }
+              """
+          )
+        );
+    }
+
+    private static SourceSpecs rewriteTypes() {
+        return typescript(
+            """
+              declare module "@openrewrite/rewrite" {
+                  export interface Tree {
+                      readonly id: string;
+                  }
+                  export function tree(): Tree;
+                  export interface TreePrinter {
+                      print(tree: Tree): Promise<string>;
+                  }
+                  export function printer(kind: string): TreePrinter;
+                  export class TreePrinters {
+                      static print(tree: Tree): Promise<string>;
+                  }
+              }
+              declare module "@openrewrite/rewrite/javascript" {
+                  import { J } from "@openrewrite/rewrite/java";
+                  export namespace JS {
+                      export interface Binary extends J {}
+                  }
+              }
+              declare module "@openrewrite/rewrite/java" {
+                  import { Tree } from "@openrewrite/rewrite";
+                  export interface J extends Tree {}
+                  export namespace J {
+                      export interface Identifier extends J {
+                          readonly simpleName: string;
+                      }
+                  }
+              }
+              """,
+            spec -> spec.path("rewrite.d.ts")
+          );
     }
 
     @DocumentExample
