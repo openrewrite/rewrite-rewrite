@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.test.RecipeQualityValidation;
+import org.openrewrite.test.RecipeQualityValidation.ParserTypes;
 import org.openrewrite.test.RecipeSpec;
 import org.openrewrite.test.RewriteTest;
 
@@ -162,7 +163,8 @@ class UseMethodMatcherPreconditionsTest implements RewriteTest {
     void findMethodsVisitorToUsesMethod() {
         rewriteRun(
           // the context-free template infers `new UsesMethod<>(..)` without its target type, as `UsesMethod<Object>`
-          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder()
+            .parserTypedTrees(ParserTypes.Erasure).build()),
           java(
             """
               import org.openrewrite.ExecutionContext;
@@ -210,7 +212,8 @@ class UseMethodMatcherPreconditionsTest implements RewriteTest {
     void findMethodsVisitorToUsesMethodWithMatcher() {
         rewriteRun(
           // the context-free template infers `new UsesMethod<>(..)` without its target type, as `UsesMethod<Object>`
-          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder()
+            .parserTypedTrees(ParserTypes.Erasure).build()),
           java(
             """
               import org.openrewrite.ExecutionContext;
