@@ -240,9 +240,7 @@ class FindRecipesTest implements RewriteTest {
                     newArtifactId: poi
                     newVersion: 3.x
               """,
-            spec -> spec.path("rewrite.yml").after(after -> {
-                return assertThat(after).contains("~~>").actual();
-            })
+            spec -> spec.path("rewrite.yml").after(after -> assertThat(after).contains("~~>").actual())
           )
         );
     }
