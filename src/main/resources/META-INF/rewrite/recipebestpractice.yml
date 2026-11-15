@@ -24,6 +24,9 @@ preconditions:
   - org.openrewrite.java.search.DoesNotUseType:
       fullyQualifiedTypeName: com.google.errorprone.refaster.annotation.BeforeTemplate
       includeImplicit: true
+  # ANTLR writes its parsers there, and regenerating them would undo any change
+  - org.openrewrite.FindSourceFiles:
+      filePattern: '!(**/internal/grammar/**)'
 recipeList:
   # Flag ignored return values of Lombok-generated methods, such as unassigned `@With` calls on LST elements
   - org.openrewrite.text.AppendToTextFile:

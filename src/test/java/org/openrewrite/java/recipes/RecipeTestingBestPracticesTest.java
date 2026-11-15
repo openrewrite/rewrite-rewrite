@@ -107,6 +107,26 @@ class RecipeTestingBestPracticesTest implements RewriteTest {
     }
 
     @Test
+    void doNotChangeGeneratedParsers() {
+        rewriteRun(
+          java(
+            """
+              import java.util.ArrayList;
+              import java.util.List;
+
+              public class CobolParser {
+                  List<String> tokens() {
+                      List<String> tokens = new ArrayList<String>();
+                      return tokens;
+                  }
+              }
+              """,
+            spec -> spec.path("src/main/java/org/openrewrite/cobol/internal/grammar/CobolParser.java")
+          )
+        );
+    }
+
+    @Test
     void addCheckReturnValueAnnotationToLombokConfig() {
         rewriteRun(
           text(
