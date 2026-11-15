@@ -56,7 +56,7 @@ public class UseDataTableRowsByClass extends Recipe {
 
     String description = "Replace calls to the deprecated `RecipeRun.getDataTableRows(String)` and `RecipeRun.getDataTableRows(String, String)` " +
             "with their type-safe `getDataTableRows(Class)` and `getDataTableRows(Class, String)` counterparts, " +
-            "where the data table name is a class name literal or `DataTable.class.getName()`.";
+            "where the data table name is a class name literal or the `getName()` of a data table class.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -76,30 +76,27 @@ public class UseDataTableRowsByClass extends Recipe {
                     return mi;
                 }
                 JavaType.FullyQualified classType = ((JavaType.Parameterized) generic.getParameterTypes().get(0)).getType();
-                J.FieldAccess classLiteral = classLiteral(arguments.get(0), classType);
-                if (classLiteral == null) {
+                Expression dataTableClass = dataTableClass(arguments.get(0), classType);
+                if (dataTableClass == null) {
                     return mi;
                 }
-                JavaType row = rowType(classLiteral.getTarget().getType(), byName.getReturnType());
+                JavaType row = rowType(dataTableClass.getType(), byName.getReturnType());
                 JavaType.Method byClass = row == null ? null : instantiate(generic, row);
                 if (byClass == null) {
                     return mi;
                 }
 
-                doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(classLiteral));
+                doAfterVisit(service(ImportService.class).shortenFullyQualifiedTypeReferencesIn(dataTableClass));
                 return mi
                         .withArguments(defaultGroup ?
-                                singletonList(classLiteral) :
-                                ListUtils.mapFirst(arguments, name -> classLiteral))
+                                singletonList(dataTableClass) :
+                                ListUtils.mapFirst(arguments, name -> dataTableClass))
                         .withMethodType(byClass);
             }
 
-            private J.@Nullable FieldAccess classLiteral(Expression name, JavaType.FullyQualified classType) {
+            private @Nullable Expression dataTableClass(Expression name, JavaType.FullyQualified classType) {
                 if (CLASS_GET_NAME.matches(name)) {
-                    Expression select = ((J.MethodInvocation) name).getSelect();
-                    if (select instanceof J.FieldAccess && "class".equals(((J.FieldAccess) select).getSimpleName())) {
-                        return ((J.FieldAccess) select).withPrefix(name.getPrefix());
-                    }
+                    return requireNonNull(((J.MethodInvocation) name).getSelect()).withPrefix(name.getPrefix());
                 } else if (name instanceof J.Literal && ((J.Literal) name).getValue() instanceof String) {
                     String fqn = (String) ((J.Literal) name).getValue();
                     if (TOP_LEVEL_CLASS_NAME.matcher(fqn).matches()) {
@@ -138,13 +135,24 @@ public class UseDataTableRowsByClass extends Recipe {
         return null;
     }
 
-    // Null when the rows go to a list of another type than the data table's, which the call by class wouldn't compile to
-    private static @Nullable JavaType rowType(@Nullable JavaType dataTable, @Nullable JavaType rowsByName) {
+    // Null when the class isn't known to be of a data table, or the rows go to a list of another type than the data
+    // table's, either of which the call by class wouldn't compile with
+    private static @Nullable JavaType rowType(@Nullable JavaType classOfDataTable, @Nullable JavaType rowsByName) {
+        JavaType.Parameterized classOf = TypeUtils.asParameterized(classOfDataTable);
+        if (classOf == null) {
+            return null;
+        }
+        JavaType dataTable = classOf.getTypeParameters().get(0);
+        if (dataTable instanceof JavaType.GenericTypeVariable) {
+            List<JavaType> bounds = ((JavaType.GenericTypeVariable) dataTable).getBounds();
+            dataTable = bounds.size() == 1 ? bounds.get(0) : null;
+        }
         JavaType.Parameterized rows = TypeUtils.asParameterized(rowsByName);
         JavaType inferred = rows == null ? null : rows.getTypeParameters().get(0);
         JavaType.Parameterized dataTableOfRow = Substitutions.asSupertype(dataTable, "org.openrewrite.DataTable");
         if (dataTableOfRow == null) {
-            return inferred;
+            // A class named only in a string isn't among the types of the source file to give its supertypes
+            return dataTable instanceof JavaType.ShallowClass ? inferred : null;
         }
         JavaType declared = dataTableOfRow.getTypeParameters().get(0);
         return inferred == null || TypeUtils.isObject(inferred) || TypeUtils.isOfType(inferred, declared) ? declared : null;

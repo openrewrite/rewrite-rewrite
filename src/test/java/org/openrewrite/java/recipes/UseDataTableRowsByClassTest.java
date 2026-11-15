@@ -130,6 +130,38 @@ class UseDataTableRowsByClassTest implements RewriteTest {
     }
 
     @Test
+    void classVariable() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.RecipeRun;
+              import org.openrewrite.table.SourcesFileResults;
+
+              import java.util.List;
+
+              class Test {
+                  List<SourcesFileResults.Row> rows(RecipeRun run, Class<SourcesFileResults> type) {
+                      return run.getDataTableRows(type.getName());
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.RecipeRun;
+              import org.openrewrite.table.SourcesFileResults;
+
+              import java.util.List;
+
+              class Test {
+                  List<SourcesFileResults.Row> rows(RecipeRun run, Class<SourcesFileResults> type) {
+                      return run.getDataTableRows(type);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void keepGroup() {
         rewriteRun(
           java(
@@ -220,7 +252,9 @@ class UseDataTableRowsByClassTest implements RewriteTest {
               import java.util.List;
 
               class Test {
-                  List<Object> rows(RecipeRun run, String name) {
+                  List<Object> rows(RecipeRun run, String name, Class<?> type, Object table) {
+                      run.getDataTableRows(type.getName());
+                      run.getDataTableRows(table.getClass().getName());
                       run.getDataTableRows("org.openrewrite.Outer$Table");
                       run.getDataTableRows("table");
                       return run.getDataTableRows(name);
