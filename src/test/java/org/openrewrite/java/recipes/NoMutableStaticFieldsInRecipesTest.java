@@ -74,6 +74,35 @@ class NoMutableStaticFieldsInRecipesTest implements RewriteTest {
     }
 
     @Test
+    void retainLazilyAssignedFields() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.Recipe;
+
+              import java.util.HashSet;
+              import java.util.Set;
+
+              public class A extends Recipe {
+                  private static Set<String> cache;
+                  private static int count = 0;
+                  private static int calls = 0;
+
+                  private static synchronized Set<String> cache() {
+                      if (cache == null) {
+                          cache = new HashSet<>();
+                      }
+                      count += 1;
+                      A.calls++;
+                      return cache;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void addFinalEvenWhenWarningsSuppressed() {
         rewriteRun(
           java(
