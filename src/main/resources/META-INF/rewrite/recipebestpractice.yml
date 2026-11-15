@@ -25,11 +25,6 @@ preconditions:
       fullyQualifiedTypeName: com.google.errorprone.refaster.annotation.BeforeTemplate
       includeImplicit: true
 recipeList:
-  # Keep the Develocity build scan configuration consistent across OpenRewrite projects
-  - org.openrewrite.gradle.plugins.SetDevelocityServer:
-      server: "https://community.develocity.cloud/"
-  - org.openrewrite.gradle.plugins.SetDevelocityProjectId:
-      projectId: openrewrite
   # Flag ignored return values of Lombok-generated methods, such as unassigned `@With` calls on LST elements
   - org.openrewrite.text.AppendToTextFile:
       relativeFileName: '{,**/}lombok.config'
