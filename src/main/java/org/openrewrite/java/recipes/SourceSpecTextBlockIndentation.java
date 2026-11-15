@@ -22,6 +22,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.internal.ListUtils;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.Arrays;
@@ -33,7 +34,8 @@ public class SourceSpecTextBlockIndentation extends Recipe {
     final String displayName = "Minimal indentation for `SourceSpecs` text blocks";
 
     @Getter
-    final String description = "Text blocks that assert before and after source code should have minimal indentation.";
+    final String description = "Text blocks that assert before and after source code should have minimal indentation, " +
+            "except for fixed-format languages such as COBOL, assembler and JCL, where the column a line starts in carries meaning.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -43,7 +45,7 @@ public class SourceSpecTextBlockIndentation extends Recipe {
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                 if (method.getMethodType() != null && TypeUtils.isOfClassType(method.getMethodType().getReturnType(),
-                        "org.openrewrite.test.SourceSpecs")) {
+                        "org.openrewrite.test.SourceSpecs") && !isFixedFormat(method.getMethodType().getDeclaringType())) {
                     return method.withArguments(ListUtils.map(method.getArguments(), argument -> {
                         if (TypeUtils.isString(argument.getType()) && argument instanceof J.Literal) {
                             J.Literal source = (J.Literal) argument;
@@ -113,6 +115,12 @@ public class SourceSpecTextBlockIndentation extends Recipe {
                 return super.visitMethodInvocation(method, ctx);
             }
         };
+    }
+
+    // In fixed-format languages such as COBOL, assembler and JCL, the column a line starts in carries meaning
+    private static boolean isFixedFormat(JavaType.FullyQualified declaringType) {
+        String packageName = declaringType.getPackageName();
+        return packageName.startsWith("org.openrewrite.cobol") || packageName.startsWith("org.openrewrite.mainframe");
     }
 
     private static String trimMargin(String value, int margin) {
