@@ -205,6 +205,86 @@ class UseEstimatedEffortPerOccurrenceFieldTest implements RewriteTest {
         }
 
         @Test
+        void returnsWhatAnInstanceFieldHolds() {
+            rewriteRun(
+              java(
+                """
+                  import org.openrewrite.ExecutionContext;
+                  import org.openrewrite.Recipe;
+                  import org.openrewrite.TreeVisitor;
+
+                  import java.time.Duration;
+
+                  public class Delegating extends Recipe {
+                      private final Recipe delegate;
+
+                      Delegating(Recipe delegate) {
+                          this.delegate = delegate;
+                      }
+
+                      @Override
+                      public String getDisplayName() {
+                          return delegate.getDisplayName();
+                      }
+
+                      @Override
+                      public String getDescription() {
+                          return delegate.getDescription();
+                      }
+
+                      @Override
+                      public Duration getEstimatedEffortPerOccurrence() {
+                          return delegate.getEstimatedEffortPerOccurrence();
+                      }
+
+                      @Override
+                      public TreeVisitor<?, ExecutionContext> getVisitor() {
+                          return delegate.getVisitor();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void callsAnInstanceMethod() {
+            rewriteRun(
+              java(
+                """
+                  import org.openrewrite.ExecutionContext;
+                  import org.openrewrite.Recipe;
+                  import org.openrewrite.TreeVisitor;
+
+                  import java.time.Duration;
+
+                  public class Computed extends Recipe {
+                      @Override
+                      public String getDisplayName() {
+                          return "Computed";
+                      }
+
+                      @Override
+                      public String getDescription() {
+                          return "Computed.";
+                      }
+
+                      @Override
+                      public Duration getEstimatedEffortPerOccurrence() {
+                          return Duration.ofMinutes(getRecipeList().size());
+                      }
+
+                      @Override
+                      public TreeVisitor<?, ExecutionContext> getVisitor() {
+                          return TreeVisitor.noop();
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
         void notRecipeClass() {
             rewriteRun(
               java(
