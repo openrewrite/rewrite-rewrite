@@ -46,6 +46,8 @@ import static org.openrewrite.Tree.randomId;
 public class UseDataTableRowsByClass extends Recipe {
 
     private static final MethodMatcher GET_ROWS_BY_NAME = new MethodMatcher("org.openrewrite.RecipeRun getDataTableRows(java.lang.String, ..)");
+    private static final MethodMatcher GET_ROWS_BY_CLASS = new MethodMatcher("org.openrewrite.RecipeRun getDataTableRows(java.lang.Class)");
+    private static final MethodMatcher GET_ROWS_BY_CLASS_AND_GROUP = new MethodMatcher("org.openrewrite.RecipeRun getDataTableRows(java.lang.Class, java.lang.String)");
     private static final MethodMatcher CLASS_GET_NAME = new MethodMatcher("java.lang.Class getName()");
     // Leaves out nested classes, named with a `$`, whose class literal would need their outer class
     private static final Pattern TOP_LEVEL_CLASS_NAME = Pattern.compile("(\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*\\.)+\\p{javaJavaIdentifierStart}[\\p{javaJavaIdentifierPart}&&[^$]]*");
@@ -68,7 +70,8 @@ public class UseDataTableRowsByClass extends Recipe {
                 JavaType.Method byName = requireNonNull(mi.getMethodType());
                 List<Expression> arguments = mi.getArguments();
                 boolean defaultGroup = arguments.size() == 2 && J.Literal.isLiteralValue(arguments.get(1), null);
-                JavaType.Method generic = overloadTakingClass(byName.getDeclaringType(), defaultGroup ? 1 : arguments.size());
+                JavaType.Method generic = overloadTakingClass(byName.getDeclaringType(),
+                        defaultGroup || arguments.size() == 1 ? GET_ROWS_BY_CLASS : GET_ROWS_BY_CLASS_AND_GROUP);
                 if (generic == null) {
                     return mi;
                 }
@@ -126,11 +129,9 @@ public class UseDataTableRowsByClass extends Recipe {
         });
     }
 
-    private static JavaType.@Nullable Method overloadTakingClass(JavaType.FullyQualified recipeRun, int parameterCount) {
+    private static JavaType.@Nullable Method overloadTakingClass(JavaType.FullyQualified recipeRun, MethodMatcher overload) {
         for (JavaType.Method method : recipeRun.getMethods()) {
-            if ("getDataTableRows".equals(method.getName()) &&
-                method.getParameterTypes().size() == parameterCount &&
-                TypeUtils.isOfClassType(method.getParameterTypes().get(0), "java.lang.Class")) {
+            if (overload.matches(method)) {
                 return method;
             }
         }
