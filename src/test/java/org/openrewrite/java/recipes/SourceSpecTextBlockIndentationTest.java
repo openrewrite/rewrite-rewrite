@@ -111,4 +111,42 @@ class SourceSpecTextBlockIndentationTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void keepColumnsOfFixedFormatSources() {
+        rewriteRun(
+          java(
+            """
+              package org.openrewrite.mainframe.assembler;
+
+              import org.openrewrite.test.SourceSpecs;
+
+              public class Assertions {
+                  public static SourceSpecs assembler(String before) {
+                      return SourceSpecs.text(before);
+                  }
+              }
+              """
+          ),
+          java(
+            """
+              import org.openrewrite.test.RewriteTest;
+              import static org.openrewrite.mainframe.assembler.Assertions.assembler;
+
+              class MyRecipeTest implements RewriteTest {
+                  void test() {
+                    rewriteRun(
+                       assembler(
+                         \"""
+                                  SR    15,15                   ZERO R15 BEFORE RETURN
+                                  BR    14
+                         \"""
+                       )
+                    );
+                  }
+              }
+              """
+          )
+        );
+    }
 }

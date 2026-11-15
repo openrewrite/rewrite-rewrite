@@ -231,6 +231,38 @@ class SelectRecipeExamplesTest implements RewriteTest {
     }
 
     @Test
+    void skipTestsThatOnlyAssertOnParsedSources() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              package org.openrewrite.java.cleanup;
+
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RewriteTest;
+
+              import static org.junit.jupiter.api.Assertions.assertEquals;
+              import static org.openrewrite.java.Assertions.java;
+
+              class ParserTest implements RewriteTest {
+                  @Test
+                  void test1() {
+                      rewriteRun(
+                        java(
+                          \"""
+                            class A {}
+                            \""",
+                          spec -> spec.afterRecipe(cu -> assertEquals("A", "A"))
+                        )
+                      );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void skipIssueAnnotatedTests() {
         rewriteRun(
           //language=java

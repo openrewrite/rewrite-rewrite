@@ -46,6 +46,7 @@ public class SelectRecipeExamples extends Recipe {
             new MethodMatcher("org.openrewrite.test.RewriteTest rewriteRun(..)");
 
     private static final String REWRITE_TEST_FQN = "org.openrewrite.test.RewriteTest";
+    private static final String SOURCE_SPECS_FQN = "org.openrewrite.test.SourceSpecs";
 
     @Getter
     final String displayName = "Automatically select recipe examples from the unit test cases of a recipe";
@@ -122,6 +123,8 @@ public class SelectRecipeExamples extends Recipe {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean isGood) {
                         if (!isGood.get() &&
+                                method.getMethodType() != null &&
+                                TypeUtils.isOfClassType(method.getMethodType().getReturnType(), SOURCE_SPECS_FQN) &&
                                 method.getArguments().size() > 1 &&
                                 isStringLiteral(method.getArguments().get(0)) &&
                                 isStringLiteral(method.getArguments().get(1))) {
