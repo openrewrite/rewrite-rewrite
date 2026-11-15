@@ -22,6 +22,7 @@ import org.openrewrite.ExecutionContext;
 import org.openrewrite.Preconditions;
 import org.openrewrite.Recipe;
 import org.openrewrite.TreeVisitor;
+import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.JavaParser;
 import org.openrewrite.java.JavaTemplate;
 import org.openrewrite.java.JavaVisitor;
@@ -29,11 +30,14 @@ import org.openrewrite.java.MethodMatcher;
 import org.openrewrite.java.search.DeclaresType;
 import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.Expression;
+import org.openrewrite.java.tree.Flag;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Value
 @EqualsAndHashCode(callSuper = false)
@@ -42,7 +46,8 @@ public class UseEstimatedEffortPerOccurrenceField extends Recipe {
     private static final MethodMatcher GET_ESTIMATED_EFFORT_MATCHER = new MethodMatcher(RECIPE + " getEstimatedEffortPerOccurrence()", true);
 
     String displayName = "Replace `getEstimatedEffortPerOccurrence()` method with field";
-    String description = "Recipe classes that return a simple expression from `getEstimatedEffortPerOccurrence()` can use a Lombok annotated field instead.";
+    String description = "Recipe classes that return a simple expression from `getEstimatedEffortPerOccurrence()` can use a Lombok annotated field instead, " +
+            "as long as that expression does not read instance state the field initializer would see before the constructor assigns it.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -104,10 +109,35 @@ public class UseEstimatedEffortPerOccurrenceField extends Recipe {
                         if (!(stmt instanceof J.Return)) {
                             return null;
                         }
-                        J.Return returnStmt = (J.Return) stmt;
-                        return returnStmt.getExpression();
+                        Expression expr = ((J.Return) stmt).getExpression();
+                        return expr == null || readsInstanceState(expr) ? null : expr;
                     }
                 }
         );
+    }
+
+    // A field initializer runs before the constructor body, so it cannot see what the constructor assigns
+    private static boolean readsInstanceState(Expression expr) {
+        return new JavaIsoVisitor<AtomicBoolean>() {
+            @Override
+            public J.Identifier visitIdentifier(J.Identifier ident, AtomicBoolean reads) {
+                JavaType.Variable fieldType = ident.getFieldType();
+                if ("this".equals(ident.getSimpleName()) || "super".equals(ident.getSimpleName()) ||
+                        fieldType != null && fieldType.getOwner() instanceof JavaType.FullyQualified &&
+                                !fieldType.hasFlags(Flag.Static)) {
+                    reads.set(true);
+                }
+                return ident;
+            }
+
+            @Override
+            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean reads) {
+                if (method.getSelect() == null &&
+                        (method.getMethodType() == null || !method.getMethodType().hasFlags(Flag.Static))) {
+                    reads.set(true);
+                }
+                return super.visitMethodInvocation(method, reads);
+            }
+        }.reduce(expr, new AtomicBoolean()).get();
     }
 }
