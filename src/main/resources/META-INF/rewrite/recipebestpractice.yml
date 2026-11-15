@@ -31,6 +31,7 @@ recipeList:
       content: lombok.checkReturnValueAnnotation += lombok
       existingFileStrategy: Merge
   - org.openrewrite.recipes.rewrite.InlineMethods
+  - org.openrewrite.java.recipes.UseDataTableRowsByClass
   # Visitors walking the tree must not be shared, as source files can be visited concurrently
   - org.openrewrite.java.recipes.FindSharedVisitorInstances
   # Printing LST elements with `toString()` loses the cursor and the source language's printer
