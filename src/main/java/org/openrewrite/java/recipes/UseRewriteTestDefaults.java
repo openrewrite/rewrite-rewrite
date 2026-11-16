@@ -211,7 +211,10 @@ public class UseRewriteTestDefaults extends Recipe {
             }
 
             private J.MethodInvocation withoutSpec(J.MethodInvocation rewriteRun) {
-                J.MethodInvocation mi = rewriteRun.withArguments(ListUtils.mapFirst(rewriteRun.getArguments(), firstArg -> null));
+                Space specPrefix = rewriteRun.getArguments().get(0).getPrefix();
+                J.MethodInvocation mi = rewriteRun.withArguments(ListUtils.mapFirst(
+                        ListUtils.mapFirst(rewriteRun.getArguments(), spec -> null),
+                        next -> next.getPrefix().getWhitespace().contains("\n") ? next : next.withPrefix(specPrefix)));
                 JavaType.Method type = mi.getMethodType();
                 if (type == null) {
                     return mi;
@@ -310,7 +313,7 @@ public class UseRewriteTestDefaults extends Recipe {
                                 }
                                 return statement;
                             }));
-                            return newBlock.getStatements().isEmpty() ? null : newBlock;
+                            return newBlock == block || !newBlock.getStatements().isEmpty() ? newBlock : null;
                         }
                         if (lambdaBody instanceof J.MethodInvocation) {
                             Expression call = chainWithoutRecipe((J.MethodInvocation) lambdaBody);

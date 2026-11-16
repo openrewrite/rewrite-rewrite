@@ -219,6 +219,48 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     }
 
     @Test
+    void removeRepeatedRecipeOnTheSameLineAsSources() {
+        rewriteRun(
+          java(
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(new org.openrewrite.java.recipes.FindRecipes());
+                  }
+
+                  @Test
+                  void test1() {
+                      rewriteRun(spec -> spec.recipe(new org.openrewrite.java.recipes.FindRecipes()), org.openrewrite.test.SourceSpecs.text("a"));
+                  }
+              }
+              """,
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(new org.openrewrite.java.recipes.FindRecipes());
+                  }
+
+                  @Test
+                  void test1() {
+                      rewriteRun(org.openrewrite.test.SourceSpecs.text("a"));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void keepOtherConfigurationAlongsideRepeatedRecipe() {
         rewriteRun(
           java(
@@ -890,6 +932,31 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
                                   org.openrewrite.test.SourceSpecs.text("a")
                               );
                           }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void keepEmptySpec() {
+            rewriteRun(
+              java(
+                """
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+                  import org.openrewrite.test.SourceSpecs;
+
+                  interface MyTest extends RewriteTest {
+                      @Override
+                      default void defaults(RecipeSpec spec) {
+                          spec.recipe(new org.openrewrite.java.recipes.FindRecipes());
+                      }
+
+                      default void run(SourceSpecs... sourceSpecs) {
+                          rewriteRun(spec -> {
+                          }, sourceSpecs);
                       }
                   }
                   """
