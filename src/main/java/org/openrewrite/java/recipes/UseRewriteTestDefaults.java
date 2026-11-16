@@ -28,10 +28,16 @@ import org.openrewrite.java.search.SemanticallyEqual;
 import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
+import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.JavaType;
+import org.openrewrite.java.tree.Space;
+import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static java.util.Objects.requireNonNull;
 
 public class UseRewriteTestDefaults extends Recipe {
 
@@ -40,7 +46,12 @@ public class UseRewriteTestDefaults extends Recipe {
 
     @Getter
     final String description = "When all `rewriteRun` methods in a test class use the same RecipeSpec configuration, " +
-            "refactor to use the `defaults` method instead.";
+            "refactor to use the `defaults` method instead. When the class already has a `defaults` method, " +
+            "remove a test's `spec.recipe(..)` when `defaults` already sets that same recipe.";
+
+    private static final MethodMatcher RECIPE = new MethodMatcher("org.openrewrite.test.RecipeSpec recipe(..)");
+    private static final MethodMatcher RECIPES = new MethodMatcher("org.openrewrite.test.RecipeSpec recipes(..)");
+    private static final MethodMatcher RECIPE_FROM = new MethodMatcher("org.openrewrite.test.RecipeSpec recipeFrom*(..)");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -54,12 +65,15 @@ public class UseRewriteTestDefaults extends Recipe {
                     return cd;
                 }
 
-                boolean hasDefaultsMethod = cd.getBody().getStatements().stream()
+                J.MethodDeclaration defaults = cd.getBody().getStatements().stream()
                         .filter(J.MethodDeclaration.class::isInstance)
                         .map(J.MethodDeclaration.class::cast)
-                        .anyMatch(md -> "defaults".equals(md.getSimpleName()));
-                if (hasDefaultsMethod) {
-                    return cd;
+                        .filter(md -> "defaults".equals(md.getSimpleName()))
+                        .findFirst()
+                        .orElse(null);
+                if (defaults != null) {
+                    J.MethodInvocation defaultRecipe = recipeSetByDefaults(defaults);
+                    return defaultRecipe == null ? cd : removeRepeatedRecipe(cd, defaultRecipe, ctx);
                 }
 
                 List<RecipeSpecInfo> specInfos = collectRecipeSpecs(cd);
@@ -186,11 +200,142 @@ public class UseRewriteTestDefaults extends Recipe {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-                        if (rewriteRunMatcher.matches(mi)) {
-                            return mi.withArguments(ListUtils.mapFirst(mi.getArguments(),
-                                    firstArg -> firstArg instanceof J.Lambda || firstArg instanceof J.MemberReference ? null : firstArg));
+                        if (rewriteRunMatcher.matches(mi) && !mi.getArguments().isEmpty() &&
+                            (mi.getArguments().get(0) instanceof J.Lambda || mi.getArguments().get(0) instanceof J.MemberReference)) {
+                            return withoutSpec(mi);
                         }
                         return mi;
+                    }
+                }.visitNonNull(cd.getBody(), ctx);
+                return cd.withBody(body);
+            }
+
+            private J.MethodInvocation withoutSpec(J.MethodInvocation rewriteRun) {
+                Space specPrefix = rewriteRun.getArguments().get(0).getPrefix();
+                J.MethodInvocation mi = rewriteRun.withArguments(ListUtils.mapFirst(
+                        ListUtils.mapFirst(rewriteRun.getArguments(), spec -> null),
+                        next -> next.getPrefix().getWhitespace().contains("\n") ? next : next.withPrefix(specPrefix)));
+                JavaType.Method type = mi.getMethodType();
+                if (type == null) {
+                    return mi;
+                }
+                List<JavaType> parameterTypes = type.getParameterTypes().subList(1, type.getParameterTypes().size());
+                for (JavaType.Method overload : type.getDeclaringType().getMethods()) {
+                    if (overload.getName().equals(type.getName()) && sameTypes(overload.getParameterTypes(), parameterTypes)) {
+                        return mi.withMethodType(overload).withName(mi.getName().withType(overload));
+                    }
+                }
+                return mi;
+            }
+
+            private boolean sameTypes(List<JavaType> a, List<JavaType> b) {
+                if (a.size() != b.size()) {
+                    return false;
+                }
+                for (int i = 0; i < a.size(); i++) {
+                    if (!TypeUtils.isOfType(a.get(i), b.get(i))) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            private J.@Nullable MethodInvocation recipeSetByDefaults(J.MethodDeclaration defaults) {
+                if (defaults.getBody() == null) {
+                    return null;
+                }
+                List<J.MethodInvocation> recipeSetters = new JavaIsoVisitor<List<J.MethodInvocation>>() {
+                    @Override
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, List<J.MethodInvocation> setters) {
+                        if (isRecipeSetter(method)) {
+                            setters.add(method);
+                        }
+                        return super.visitMethodInvocation(method, setters);
+                    }
+                }.reduce(defaults.getBody(), new ArrayList<>());
+                if (recipeSetters.size() != 1) {
+                    return null;
+                }
+                J.MethodInvocation recipeSetter = recipeSetters.get(0);
+                // a recipe set conditionally may not be the one a test runs with
+                for (Statement statement : defaults.getBody().getStatements()) {
+                    for (Expression e = statement instanceof J.MethodInvocation ? (J.MethodInvocation) statement : null;
+                         e instanceof J.MethodInvocation; e = ((J.MethodInvocation) e).getSelect()) {
+                        if (e == recipeSetter) {
+                            return recipeSetter;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            private boolean isRecipeSetter(J.MethodInvocation method) {
+                return RECIPE.matches(method) || RECIPES.matches(method) || RECIPE_FROM.matches(method);
+            }
+
+            private J.ClassDeclaration removeRepeatedRecipe(J.ClassDeclaration cd, J.MethodInvocation defaultRecipe, ExecutionContext ctx) {
+                J.Block body = (J.Block) new JavaIsoVisitor<ExecutionContext>() {
+                    @Override
+                    public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
+                        return classDecl; // Ignore nested classes
+                    }
+
+                    @Override
+                    public J.NewClass visitNewClass(J.NewClass newClass, ExecutionContext ctx) {
+                        return newClass; // Ignore nested classes
+                    }
+
+                    @Override
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                        J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
+                        if (!rewriteRunMatcher.matches(mi) || mi.getArguments().size() < 2 ||
+                            !(mi.getArguments().get(0) instanceof J.Lambda)) {
+                            return mi;
+                        }
+                        J.Lambda lambda = (J.Lambda) mi.getArguments().get(0);
+                        J withoutRecipe = lambdaBodyWithoutRecipe(lambda.getBody());
+                        if (withoutRecipe == lambda.getBody()) {
+                            return mi;
+                        }
+                        if (withoutRecipe == null) {
+                            return withoutSpec(mi);
+                        }
+                        return mi.withArguments(ListUtils.mapFirst(mi.getArguments(), firstArg -> lambda.withBody(withoutRecipe)));
+                    }
+
+                    private @Nullable J lambdaBodyWithoutRecipe(J lambdaBody) {
+                        if (lambdaBody instanceof J.Block) {
+                            J.Block block = (J.Block) lambdaBody;
+                            J.Block newBlock = block.withStatements(ListUtils.map(block.getStatements(), statement -> {
+                                if (statement instanceof J.MethodInvocation) {
+                                    Expression call = chainWithoutRecipe((J.MethodInvocation) statement);
+                                    return call instanceof J.MethodInvocation ? (J.MethodInvocation) call : null;
+                                }
+                                return statement;
+                            }));
+                            return newBlock == block || !newBlock.getStatements().isEmpty() ? newBlock : null;
+                        }
+                        if (lambdaBody instanceof J.MethodInvocation) {
+                            Expression call = chainWithoutRecipe((J.MethodInvocation) lambdaBody);
+                            return call instanceof J.MethodInvocation ? call : null;
+                        }
+                        return lambdaBody;
+                    }
+
+                    private Expression chainWithoutRecipe(Expression expression) {
+                        if (!(expression instanceof J.MethodInvocation) || ((J.MethodInvocation) expression).getSelect() == null) {
+                            return expression;
+                        }
+                        J.MethodInvocation mi = (J.MethodInvocation) expression;
+                        Expression select = chainWithoutRecipe(requireNonNull(mi.getSelect()));
+                        if (SemanticallyEqual.areEqual(mi.withSelect(null), defaultRecipe.withSelect(null))) {
+                            return select.withPrefix(mi.getPrefix());
+                        }
+                        if (select == mi.getSelect()) {
+                            return mi;
+                        }
+                        JRightPadded<Expression> paddedSelect = requireNonNull(mi.getPadding().getSelect()).withElement(select);
+                        return mi.getPadding().withSelect(select instanceof J.MethodInvocation ? paddedSelect : paddedSelect.withAfter(Space.EMPTY));
                     }
                 }.visitNonNull(cd.getBody(), ctx);
                 return cd.withBody(body);
