@@ -15,6 +15,7 @@
  */
 package org.openrewrite.java.recipes;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.openrewrite.DocumentExample;
 import org.openrewrite.java.JavaParser;
@@ -90,58 +91,6 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     }
 
     @Test
-    void shouldNotRefactorWhenOnlyOneTest() {
-        rewriteRun(
-          java(
-            """
-              import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RewriteTest;
-
-              class MyTest implements RewriteTest {
-                  @Test
-                  void test1() {
-                      rewriteRun(
-                          spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
-                          org.openrewrite.java.Assertions.java("class A {}", "class A {}")
-                      );
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void shouldNotRefactorWhenTestsUseDifferentRecipes() {
-        rewriteRun(
-          java(
-            """
-              import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RewriteTest;
-
-              class MyTest implements RewriteTest {
-                  @Test
-                  void test1() {
-                      rewriteRun(
-                          spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
-                          org.openrewrite.java.Assertions.java("class A {}", "class A {}")
-                      );
-                  }
-
-                  @Test
-                  void test2() {
-                      rewriteRun(
-                          spec -> spec.recipe(new org.openrewrite.java.recipes.FindRecipes()),
-                          org.openrewrite.java.Assertions.java("class B {}", "class B {}")
-                      );
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
     void shouldHandleComplexRecipeSpec() {
         rewriteRun(
           java(
@@ -197,72 +146,6 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
                   @Test
                   void test2() {
                       rewriteRun(
-                          org.openrewrite.java.Assertions.java("class B {}", "class B {}")
-                      );
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void shouldNotRefactorWhenSomeTestsHaveDifferentSpecs() {
-        rewriteRun(
-          java(
-            """
-              import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RewriteTest;
-
-              class MyTest implements RewriteTest {
-                  @Test
-                  void test1() {
-                      rewriteRun(
-                          spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
-                          org.openrewrite.java.Assertions.java("class A {}", "class A {}")
-                      );
-                  }
-
-                  @Test
-                  void test2() {
-                      rewriteRun(
-                          spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()).expectedCyclesThatMakeChanges(2),
-                          org.openrewrite.java.Assertions.java("class B {}", "class B {}")
-                      );
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void shouldNotRefactorWhenDefaultsAlreadyExists() {
-        rewriteRun(
-          java(
-            """
-              import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RecipeSpec;
-              import org.openrewrite.test.RewriteTest;
-
-              class MyTest implements RewriteTest {
-                  @Override
-                  public void defaults(RecipeSpec spec) {
-                      spec.recipe(new org.openrewrite.java.recipes.FindRecipes());
-                  }
-
-                  @Test
-                  void test1() {
-                      rewriteRun(
-                          spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
-                          org.openrewrite.java.Assertions.java("class A {}", "class A {}")
-                      );
-                  }
-
-                  @Test
-                  void test2() {
-                      rewriteRun(
-                          spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
                           org.openrewrite.java.Assertions.java("class B {}", "class B {}")
                       );
                   }
@@ -353,7 +236,8 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
                   @Test
                   void recipeFirst() {
                       rewriteRun(
-                          spec -> spec.recipe(new org.openrewrite.java.recipes.FindRecipes()).expectedCyclesThatMakeChanges(1),
+                          spec -> spec.recipe(new org.openrewrite.java.recipes.FindRecipes())
+                              .expectedCyclesThatMakeChanges(1),
                           org.openrewrite.test.SourceSpecs.text("a")
                       );
                   }
@@ -478,68 +362,6 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
                       rewriteRun(
                           spec -> spec.recipeFromResources("org.openrewrite.java.recipes.RecipeNullabilityBestPractices"),
                           org.openrewrite.test.SourceSpecs.text("b")
-                      );
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void keepRecipeWhenDefaultsMaySetAnother() {
-        rewriteRun(
-          java(
-            """
-              import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RecipeSpec;
-              import org.openrewrite.test.RewriteTest;
-
-              class MyTest implements RewriteTest {
-                  boolean other;
-
-                  @Override
-                  public void defaults(RecipeSpec spec) {
-                      spec.recipe(new org.openrewrite.java.recipes.FindRecipes());
-                      if (other) {
-                          spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample());
-                      }
-                  }
-
-                  @Test
-                  void test1() {
-                      rewriteRun(
-                          spec -> spec.recipe(new org.openrewrite.java.recipes.FindRecipes()),
-                          org.openrewrite.test.SourceSpecs.text("a")
-                      );
-                  }
-              }
-              """
-          )
-        );
-    }
-
-    @Test
-    void shouldHandleTestsWithNoRecipeSpec() {
-        rewriteRun(
-          java(
-            """
-              import org.junit.jupiter.api.Test;
-              import org.openrewrite.test.RewriteTest;
-
-              class MyTest implements RewriteTest {
-                  @Test
-                  void test1() {
-                      rewriteRun(
-                          org.openrewrite.java.Assertions.java("class A {}", "class A {}")
-                      );
-                  }
-
-                  @Test
-                  void test2() {
-                      rewriteRun(
-                          spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
-                          org.openrewrite.java.Assertions.java("class B {}", "class B {}")
                       );
                   }
               }
@@ -859,5 +681,245 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
               """
           )
         );
+    }
+
+    @Nested
+    class NoChange {
+        @Test
+        void shouldNotRefactorWhenOnlyOneTest() {
+            rewriteRun(
+              java(
+                """
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.test.RewriteTest;
+
+                  class MyTest implements RewriteTest {
+                      @Test
+                      void test1() {
+                          rewriteRun(
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                              org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+                          );
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void shouldNotRefactorWhenTestsUseDifferentRecipes() {
+            rewriteRun(
+              java(
+                """
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.test.RewriteTest;
+
+                  class MyTest implements RewriteTest {
+                      @Test
+                      void test1() {
+                          rewriteRun(
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                              org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+                          );
+                      }
+
+                      @Test
+                      void test2() {
+                          rewriteRun(
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.FindRecipes()),
+                              org.openrewrite.java.Assertions.java("class B {}", "class B {}")
+                          );
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void shouldNotRefactorWhenSomeTestsHaveDifferentSpecs() {
+            rewriteRun(
+              java(
+                """
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.test.RewriteTest;
+
+                  class MyTest implements RewriteTest {
+                      @Test
+                      void test1() {
+                          rewriteRun(
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                              org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+                          );
+                      }
+
+                      @Test
+                      void test2() {
+                          rewriteRun(
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()).expectedCyclesThatMakeChanges(2),
+                              org.openrewrite.java.Assertions.java("class B {}", "class B {}")
+                          );
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void shouldNotRefactorWhenDefaultsAlreadyExists() {
+            rewriteRun(
+              java(
+                """
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  class MyTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new org.openrewrite.java.recipes.FindRecipes());
+                      }
+
+                      @Test
+                      void test1() {
+                          rewriteRun(
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                              org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+                          );
+                      }
+
+                      @Test
+                      void test2() {
+                          rewriteRun(
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                              org.openrewrite.java.Assertions.java("class B {}", "class B {}")
+                          );
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void shouldHandleTestsWithNoRecipeSpec() {
+            rewriteRun(
+              java(
+                """
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.test.RewriteTest;
+
+                  class MyTest implements RewriteTest {
+                      @Test
+                      void test1() {
+                          rewriteRun(
+                              org.openrewrite.java.Assertions.java("class A {}", "class A {}")
+                          );
+                      }
+
+                      @Test
+                      void test2() {
+                          rewriteRun(
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample()),
+                              org.openrewrite.java.Assertions.java("class B {}", "class B {}")
+                          );
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void keepRecipeWhenDefaultsMaySetAnother() {
+            rewriteRun(
+              java(
+                """
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  class MyTest implements RewriteTest {
+                      boolean other;
+
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new org.openrewrite.java.recipes.FindRecipes());
+                          if (other) {
+                              spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample());
+                          }
+                      }
+
+                      @Test
+                      void test1() {
+                          rewriteRun(
+                              spec -> spec.recipe(new org.openrewrite.java.recipes.FindRecipes()),
+                              org.openrewrite.test.SourceSpecs.text("a")
+                          );
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void keepRecipeInNestedClassWithoutDefaults() {
+            rewriteRun(
+              java(
+                """
+                  import org.junit.jupiter.api.Nested;
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  class MyTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new org.openrewrite.java.recipes.FindRecipes());
+                      }
+
+                      @Nested
+                      class Inner implements RewriteTest {
+                          @Test
+                          void test1() {
+                              rewriteRun(
+                                  spec -> spec.recipe(new org.openrewrite.java.recipes.FindRecipes()),
+                                  org.openrewrite.test.SourceSpecs.text("a")
+                              );
+                          }
+                      }
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void keepSpecThatIsTheOnlyArgument() {
+            rewriteRun(
+              java(
+                """
+                  import org.junit.jupiter.api.Test;
+                  import org.openrewrite.test.RecipeSpec;
+                  import org.openrewrite.test.RewriteTest;
+
+                  class MyTest implements RewriteTest {
+                      @Override
+                      public void defaults(RecipeSpec spec) {
+                          spec.recipe(new org.openrewrite.java.recipes.FindRecipes());
+                      }
+
+                      @Test
+                      void test1() {
+                          rewriteRun(spec -> spec.recipe(new org.openrewrite.java.recipes.FindRecipes()));
+                      }
+                  }
+                  """
+              )
+            );
+        }
     }
 }
