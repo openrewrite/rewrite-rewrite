@@ -278,6 +278,222 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     }
 
     @Test
+    void removeRecipeThatDefaultsAlreadySets() {
+        rewriteRun(
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
+          java(
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(new org.openrewrite.text.ChangeText("changed"));
+                  }
+
+                  @Test
+                  void same() {
+                      rewriteRun(
+                          spec -> spec.recipe(new org.openrewrite.text.ChangeText("changed")),
+                          org.openrewrite.test.SourceSpecs.text("before", "changed")
+                      );
+                  }
+
+                  @Test
+                  void otherOption() {
+                      rewriteRun(
+                          spec -> spec.recipe(new org.openrewrite.text.ChangeText("other")),
+                          org.openrewrite.test.SourceSpecs.text("before", "other")
+                      );
+                  }
+              }
+              """,
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(new org.openrewrite.text.ChangeText("changed"));
+                  }
+
+                  @Test
+                  void same() {
+                      rewriteRun(
+                          org.openrewrite.test.SourceSpecs.text("before", "changed")
+                      );
+                  }
+
+                  @Test
+                  void otherOption() {
+                      rewriteRun(
+                          spec -> spec.recipe(new org.openrewrite.text.ChangeText("other")),
+                          org.openrewrite.test.SourceSpecs.text("before", "other")
+                      );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepOtherConfigurationAlongsideRepeatedRecipe() {
+        rewriteRun(
+          java(
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(new org.openrewrite.java.recipes.FindRecipes()).cycles(1);
+                  }
+
+                  @Test
+                  void recipeFirst() {
+                      rewriteRun(
+                          spec -> spec.recipe(new org.openrewrite.java.recipes.FindRecipes()).expectedCyclesThatMakeChanges(1),
+                          org.openrewrite.test.SourceSpecs.text("a")
+                      );
+                  }
+
+                  @Test
+                  void recipeLast() {
+                      rewriteRun(
+                          spec -> spec.expectedCyclesThatMakeChanges(1)
+                              .recipe(new org.openrewrite.java.recipes.FindRecipes()),
+                          org.openrewrite.test.SourceSpecs.text("b")
+                      );
+                  }
+
+                  @Test
+                  void block() {
+                      rewriteRun(
+                          spec -> {
+                              spec.recipe(new org.openrewrite.java.recipes.FindRecipes());
+                              spec.expectedCyclesThatMakeChanges(1);
+                          },
+                          org.openrewrite.test.SourceSpecs.text("c")
+                      );
+                  }
+              }
+              """,
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(new org.openrewrite.java.recipes.FindRecipes()).cycles(1);
+                  }
+
+                  @Test
+                  void recipeFirst() {
+                      rewriteRun(
+                          spec -> spec.expectedCyclesThatMakeChanges(1),
+                          org.openrewrite.test.SourceSpecs.text("a")
+                      );
+                  }
+
+                  @Test
+                  void recipeLast() {
+                      rewriteRun(
+                          spec -> spec.expectedCyclesThatMakeChanges(1),
+                          org.openrewrite.test.SourceSpecs.text("b")
+                      );
+                  }
+
+                  @Test
+                  void block() {
+                      rewriteRun(
+                          spec -> {
+                              spec.expectedCyclesThatMakeChanges(1);
+                          },
+                          org.openrewrite.test.SourceSpecs.text("c")
+                      );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void removeRepeatedDeclarativeRecipe() {
+        rewriteRun(
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
+          java(
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipeFromResources("org.openrewrite.java.recipes.RecipeTestingBestPractices");
+                  }
+
+                  @Test
+                  void same() {
+                      rewriteRun(
+                          spec -> {
+                              spec.recipeFromResources("org.openrewrite.java.recipes.RecipeTestingBestPractices");
+                          },
+                          org.openrewrite.test.SourceSpecs.text("a")
+                      );
+                  }
+
+                  @Test
+                  void other() {
+                      rewriteRun(
+                          spec -> spec.recipeFromResources("org.openrewrite.java.recipes.RecipeNullabilityBestPractices"),
+                          org.openrewrite.test.SourceSpecs.text("b")
+                      );
+                  }
+              }
+              """,
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyTest implements RewriteTest {
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipeFromResources("org.openrewrite.java.recipes.RecipeTestingBestPractices");
+                  }
+
+                  @Test
+                  void same() {
+                      rewriteRun(
+                          org.openrewrite.test.SourceSpecs.text("a")
+                      );
+                  }
+
+                  @Test
+                  void other() {
+                      rewriteRun(
+                          spec -> spec.recipeFromResources("org.openrewrite.java.recipes.RecipeNullabilityBestPractices"),
+                          org.openrewrite.test.SourceSpecs.text("b")
+                      );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void shouldHandleTestsWithNoRecipeSpec() {
         rewriteRun(
           java(
