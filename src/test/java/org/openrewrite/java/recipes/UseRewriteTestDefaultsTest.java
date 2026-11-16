@@ -494,6 +494,39 @@ class UseRewriteTestDefaultsTest implements RewriteTest {
     }
 
     @Test
+    void keepRecipeWhenDefaultsMaySetAnother() {
+        rewriteRun(
+          java(
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RecipeSpec;
+              import org.openrewrite.test.RewriteTest;
+
+              class MyTest implements RewriteTest {
+                  boolean other;
+
+                  @Override
+                  public void defaults(RecipeSpec spec) {
+                      spec.recipe(new org.openrewrite.java.recipes.FindRecipes());
+                      if (other) {
+                          spec.recipe(new org.openrewrite.java.recipes.MissingOptionExample());
+                      }
+                  }
+
+                  @Test
+                  void test1() {
+                      rewriteRun(
+                          spec -> spec.recipe(new org.openrewrite.java.recipes.FindRecipes()),
+                          org.openrewrite.test.SourceSpecs.text("a")
+                      );
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void shouldHandleTestsWithNoRecipeSpec() {
         rewriteRun(
           java(

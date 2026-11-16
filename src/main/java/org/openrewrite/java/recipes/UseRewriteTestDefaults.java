@@ -211,16 +211,29 @@ public class UseRewriteTestDefaults extends Recipe {
                 if (defaults.getBody() == null) {
                     return null;
                 }
-                List<J.MethodInvocation> recipeSetters = new ArrayList<>();
+                List<J.MethodInvocation> recipeSetters = new JavaIsoVisitor<List<J.MethodInvocation>>() {
+                    @Override
+                    public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, List<J.MethodInvocation> setters) {
+                        if (isRecipeSetter(method)) {
+                            setters.add(method);
+                        }
+                        return super.visitMethodInvocation(method, setters);
+                    }
+                }.reduce(defaults.getBody(), new ArrayList<>());
+                if (recipeSetters.size() != 1) {
+                    return null;
+                }
+                J.MethodInvocation recipeSetter = recipeSetters.get(0);
+                // a recipe set conditionally may not be the one a test runs with
                 for (Statement statement : defaults.getBody().getStatements()) {
                     for (Expression e = statement instanceof J.MethodInvocation ? (J.MethodInvocation) statement : null;
                          e instanceof J.MethodInvocation; e = ((J.MethodInvocation) e).getSelect()) {
-                        if (isRecipeSetter((J.MethodInvocation) e)) {
-                            recipeSetters.add((J.MethodInvocation) e);
+                        if (e == recipeSetter) {
+                            return recipeSetter;
                         }
                     }
                 }
-                return recipeSetters.size() == 1 ? recipeSetters.get(0) : null;
+                return null;
             }
 
             private boolean isRecipeSetter(J.MethodInvocation method) {
