@@ -29,6 +29,7 @@ import org.openrewrite.java.search.UsesType;
 import org.openrewrite.java.tree.Expression;
 import org.openrewrite.java.tree.J;
 import org.openrewrite.java.tree.JRightPadded;
+import org.openrewrite.java.tree.JavaType;
 import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
@@ -199,14 +200,41 @@ public class UseRewriteTestDefaults extends Recipe {
                     @Override
                     public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                         J.MethodInvocation mi = super.visitMethodInvocation(method, ctx);
-                        if (rewriteRunMatcher.matches(mi)) {
-                            return mi.withArguments(ListUtils.mapFirst(mi.getArguments(),
-                                    firstArg -> firstArg instanceof J.Lambda || firstArg instanceof J.MemberReference ? null : firstArg));
+                        if (rewriteRunMatcher.matches(mi) && !mi.getArguments().isEmpty() &&
+                            (mi.getArguments().get(0) instanceof J.Lambda || mi.getArguments().get(0) instanceof J.MemberReference)) {
+                            return withoutSpec(mi);
                         }
                         return mi;
                     }
                 }.visitNonNull(cd.getBody(), ctx);
                 return cd.withBody(body);
+            }
+
+            private J.MethodInvocation withoutSpec(J.MethodInvocation rewriteRun) {
+                J.MethodInvocation mi = rewriteRun.withArguments(ListUtils.mapFirst(rewriteRun.getArguments(), firstArg -> null));
+                JavaType.Method type = mi.getMethodType();
+                if (type == null) {
+                    return mi;
+                }
+                List<JavaType> parameterTypes = type.getParameterTypes().subList(1, type.getParameterTypes().size());
+                for (JavaType.Method overload : type.getDeclaringType().getMethods()) {
+                    if (overload.getName().equals(type.getName()) && sameTypes(overload.getParameterTypes(), parameterTypes)) {
+                        return mi.withMethodType(overload).withName(mi.getName().withType(overload));
+                    }
+                }
+                return mi;
+            }
+
+            private boolean sameTypes(List<JavaType> a, List<JavaType> b) {
+                if (a.size() != b.size()) {
+                    return false;
+                }
+                for (int i = 0; i < a.size(); i++) {
+                    if (!TypeUtils.isOfType(a.get(i), b.get(i))) {
+                        return false;
+                    }
+                }
+                return true;
             }
 
             private J.@Nullable MethodInvocation recipeSetByDefaults(J.MethodDeclaration defaults) {
@@ -267,7 +295,7 @@ public class UseRewriteTestDefaults extends Recipe {
                             return mi;
                         }
                         if (withoutRecipe == null) {
-                            return mi.withArguments(ListUtils.mapFirst(mi.getArguments(), firstArg -> null));
+                            return withoutSpec(mi);
                         }
                         return mi.withArguments(ListUtils.mapFirst(mi.getArguments(), firstArg -> lambda.withBody(withoutRecipe)));
                     }
