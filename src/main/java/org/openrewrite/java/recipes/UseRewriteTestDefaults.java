@@ -33,7 +33,8 @@ import org.openrewrite.java.tree.Space;
 import org.openrewrite.java.tree.Statement;
 import org.openrewrite.java.tree.TypeUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
@@ -47,8 +48,9 @@ public class UseRewriteTestDefaults extends Recipe {
             "refactor to use the `defaults` method instead. When the class already has a `defaults` method, " +
             "remove the recipe that a test sets when `defaults` already sets that same recipe.";
 
-    private static final Set<String> RECIPE_SETTERS = new HashSet<>(Arrays.asList(
-            "recipe", "recipes", "recipeFromYaml", "recipeFromResource", "recipeFromResources"));
+    private static final MethodMatcher RECIPE = new MethodMatcher("org.openrewrite.test.RecipeSpec recipe(..)");
+    private static final MethodMatcher RECIPES = new MethodMatcher("org.openrewrite.test.RecipeSpec recipes(..)");
+    private static final MethodMatcher RECIPE_FROM = new MethodMatcher("org.openrewrite.test.RecipeSpec recipeFrom*(..)");
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -237,22 +239,7 @@ public class UseRewriteTestDefaults extends Recipe {
             }
 
             private boolean isRecipeSetter(J.MethodInvocation method) {
-                return RECIPE_SETTERS.contains(method.getSimpleName()) &&
-                       method.getMethodType() != null &&
-                       TypeUtils.isOfClassType(method.getMethodType().getDeclaringType(), "org.openrewrite.test.RecipeSpec");
-            }
-
-            private boolean sameRecipe(J.MethodInvocation setter, J.MethodInvocation defaultRecipe) {
-                if (!setter.getSimpleName().equals(defaultRecipe.getSimpleName()) ||
-                    setter.getArguments().size() != defaultRecipe.getArguments().size()) {
-                    return false;
-                }
-                for (int i = 0; i < setter.getArguments().size(); i++) {
-                    if (!SemanticallyEqual.areEqual(setter.getArguments().get(i), defaultRecipe.getArguments().get(i))) {
-                        return false;
-                    }
-                }
-                return true;
+                return RECIPE.matches(method) || RECIPES.matches(method) || RECIPE_FROM.matches(method);
             }
 
             private J.ClassDeclaration removeRepeatedRecipe(J.ClassDeclaration cd, J.MethodInvocation defaultRecipe, ExecutionContext ctx) {
@@ -310,7 +297,7 @@ public class UseRewriteTestDefaults extends Recipe {
                         }
                         J.MethodInvocation mi = (J.MethodInvocation) expression;
                         Expression select = chainWithoutRecipe(requireNonNull(mi.getSelect()));
-                        if (isRecipeSetter(mi) && sameRecipe(mi, defaultRecipe)) {
+                        if (SemanticallyEqual.areEqual(mi.withSelect(null), defaultRecipe.withSelect(null))) {
                             return select.withPrefix(mi.getPrefix());
                         }
                         if (select == mi.getSelect()) {
