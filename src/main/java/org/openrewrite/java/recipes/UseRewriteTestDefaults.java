@@ -47,7 +47,7 @@ public class UseRewriteTestDefaults extends Recipe {
     @Getter
     final String description = "When all `rewriteRun` methods in a test class use the same RecipeSpec configuration, " +
             "refactor to use the `defaults` method instead. When the class already has a `defaults` method, " +
-            "remove the recipe that a test sets when `defaults` already sets that same recipe.";
+            "remove a test's `spec.recipe(..)` when `defaults` already sets that same recipe.";
 
     private static final MethodMatcher RECIPE = new MethodMatcher("org.openrewrite.test.RecipeSpec recipe(..)");
     private static final MethodMatcher RECIPES = new MethodMatcher("org.openrewrite.test.RecipeSpec recipes(..)");
