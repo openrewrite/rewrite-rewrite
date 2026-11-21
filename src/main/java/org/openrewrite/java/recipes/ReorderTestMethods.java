@@ -23,6 +23,7 @@ import org.openrewrite.TreeVisitor;
 import org.openrewrite.java.AnnotationMatcher;
 import org.openrewrite.java.JavaIsoVisitor;
 import org.openrewrite.java.search.UsesType;
+import org.openrewrite.java.service.AnnotationService;
 import org.openrewrite.java.tree.J;
 
 import java.util.Comparator;
@@ -56,6 +57,9 @@ public class ReorderTestMethods extends Recipe {
             @Override
             public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
                 J.ClassDeclaration cd = super.visitClassDeclaration(classDecl, ctx);
+                if (!declaresDocumentExample(cd)) {
+                    return cd;
+                }
 
                 return cd.withBody(cd.getBody().withStatements(
                         cd.getBody().getStatements().stream().sorted((left, right) ->
@@ -64,6 +68,12 @@ public class ReorderTestMethods extends Recipe {
                             left instanceof J.MethodDeclaration && right instanceof J.MethodDeclaration ?
                                     isHelperMethod((J.MethodDeclaration) left) || isHelperMethod((J.MethodDeclaration) right) ?
                                             0 : methodDeclarationComparator.compare((J.MethodDeclaration) left, (J.MethodDeclaration) right) : 0).collect(toList())));
+            }
+
+            boolean declaresDocumentExample(J.ClassDeclaration cd) {
+                AnnotationService annotationService = service(AnnotationService.class);
+                return cd.getBody().getStatements().stream().anyMatch(s -> s instanceof J.MethodDeclaration &&
+                        annotationService.isAnnotatedWith(s, DOCUMENT_EXAMPLE_ANNOTATION_FQN));
             }
 
             boolean isHelperMethod(J.MethodDeclaration md) {

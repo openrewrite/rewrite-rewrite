@@ -197,4 +197,56 @@ class ReorderTestMethodsTest implements RewriteTest {
           )
         );
     }
+
+    @Test
+    void doNotReorderNestedClassesWithoutDocumentExample() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.DocumentExample;
+              import org.openrewrite.test.RewriteTest;
+
+              class SomeTest implements RewriteTest {
+
+                  @DocumentExample
+                  @Test
+                  void first() {
+                  }
+
+                  static class Analysis extends Base {
+
+                      public Analysis(String name) {
+                          super(name);
+                      }
+
+                      @Override
+                      protected String initial() {
+                          return "";
+                      }
+
+                      private String transfer(String in) {
+                          return in;
+                      }
+
+                      @Override
+                      protected String merge(String left, String right) {
+                          return left + right;
+                      }
+                  }
+
+                  static abstract class Base {
+                      Base(String name) {
+                      }
+
+                      protected abstract String initial();
+
+                      protected abstract String merge(String left, String right);
+                  }
+              }
+              """
+          )
+        );
+    }
 }
