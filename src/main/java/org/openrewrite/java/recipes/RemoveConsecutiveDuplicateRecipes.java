@@ -32,8 +32,10 @@ public class RemoveConsecutiveDuplicateRecipes extends Recipe {
 
     @Getter
     final String description = "Remove an entry from the `recipeList` or `preconditions` of a declarative YAML recipe " +
-            "when it repeats the entry right before it, with the same recipe name and options, as running it twice in a row has no effect. " +
-            "Duplicates further apart are kept, as the recipes in between can produce new matches for the repeated recipe.";
+            "when it repeats the entry right before it, with the same recipe name and options. " +
+            "Duplicates further apart are kept, as the recipes in between can produce new matches for the repeated recipe. " +
+            "A run of duplicates with a comment above or between its entries is kept as well, as some recipes act on their own " +
+            "output, and a repeated pass of those is a documented choice rather than an oversight.";
 
     @Override
     public TreeVisitor<?, ExecutionContext> getVisitor() {
@@ -66,9 +68,27 @@ public class RemoveConsecutiveDuplicateRecipes extends Recipe {
             }
 
             private boolean isRepeatedByNext(List<Yaml.Sequence.Entry> recipes, int i) {
-                return i + 1 < recipes.size() &&
-                        !recipes.get(i + 1).getPrefix().contains("#") &&
-                        recipes.get(i).getBlock().print(getCursor()).trim().equals(recipes.get(i + 1).getBlock().print(getCursor()).trim());
+                if (i + 1 >= recipes.size() || !isSameRecipe(recipes, i, i + 1)) {
+                    return false;
+                }
+                int first = i;
+                while (first > 0 && isSameRecipe(recipes, first - 1, first)) {
+                    first--;
+                }
+                int last = i + 1;
+                while (last + 1 < recipes.size() && isSameRecipe(recipes, last, last + 1)) {
+                    last++;
+                }
+                for (int j = first; j <= last; j++) {
+                    if (recipes.get(j).getPrefix().contains("#")) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            private boolean isSameRecipe(List<Yaml.Sequence.Entry> recipes, int i, int j) {
+                return recipes.get(i).getBlock().print(getCursor()).trim().equals(recipes.get(j).getBlock().print(getCursor()).trim());
             }
         };
     }

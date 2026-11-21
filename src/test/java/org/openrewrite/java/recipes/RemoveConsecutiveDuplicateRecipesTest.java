@@ -194,6 +194,26 @@ class RemoveConsecutiveDuplicateRecipesTest implements RewriteTest {
         }
 
         @Test
+        void repeatedPassesExplainedByCommentAbove() {
+            rewriteRun(
+              yaml(
+                """
+                  type: specs.openrewrite.org/v1beta/recipe
+                  name: com.example.MyRecipe
+                  recipeList:
+                    - org.openrewrite.java.OrderImports
+
+                    # Each pass migrates the matchers that the pass before it unwrapped from matchers nesting them
+                    - org.openrewrite.java.testing.hamcrest.MigrateHamcrestMatchersToAssertJ
+                    - org.openrewrite.java.testing.hamcrest.MigrateHamcrestMatchersToAssertJ
+                    - org.openrewrite.java.testing.hamcrest.MigrateHamcrestMatchersToAssertJ
+                    - org.openrewrite.java.RemoveUnusedImports
+                  """
+              )
+            );
+        }
+
+        @Test
         void notRecipeDocument() {
             rewriteRun(
               yaml(
