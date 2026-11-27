@@ -338,6 +338,82 @@ class UseVisitWithParentCursorTest implements RewriteTest {
     }
 
     @Test
+    void doNotAddCastForUnbracedStatementInvocation() {
+        rewriteRun(
+          // the recipe types the `visit` call as the `visitXxx` method it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              class A extends JavaIsoVisitor<ExecutionContext> {
+                  @Override
+                  public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
+                      if (mi.getSelect() != null)
+                          new JavaIsoVisitor<Integer>() {
+                          }.visitMethodInvocation(mi, 0);
+                      return mi;
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              class A extends JavaIsoVisitor<ExecutionContext> {
+                  @Override
+                  public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
+                      if (mi.getSelect() != null)
+                          new JavaIsoVisitor<Integer>() {
+                          }.visit(mi, 0, getCursor().getParentTreeCursor());
+                      return mi;
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotAddCastWhenAlreadyCastThroughParentheses() {
+        rewriteRun(
+          // the recipe types the `visit` call as the `visitXxx` method it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              class A extends JavaIsoVisitor<ExecutionContext> {
+                  @Override
+                  public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
+                      return (J.MethodInvocation) (new JavaIsoVisitor<Integer>() {
+                      }.visitMethodInvocation(mi, 0));
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              class A extends JavaIsoVisitor<ExecutionContext> {
+                  @Override
+                  public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
+                      return (J.MethodInvocation) (new JavaIsoVisitor<Integer>() {
+                      }.visit(mi, 0, getCursor().getParentTreeCursor()));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotChangeSuperCall() {
         rewriteRun(
           java(
@@ -350,6 +426,33 @@ class UseVisitWithParentCursorTest implements RewriteTest {
                   @Override
                   public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
                       return super.visitMethodInvocation(method, ctx);
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void doNotChangeQualifiedSuperCall() {
+        rewriteRun(
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.java.JavaVisitor;
+              import org.openrewrite.java.tree.J;
+
+              class SomeJavaVisitor extends JavaVisitor<ExecutionContext> {
+                  @Override
+                  public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                      Runnable r = new Runnable() {
+                          @Override
+                          public void run() {
+                              SomeJavaVisitor.super.visitMethodInvocation(method, ctx);
+                          }
+                      };
+                      r.run();
+                      return method;
                   }
               }
               """
