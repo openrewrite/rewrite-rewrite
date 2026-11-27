@@ -103,11 +103,10 @@ public class UseVisitWithParentCursor extends Recipe {
                         if (select == null) {
                             return mi; // Unqualified call = implicit this
                         }
-                        if (select instanceof J.Identifier) {
-                            String name = ((J.Identifier) select).getSimpleName();
-                            if ("super".equals(name) || "this".equals(name)) {
-                                return mi;
-                            }
+                        String selectName = select instanceof J.Identifier ? ((J.Identifier) select).getSimpleName() :
+                                select instanceof J.FieldAccess ? ((J.FieldAccess) select).getSimpleName() : null;
+                        if ("super".equals(selectName) || "this".equals(selectName)) {
+                            return mi;
                         }
 
                         // Must be inside a TreeVisitor so getCursor() is available
@@ -118,14 +117,14 @@ public class UseVisitWithParentCursor extends Recipe {
                         // Determine if the called method is iso-style (return type matches first param type)
                         // and needs a cast since visit() returns Tree. Skip the cast when the parent
                         // is already a cast, or when the invocation's return value is discarded (i.e. it
-                        // is a standalone statement in a block) - a cast expression would not be a valid
+                        // is a standalone statement) - a cast expression would not be a valid
                         // Java statement in that position.
-                        Object parent = getCursor().getParentTreeCursor().getValue();
+                        Object parent = getCursor().dropParentUntil(p -> p instanceof J && !(p instanceof J.Parentheses)).getValue();
                         JavaType returnType = mi.getMethodType().getReturnType();
                         boolean needsCast = TypeUtils.isOfType(returnType, firstParamType) &&
                                 returnType instanceof JavaType.FullyQualified &&
                                 !(parent instanceof J.TypeCast) &&
-                                !(parent instanceof J.Block);
+                                !isStatementPosition(parent, method);
 
                         String templateStr;
                         String castTypeImport = null;
@@ -164,20 +163,44 @@ public class UseVisitWithParentCursor extends Recipe {
                                     .withName("visit")
                                     .withParameterNames(ListUtils.concat(originalMt.getParameterNames(), "parent"))
                                     .withParameterTypes(ListUtils.concat(originalMt.getParameterTypes(), cursorType));
-                            J.MethodInvocation visitMi;
-                            if (result instanceof J.TypeCast) {
-                                visitMi = (J.MethodInvocation) ((J.TypeCast) result).getExpression();
-                                visitMi = visitMi.withMethodType(visitMt)
-                                        .withName(visitMi.getName().withType(visitMt));
-                                return ((J.TypeCast) result).withExpression(visitMi);
-                            }
-                            visitMi = (J.MethodInvocation) result;
-                            return visitMi.withMethodType(visitMt)
-                                    .withName(visitMi.getName().withType(visitMt));
+                            return withVisitMethodType(result, visitMt);
                         }
                         return result;
                     }
                 }
         );
+    }
+
+    private static boolean isStatementPosition(Object parent, J.MethodInvocation method) {
+        if (parent instanceof J.Case) {
+            return ((J.Case) parent).getStatements().contains(method);
+        }
+        return parent instanceof J.Block ||
+                parent instanceof J.If ||
+                parent instanceof J.If.Else ||
+                parent instanceof J.WhileLoop ||
+                parent instanceof J.DoWhileLoop ||
+                parent instanceof J.ForLoop ||
+                parent instanceof J.ForLoop.Control ||
+                parent instanceof J.ForEachLoop ||
+                parent instanceof J.Label;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static J withVisitMethodType(J j, JavaType.Method visitMt) {
+        if (j instanceof J.Parentheses) {
+            J.Parentheses<J> parens = (J.Parentheses<J>) j;
+            return parens.withTree(withVisitMethodType(parens.getTree(), visitMt));
+        }
+        if (j instanceof J.TypeCast) {
+            J.TypeCast cast = (J.TypeCast) j;
+            return cast.withExpression((Expression) withVisitMethodType(cast.getExpression(), visitMt));
+        }
+        if (j instanceof J.MethodInvocation) {
+            J.MethodInvocation visitMi = (J.MethodInvocation) j;
+            return visitMi.withMethodType(visitMt)
+                    .withName(visitMi.getName().withType(visitMt));
+        }
+        return j;
     }
 }
