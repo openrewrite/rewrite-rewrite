@@ -238,6 +238,42 @@ class UseVisitWithParentCursorTest implements RewriteTest {
     }
 
     @Test
+    void addParenthesizedCastWhenResultIsMethodSelect() {
+        rewriteRun(
+          // the recipe types the `visit` call as the `visitXxx` method it replaces
+          spec -> spec.recipeQualityValidation(RecipeQualityValidation.builder().parserTypedTrees(false).build()),
+          java(
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              class A extends JavaIsoVisitor<ExecutionContext> {
+                  @Override
+                  public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
+                      return new JavaIsoVisitor<Integer>() {
+                      }.visitMethodInvocation(mi, 0).withPrefix(mi.getPrefix());
+                  }
+              }
+              """,
+            """
+              import org.openrewrite.ExecutionContext;
+              import org.openrewrite.java.JavaIsoVisitor;
+              import org.openrewrite.java.tree.J;
+
+              class A extends JavaIsoVisitor<ExecutionContext> {
+                  @Override
+                  public J.MethodInvocation visitMethodInvocation(J.MethodInvocation mi, ExecutionContext ctx) {
+                      return ((J.MethodInvocation) new JavaIsoVisitor<Integer>() {
+                      }.visit(mi, 0, getCursor().getParentTreeCursor())).withPrefix(mi.getPrefix());
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void doNotAddCastForStandaloneStatementInvocation() {
         // When the invocation's return value is discarded (statement-expression context),
         // adding a cast would produce `(Type) foo.visit(...);` which is not a valid Java

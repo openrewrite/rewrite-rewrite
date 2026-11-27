@@ -164,20 +164,29 @@ public class UseVisitWithParentCursor extends Recipe {
                                     .withName("visit")
                                     .withParameterNames(ListUtils.concat(originalMt.getParameterNames(), "parent"))
                                     .withParameterTypes(ListUtils.concat(originalMt.getParameterTypes(), cursorType));
-                            J.MethodInvocation visitMi;
-                            if (result instanceof J.TypeCast) {
-                                visitMi = (J.MethodInvocation) ((J.TypeCast) result).getExpression();
-                                visitMi = visitMi.withMethodType(visitMt)
-                                        .withName(visitMi.getName().withType(visitMt));
-                                return ((J.TypeCast) result).withExpression(visitMi);
-                            }
-                            visitMi = (J.MethodInvocation) result;
-                            return visitMi.withMethodType(visitMt)
-                                    .withName(visitMi.getName().withType(visitMt));
+                            return withVisitMethodType(result, visitMt);
                         }
                         return result;
                     }
                 }
         );
+    }
+
+    @SuppressWarnings("unchecked")
+    private static J withVisitMethodType(J j, JavaType.Method visitMt) {
+        if (j instanceof J.Parentheses) {
+            J.Parentheses<J> parens = (J.Parentheses<J>) j;
+            return parens.withTree(withVisitMethodType(parens.getTree(), visitMt));
+        }
+        if (j instanceof J.TypeCast) {
+            J.TypeCast cast = (J.TypeCast) j;
+            return cast.withExpression((Expression) withVisitMethodType(cast.getExpression(), visitMt));
+        }
+        if (j instanceof J.MethodInvocation) {
+            J.MethodInvocation visitMi = (J.MethodInvocation) j;
+            return visitMi.withMethodType(visitMt)
+                    .withName(visitMi.getName().withType(visitMt));
+        }
+        return j;
     }
 }
