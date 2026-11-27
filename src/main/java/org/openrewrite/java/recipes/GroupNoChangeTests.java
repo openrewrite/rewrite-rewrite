@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.newSetFromMap;
 
 public class GroupNoChangeTests extends Recipe {
 
@@ -49,9 +48,11 @@ public class GroupNoChangeTests extends Recipe {
 
     private static final Set<String> CHANGE_ASSERTIONS = new HashSet<>(asList(
             "after", "afterRecipe", "dataTable", "dataTableAsCsv", "expectedCyclesThatMakeChanges"));
+    private static final Set<String> OBJECT_METHODS = new HashSet<>(asList(
+            "getClass", "toString", "hashCode", "equals", "clone", "finalize", "notify", "notifyAll", "wait"));
 
     private static final Pattern CHANGE_SUGGESTING_NAME = Pattern.compile(
-            "^(add|change|convert|delete|fix|insert|migrate|move|remove|rename|replace|simplify|update|upgrade|use)(e?s)?([A-Z_0-9].*)?$");
+            "^(add|change|convert|delete|fix|insert|migrate|move|remove|rename|replace|simplif(?:y|ie)|update|upgrade|use)(e?s)?([A-Z_0-9].*)?$");
     private static final Pattern NO_CHANGE_SUGGESTING_NAME = Pattern.compile(
             "(^|[a-z0-9_])(Not|No|Nothing|Never|Dont|Doesnt|Keep|Keeps|Retain|Retains|Preserve|Preserves|Ignore|Ignores|Ignored|" +
             "Skip|Skips|Skipped|Leave|Leaves|Unchanged|Already|Noop|Untouched)([A-Z_0-9]|$)|" +
@@ -63,7 +64,7 @@ public class GroupNoChangeTests extends Recipe {
 
     @Getter
     final String description = "Moves `RewriteTest` methods that only assert a recipe makes no changes into a " +
-            "`@Nested class NoChange`, placed after the last test that does expect a change. " +
+            "`@Nested class NoChange`, placed after the tests that stay in the class. " +
             "Only applies when at least three such tests sit next to at least one test that expects a change, " +
             "or when a `NoChange` class already exists, " +
             "and leaves test classes that already group tests by topic in other nested classes alone.";
@@ -72,8 +73,8 @@ public class GroupNoChangeTests extends Recipe {
     public TreeVisitor<?, ExecutionContext> getVisitor() {
         return Preconditions.check(
                 Preconditions.and(
-                        new UsesMethod<>(REWRITE_RUN),
-                        new UsesType<>("org.junit.jupiter.api.Test", false)),
+                        new UsesType<>("org.junit.jupiter.api.Test", false),
+                        new UsesMethod<>(REWRITE_RUN)),
                 new JavaIsoVisitor<ExecutionContext>() {
                     @Override
                     public J.ClassDeclaration visitClassDeclaration(J.ClassDeclaration classDecl, ExecutionContext ctx) {
@@ -102,7 +103,7 @@ public class GroupNoChangeTests extends Recipe {
                         List<J.MethodDeclaration> toMove = new ArrayList<>();
                         int changeTests = 0;
                         for (Statement statement : classDecl.getBody().getStatements()) {
-                            if (statement instanceof J.MethodDeclaration && isTest((J.MethodDeclaration) statement)) {
+                            if (isTest(statement)) {
                                 J.MethodDeclaration test = (J.MethodDeclaration) statement;
                                 Expectation expectation = expectation(test);
                                 if (expectation == Expectation.CHANGE) {
@@ -112,31 +113,42 @@ public class GroupNoChangeTests extends Recipe {
                                 }
                             }
                         }
-                        if (changeTests == 0 || toMove.isEmpty() || existingNoChange == null && toMove.size() < 3) {
+                        if (changeTests == 0 || !enoughToMove(toMove, existingNoChange)) {
+                            return classDecl;
+                        }
+                        Map<String, Integer> methodNameCounts = new HashMap<>();
+                        countMethodNames(classDecl, methodNameCounts);
+                        if (existingNoChange != null) {
+                            countMethodNames(existingNoChange, methodNameCounts);
+                        }
+                        toMove.removeIf(test -> methodNameCounts.get(test.getSimpleName()) > 1 || dependsOnItsPlace(test));
+                        if (!enoughToMove(toMove, existingNoChange)) {
                             return classDecl;
                         }
 
                         String indent = detectIndent(classDecl);
-                        Set<Statement> moved = newSetFromMap(new IdentityHashMap<>());
-                        moved.addAll(toMove);
-                        List<Statement> remaining = ListUtils.filter(classDecl.getBody().getStatements(), s -> !moved.contains(s));
+                        String memberIndent = classDecl.getPrefix().getIndent() + indent;
+                        List<Statement> remaining = ListUtils.filter(classDecl.getBody().getStatements(), s -> !toMove.contains(s));
                         if (existingNoChange != null) {
                             J.ClassDeclaration noChange = existingNoChange;
-                            J.ClassDeclaration merged = noChange.withBody(noChange.getBody().withStatements(
-                                    ListUtils.concatAll(noChange.getBody().getStatements(), moveInto(noChange, toMove, indent, ctx))));
+                            J.Block body = noChange.getBody();
+                            if (!body.getEnd().getWhitespace().contains("\n")) {
+                                body = body.withEnd(Space.format("\n" + memberIndent));
+                            }
+                            J.ClassDeclaration merged = noChange.withBody(body.withStatements(
+                                    ListUtils.concatAll(body.getStatements(), moveInto(noChange, toMove, indent, ctx))));
                             return classDecl.withBody(classDecl.getBody().withStatements(
                                     ListUtils.map(remaining, s -> s == noChange ? merged : s)));
                         }
 
                         maybeAddImport(NESTED_FQN);
-                        J.ClassDeclaration noChange = createNoChangeClass(classDecl, indent);
-                        String testIndent = classDecl.getPrefix().getIndent() + indent + indent;
+                        J.ClassDeclaration noChange = createNoChangeClass(classDecl, memberIndent);
                         noChange = noChange.withBody(noChange.getBody().withStatements(ListUtils.mapFirst(
                                 moveInto(noChange, toMove, indent, ctx),
-                                first -> first.withPrefix(first.getPrefix().withWhitespace("\n\n" + testIndent)))));
+                                first -> first.withPrefix(first.getPrefix().withWhitespace("\n\n" + memberIndent + indent)))));
                         int insertAt = 0;
                         for (int i = 0; i < remaining.size(); i++) {
-                            if (remaining.get(i) instanceof J.MethodDeclaration && isTest((J.MethodDeclaration) remaining.get(i))) {
+                            if (isTest(remaining.get(i))) {
                                 insertAt = i + 1;
                             }
                         }
@@ -152,7 +164,7 @@ public class GroupNoChangeTests extends Recipe {
                         return moved;
                     }
 
-                    private J.ClassDeclaration createNoChangeClass(J.ClassDeclaration outer, String indent) {
+                    private J.ClassDeclaration createNoChangeClass(J.ClassDeclaration outer, String memberIndent) {
                         J.ClassDeclaration withNoChange = JavaTemplate.builder("@Nested\nclass " + NESTED_CLASS_NAME + " {\n}")
                                 .contextSensitive()
                                 .imports(NESTED_FQN)
@@ -163,7 +175,6 @@ public class GroupNoChangeTests extends Recipe {
                                         outer.getBody().getCoordinates().lastStatement());
                         List<Statement> statements = withNoChange.getBody().getStatements();
                         J.ClassDeclaration noChange = (J.ClassDeclaration) statements.get(statements.size() - 1);
-                        String memberIndent = outer.getPrefix().getIndent() + indent;
                         J.ClassDeclaration.Kind kind = noChange.getPadding().getKind();
                         return noChange.getPadding().withKind(kind.withPrefix(Space.format("\n" + memberIndent)))
                                 .withPrefix(Space.format("\n\n" + memberIndent))
@@ -185,8 +196,22 @@ public class GroupNoChangeTests extends Recipe {
         return classDecl.getLeadingAnnotations().stream().anyMatch(NESTED::matches);
     }
 
-    private static boolean isTest(J.MethodDeclaration method) {
-        return method.getLeadingAnnotations().stream().anyMatch(a -> TEST.matches(a) || PARAMETERIZED_TEST.matches(a));
+    // A moved test would shadow every same-named method of the outer class, and clash with one in `NoChange`
+    private static void countMethodNames(J.ClassDeclaration classDecl, Map<String, Integer> counts) {
+        for (Statement statement : classDecl.getBody().getStatements()) {
+            if (statement instanceof J.MethodDeclaration) {
+                counts.merge(((J.MethodDeclaration) statement).getSimpleName(), 1, Integer::sum);
+            }
+        }
+    }
+
+    private static boolean enoughToMove(List<J.MethodDeclaration> toMove, J.@Nullable ClassDeclaration existingNoChange) {
+        return toMove.size() >= (existingNoChange == null ? 3 : 1);
+    }
+
+    private static boolean isTest(Statement statement) {
+        return statement instanceof J.MethodDeclaration && ((J.MethodDeclaration) statement).getLeadingAnnotations().stream()
+                .anyMatch(a -> TEST.matches(a) || PARAMETERIZED_TEST.matches(a));
     }
 
     private static boolean isMovable(J.MethodDeclaration test) {
@@ -195,9 +220,6 @@ public class GroupNoChangeTests extends Recipe {
                 ENABLED_IF.matches(annotation) || DISABLED_IF.matches(annotation)) {
                 return false;
             }
-        }
-        if (referencesEnclosingInstance(test)) {
-            return false;
         }
         String name = test.getSimpleName();
         return NO_CHANGE_SUGGESTING_NAME.matcher(name).find() || !CHANGE_SUGGESTING_NAME.matcher(name).matches();
@@ -226,9 +248,6 @@ public class GroupNoChangeTests extends Recipe {
                 }
             }
         }
-        if (expectation == Expectation.NO_CHANGE && callsChangeAssertion(test)) {
-            return Expectation.UNKNOWN;
-        }
         return expectation;
     }
 
@@ -237,18 +256,20 @@ public class GroupNoChangeTests extends Recipe {
             return Expectation.UNKNOWN;
         }
         J.MethodInvocation invocation = (J.MethodInvocation) sourceSpecs;
-        if (invocation.getMethodType() == null ||
-            !TypeUtils.isAssignableTo(SOURCE_SPECS_FQN, invocation.getMethodType().getReturnType()) ||
-            !isSourceSpecFactory(invocation.getMethodType().getDeclaringType())) {
+        JavaType.Method methodType = invocation.getMethodType();
+        if (methodType == null ||
+            !TypeUtils.isAssignableTo(SOURCE_SPECS_FQN, methodType.getReturnType()) ||
+            !isSourceSpecFactory(methodType.getDeclaringType()) ||
+            methodType.getParameterTypes().isEmpty()) {
             return Expectation.UNKNOWN;
         }
 
-        List<JavaType> parameterTypes = invocation.getMethodType().getParameterTypes();
+        List<JavaType> parameterTypes = methodType.getParameterTypes();
         Expectation nested = null;
         int strings = 0;
         for (int i = 0; i < invocation.getArguments().size(); i++) {
             Expression argument = invocation.getArguments().get(i);
-            if (argument instanceof J.Empty || parameterTypes.isEmpty()) {
+            if (argument instanceof J.Empty) {
                 continue;
             }
             JavaType parameterType = parameterTypes.get(Math.min(i, parameterTypes.size() - 1));
@@ -276,9 +297,15 @@ public class GroupNoChangeTests extends Recipe {
         return fqn.endsWith(".Assertions") || fqn.startsWith("org.openrewrite.test.");
     }
 
-    // Inside the nested class `this`, `super` and `getClass()` would refer to the nested class instead
-    private static boolean referencesEnclosingInstance(J.MethodDeclaration test) {
+    // A change assertion means the test may expect a change after all, while inside the nested class `this`, `super`
+    // and unqualified `Object` methods would refer to the nested class instead
+    private static boolean dependsOnItsPlace(J.MethodDeclaration test) {
         return new JavaIsoVisitor<AtomicBoolean>() {
+            @Override
+            public @Nullable J visit(@Nullable Tree tree, AtomicBoolean found) {
+                return found.get() ? (J) tree : super.visit(tree, found);
+            }
+
             @Override
             public J.Identifier visitIdentifier(J.Identifier identifier, AtomicBoolean found) {
                 if ("this".equals(identifier.getSimpleName()) || "super".equals(identifier.getSimpleName())) {
@@ -289,25 +316,14 @@ public class GroupNoChangeTests extends Recipe {
 
             @Override
             public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean found) {
-                if (method.getSelect() == null && "getClass".equals(method.getSimpleName())) {
-                    found.set(true);
-                }
-                return super.visitMethodInvocation(method, found);
-            }
-        }.reduce(test.getBody(), new AtomicBoolean()).get();
-    }
-
-    private static boolean callsChangeAssertion(J.MethodDeclaration test) {
-        return new JavaIsoVisitor<AtomicBoolean>() {
-            @Override
-            public J.MethodInvocation visitMethodInvocation(J.MethodInvocation method, AtomicBoolean found) {
-                if (CHANGE_ASSERTIONS.contains(method.getSimpleName())) {
+                if (CHANGE_ASSERTIONS.contains(method.getSimpleName()) ||
+                    method.getSelect() == null && OBJECT_METHODS.contains(method.getSimpleName())) {
                     found.set(true);
                     return method;
                 }
                 return super.visitMethodInvocation(method, found);
             }
-        }.reduce(test, new AtomicBoolean()).get();
+        }.reduce(test.getBody(), new AtomicBoolean()).get();
     }
 
     // The styles autodetected for some repositories report an indent size that does not match their test classes,
@@ -367,23 +383,14 @@ public class GroupNoChangeTests extends Recipe {
 
     // Blank lines stay as they are, so that text block values remain the same, but the indent before a token is shifted
     private static String indentLines(String text, String indent) {
-        if (text.indexOf('\n') < 0) {
-            return text;
-        }
-        StringBuilder sb = new StringBuilder(text.length() + indent.length() * 4);
-        int lineStart = 0;
-        for (int i = 0; i <= text.length(); i++) {
-            if (i == text.length() || text.charAt(i) == '\n') {
-                String line = text.substring(lineStart, i);
-                if (lineStart > 0 && (i == text.length() || !StringUtils.isBlank(line))) {
-                    sb.append(indent);
-                }
-                sb.append(line);
-                if (i < text.length()) {
-                    sb.append('\n');
-                }
-                lineStart = i + 1;
+        String[] lines = text.split("\n", -1);
+        StringBuilder sb = new StringBuilder(lines[0]);
+        for (int i = 1; i < lines.length; i++) {
+            sb.append('\n');
+            if (i == lines.length - 1 || !StringUtils.isBlank(lines[i])) {
+                sb.append(indent);
             }
+            sb.append(lines[i]);
         }
         return sb.toString();
     }

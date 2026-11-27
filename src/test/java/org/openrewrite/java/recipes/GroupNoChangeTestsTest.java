@@ -317,6 +317,13 @@ class GroupNoChangeTestsTest implements RewriteTest {
                         java("@interface A {}")
                       );
                   }
+
+                  @Test
+                  void simplifiesRecord() {
+                      rewriteRun(
+                        java("record A() {}")
+                      );
+                  }
               }
               """,
             """
@@ -339,6 +346,13 @@ class GroupNoChangeTestsTest implements RewriteTest {
                   void replaceInterface() {
                       rewriteRun(
                         java("interface A {}")
+                      );
+                  }
+
+                  @Test
+                  void simplifiesRecord() {
+                      rewriteRun(
+                        java("record A() {}")
                       );
                   }
 
@@ -574,6 +588,358 @@ class GroupNoChangeTestsTest implements RewriteTest {
         );
     }
 
+    @Test
+    void keepTestsThatWouldReferToTheNestedClass() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RewriteTest;
+
+              import static org.openrewrite.java.Assertions.java;
+
+              class MyRecipeTest implements RewriteTest {
+
+                  @Test
+                  void changes() {
+                      rewriteRun(java("class A {}", "class B {}"));
+                  }
+
+                  @Test
+                  void doesNotChangeInterface() {
+                      rewriteRun(java("interface A {}"));
+                  }
+
+                  @Test
+                  void qualifiedWithThis() {
+                      this.rewriteRun(java("interface B {}"));
+                  }
+
+                  @Test
+                  void namedAfterClass() {
+                      rewriteRun(java(getClass().getSimpleName()));
+                  }
+
+                  @Test
+                  void doesNotChangeEnum() {
+                      rewriteRun(java("enum A {}"));
+                  }
+
+                  @Test
+                  void printsInstance() {
+                      rewriteRun(java(toString()));
+                  }
+
+                  @Test
+                  void check() {
+                      rewriteRun(java("enum B {}"));
+                  }
+
+                  @Test
+                  void doesNotChangeAnnotation() {
+                      rewriteRun(java("@interface A {}"));
+                  }
+
+                  private void check(String before) {
+                      rewriteRun(java(before));
+                  }
+              }
+              """,
+            """
+              import org.junit.jupiter.api.Nested;
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RewriteTest;
+
+              import static org.openrewrite.java.Assertions.java;
+
+              class MyRecipeTest implements RewriteTest {
+
+                  @Test
+                  void changes() {
+                      rewriteRun(java("class A {}", "class B {}"));
+                  }
+
+                  @Test
+                  void qualifiedWithThis() {
+                      this.rewriteRun(java("interface B {}"));
+                  }
+
+                  @Test
+                  void namedAfterClass() {
+                      rewriteRun(java(getClass().getSimpleName()));
+                  }
+
+                  @Test
+                  void printsInstance() {
+                      rewriteRun(java(toString()));
+                  }
+
+                  @Test
+                  void check() {
+                      rewriteRun(java("enum B {}"));
+                  }
+
+                  @Nested
+                  class NoChange {
+
+                      @Test
+                      void doesNotChangeInterface() {
+                          rewriteRun(java("interface A {}"));
+                      }
+
+                      @Test
+                      void doesNotChangeEnum() {
+                          rewriteRun(java("enum A {}"));
+                      }
+
+                      @Test
+                      void doesNotChangeAnnotation() {
+                          rewriteRun(java("@interface A {}"));
+                      }
+                  }
+
+                  private void check(String before) {
+                      rewriteRun(java(before));
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void mergeIntoEmptyNoChange() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.junit.jupiter.api.Nested;
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RewriteTest;
+
+              import static org.openrewrite.java.Assertions.java;
+
+              class MyRecipeTest implements RewriteTest {
+
+                  @Test
+                  void changes() {
+                      rewriteRun(java("class A {}", "class B {}"));
+                  }
+
+                  @Test
+                  void doesNotChangeInterface() {
+                      rewriteRun(java("interface A {}"));
+                  }
+
+                  @Nested
+                  class NoChange {}
+              }
+              """,
+            """
+              import org.junit.jupiter.api.Nested;
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.test.RewriteTest;
+
+              import static org.openrewrite.java.Assertions.java;
+
+              class MyRecipeTest implements RewriteTest {
+
+                  @Test
+                  void changes() {
+                      rewriteRun(java("class A {}", "class B {}"));
+                  }
+
+                  @Nested
+                  class NoChange {
+
+                      @Test
+                      void doesNotChangeInterface() {
+                          rewriteRun(java("interface A {}"));
+                      }
+                  }
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void keepTestsThatMayExpectAChange() {
+        rewriteRun(
+          //language=java
+          java(
+            """
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.DocumentExample;
+              import org.openrewrite.test.RewriteTest;
+              import org.openrewrite.test.SourceSpecs;
+
+              import static org.openrewrite.java.Assertions.java;
+
+              class MyRecipeTest implements RewriteTest {
+
+                  @Test
+                  void changes() {
+                      rewriteRun(java("class A {}", "class B {}"));
+                  }
+
+                  @Test
+                  void removesNothingHere() {
+                      rewriteRun(java("class A {}", "class B {}"));
+                  }
+
+                  @Test
+                  void removeInterface() {
+                      rewriteRun(java("interface A {}"));
+                  }
+
+                  @DocumentExample
+                  @Test
+                  void documented() {
+                      rewriteRun(java("interface A {}"));
+                  }
+
+                  @Test
+                  void afterRecipe() {
+                      rewriteRun(
+                        spec -> spec.afterRecipe(run -> {}),
+                        java("interface A {}")
+                      );
+                  }
+
+                  @Test
+                  void afterSourceSpec() {
+                      rewriteRun(java("interface A {}", s -> s.after(actual -> actual)));
+                  }
+
+                  @Test
+                  void variable() {
+                      SourceSpecs a = java("interface A {}");
+                      rewriteRun(a);
+                  }
+
+                  @Test
+                  void extraAssertion() {
+                      rewriteRun(java("interface A {}"));
+                      assert true;
+                  }
+
+                  @Test
+                  void sharedSpec() {
+                      rewriteRun(sharedSpec("enum A {}"));
+                  }
+
+                  @Test
+                  void doesNotChangeInterface() {
+                      rewriteRun(java("interface C {}"));
+                  }
+
+                  @Test
+                  void doesNotChangeEnum() {
+                      rewriteRun(java("enum C {}"));
+                  }
+
+                  @Test
+                  void doesNotChangeAnnotation() {
+                      rewriteRun(java("@interface C {}"));
+                  }
+
+                  private static SourceSpecs sharedSpec(String before) {
+                      return java(before);
+                  }
+              }
+              """,
+            """
+              import org.junit.jupiter.api.Nested;
+              import org.junit.jupiter.api.Test;
+              import org.openrewrite.DocumentExample;
+              import org.openrewrite.test.RewriteTest;
+              import org.openrewrite.test.SourceSpecs;
+
+              import static org.openrewrite.java.Assertions.java;
+
+              class MyRecipeTest implements RewriteTest {
+
+                  @Test
+                  void changes() {
+                      rewriteRun(java("class A {}", "class B {}"));
+                  }
+
+                  @Test
+                  void removesNothingHere() {
+                      rewriteRun(java("class A {}", "class B {}"));
+                  }
+
+                  @Test
+                  void removeInterface() {
+                      rewriteRun(java("interface A {}"));
+                  }
+
+                  @DocumentExample
+                  @Test
+                  void documented() {
+                      rewriteRun(java("interface A {}"));
+                  }
+
+                  @Test
+                  void afterRecipe() {
+                      rewriteRun(
+                        spec -> spec.afterRecipe(run -> {}),
+                        java("interface A {}")
+                      );
+                  }
+
+                  @Test
+                  void afterSourceSpec() {
+                      rewriteRun(java("interface A {}", s -> s.after(actual -> actual)));
+                  }
+
+                  @Test
+                  void variable() {
+                      SourceSpecs a = java("interface A {}");
+                      rewriteRun(a);
+                  }
+
+                  @Test
+                  void extraAssertion() {
+                      rewriteRun(java("interface A {}"));
+                      assert true;
+                  }
+
+                  @Test
+                  void sharedSpec() {
+                      rewriteRun(sharedSpec("enum A {}"));
+                  }
+
+                  @Nested
+                  class NoChange {
+
+                      @Test
+                      void doesNotChangeInterface() {
+                          rewriteRun(java("interface C {}"));
+                      }
+
+                      @Test
+                      void doesNotChangeEnum() {
+                          rewriteRun(java("enum C {}"));
+                      }
+
+                      @Test
+                      void doesNotChangeAnnotation() {
+                          rewriteRun(java("@interface C {}"));
+                      }
+                  }
+
+                  private static SourceSpecs sharedSpec(String before) {
+                      return java(before);
+                  }
+              }
+              """
+          )
+        );
+    }
+
     @Nested
     class NoChange {
 
@@ -678,119 +1044,6 @@ class GroupNoChangeTestsTest implements RewriteTest {
                           void record() {
                               rewriteRun(java("record A() {}"));
                           }
-                      }
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        void strictlyBeforeOnly() {
-            rewriteRun(
-              //language=java
-              java(
-                """
-                  import org.junit.jupiter.api.Test;
-                  import org.openrewrite.DocumentExample;
-                  import org.openrewrite.test.RewriteTest;
-                  import org.openrewrite.test.SourceSpecs;
-
-                  import static org.openrewrite.java.Assertions.java;
-
-                  class MyRecipeTest implements RewriteTest {
-
-                      @Test
-                      void changes() {
-                          rewriteRun(java("class A {}", "class B {}"));
-                      }
-
-                      @Test
-                      void removesNothingHere() {
-                          rewriteRun(java("class A {}", "class B {}"));
-                      }
-
-                      @Test
-                      void removeInterface() {
-                          rewriteRun(java("interface A {}"));
-                      }
-
-                      @DocumentExample
-                      @Test
-                      void documented() {
-                          rewriteRun(java("interface A {}"));
-                      }
-
-                      @Test
-                      void afterRecipe() {
-                          rewriteRun(
-                            spec -> spec.afterRecipe(run -> {}),
-                            java("interface A {}")
-                          );
-                      }
-
-                      @Test
-                      void afterSourceSpec() {
-                          rewriteRun(java("interface A {}", s -> s.after(actual -> actual)));
-                      }
-
-                      @Test
-                      void variable() {
-                          SourceSpecs a = java("interface A {}");
-                          rewriteRun(a);
-                      }
-
-                      @Test
-                      void extraAssertion() {
-                          rewriteRun(java("interface A {}"));
-                          assert true;
-                      }
-
-                      @Test
-                      void sharedSpec() {
-                          rewriteRun(sharedSpec("enum A {}"));
-                      }
-
-                      private static SourceSpecs sharedSpec(String before) {
-                          return java(before);
-                      }
-                  }
-                  """
-              )
-            );
-        }
-
-        @Test
-        void referencesToEnclosingInstance() {
-            rewriteRun(
-              //language=java
-              java(
-                """
-                  import org.junit.jupiter.api.Test;
-                  import org.openrewrite.test.RewriteTest;
-
-                  import static org.openrewrite.java.Assertions.java;
-
-                  class MyRecipeTest implements RewriteTest {
-
-                      @Test
-                      void changes() {
-                          rewriteRun(java("class A {}", "class B {}"));
-                      }
-
-                      @Test
-                      void doesNotChangeInterface() {
-                          this.rewriteRun(java("interface A {}"));
-                      }
-
-                      @Test
-                      void doesNotChangeEnum() {
-                          rewriteRun(java(getClass().getSimpleName()));
-                      }
-
-                      @Test
-                      void doesNotChangeAnnotation() {
-                          rewriteRun(java("@interface A {}"));
                       }
                   }
                   """
