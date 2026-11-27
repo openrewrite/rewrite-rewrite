@@ -245,6 +245,85 @@ class UseCollectionsSingletonForSingleTagTest implements RewriteTest {
     }
 
     @Test
+    void unmodifiableSetCopy() {
+        rewriteRun(
+          java(
+            """
+              import lombok.Value;
+              import org.openrewrite.Recipe;
+
+              import java.util.Arrays;
+              import java.util.Collections;
+              import java.util.HashSet;
+              import java.util.Set;
+
+              @Value
+              public class MyRecipe extends Recipe {
+                  String displayName = "My Recipe";
+                  String description = "My description.";
+                  Set<String> tags = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("netty")));
+              }
+              """,
+            """
+              import lombok.Value;
+              import org.openrewrite.Recipe;
+
+              import java.util.Set;
+
+              import static java.util.Collections.singleton;
+
+              @Value
+              public class MyRecipe extends Recipe {
+                  String displayName = "My Recipe";
+                  String description = "My description.";
+                  Set<String> tags = singleton("netty");
+              }
+              """
+          )
+        );
+    }
+
+    @Test
+    void staticallyImportedUnmodifiableSet() {
+        rewriteRun(
+          java(
+            """
+              import lombok.Value;
+              import org.openrewrite.Recipe;
+
+              import java.util.LinkedHashSet;
+              import java.util.Set;
+
+              import static java.util.Arrays.asList;
+              import static java.util.Collections.unmodifiableSet;
+
+              @Value
+              public class MyRecipe extends Recipe {
+                  String displayName = "My Recipe";
+                  String description = "My description.";
+                  Set<String> tags = unmodifiableSet(new LinkedHashSet<>(asList("netty")));
+              }
+              """,
+            """
+              import lombok.Value;
+              import org.openrewrite.Recipe;
+
+              import java.util.Set;
+
+              import static java.util.Collections.singleton;
+
+              @Value
+              public class MyRecipe extends Recipe {
+                  String displayName = "My Recipe";
+                  String description = "My description.";
+                  Set<String> tags = singleton("netty");
+              }
+              """
+          )
+        );
+    }
+
+    @Test
     void composesWithUseTagsField() {
         rewriteRun(
           spec -> spec.recipes(new UseTagsField(), new UseCollectionsSingletonForSingleTag()),
@@ -349,6 +428,31 @@ class UseCollectionsSingletonForSingleTagTest implements RewriteTest {
                       String displayName = "My Recipe";
                       String description = "My description.";
                       Set<String> tags = new HashSet<>(Arrays.asList("liberty", "websphere"));
+                  }
+                  """
+              )
+            );
+        }
+
+        @Test
+        void unmodifiableSetOfMultipleTags() {
+            rewriteRun(
+              java(
+                """
+                  import lombok.Value;
+                  import org.openrewrite.Recipe;
+
+                  import java.util.HashSet;
+                  import java.util.Set;
+
+                  import static java.util.Arrays.asList;
+                  import static java.util.Collections.unmodifiableSet;
+
+                  @Value
+                  public class MyRecipe extends Recipe {
+                      String displayName = "My Recipe";
+                      String description = "My description.";
+                      Set<String> tags = unmodifiableSet(new HashSet<>(asList("liberty", "websphere")));
                   }
                   """
               )

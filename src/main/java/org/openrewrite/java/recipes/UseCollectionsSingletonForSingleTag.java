@@ -42,10 +42,11 @@ public class UseCollectionsSingletonForSingleTag extends Recipe {
     private static final MethodMatcher NEW_LINKED_HASH_SET_MATCHER = new MethodMatcher("java.util.LinkedHashSet <constructor>(java.util.Collection)");
     private static final MethodMatcher ARRAYS_AS_LIST_MATCHER = new MethodMatcher("java.util.Arrays asList(..)");
     private static final MethodMatcher SINGLETON_LIST_MATCHER = new MethodMatcher("java.util.Collections singletonList(..)");
+    private static final MethodMatcher UNMODIFIABLE_SET_MATCHER = new MethodMatcher("java.util.Collections unmodifiableSet(..)");
 
     String displayName = "Use `Collections.singleton(..)` for a single recipe tag";
 
-    String description = "Replace `new HashSet<>(Arrays.asList(tag))` and similar copies of a one-element list with `Collections.singleton(tag)` for recipe tags. " +
+    String description = "Replace `new HashSet<>(Arrays.asList(tag))` and similar copies of a one-element list, optionally wrapped in `Collections.unmodifiableSet(..)`, with `Collections.singleton(tag)` for recipe tags. " +
                          "Tags are only read, so the immutable singleton set is safe on Java 8.";
 
     @Override
@@ -66,12 +67,31 @@ public class UseCollectionsSingletonForSingleTag extends Recipe {
                         if (!(j instanceof J.NewClass)) {
                             return j;
                         }
-                        J.NewClass n = (J.NewClass) j;
-                        Expression tag = singleTag(n);
+                        Expression tag = singleTag(j);
                         if (tag == null || !isRecipeTags(getCursor().getParentTreeCursor())) {
-                            return n;
+                            return j;
                         }
+                        return toSingleton((J.NewClass) j, tag);
+                    }
+
+                    @Override
+                    public J visitMethodInvocation(J.MethodInvocation method, ExecutionContext ctx) {
+                        J j = super.visitMethodInvocation(method, ctx);
+                        if (!(j instanceof J.MethodInvocation) || !UNMODIFIABLE_SET_MATCHER.matches((J.MethodInvocation) j)) {
+                            return j;
+                        }
+                        J.MethodInvocation m = (J.MethodInvocation) j;
+                        Expression tag = singleTag(m.getArguments().get(0));
+                        if (tag == null || !isRecipeTags(getCursor().getParentTreeCursor())) {
+                            return m;
+                        }
+                        maybeRemoveImport("java.util.Collections.unmodifiableSet");
+                        return toSingleton(m, tag);
+                    }
+
+                    private J toSingleton(Expression copy, Expression tag) {
                         maybeAddImport("java.util.Collections", "singleton");
+                        maybeRemoveImport("java.util.Collections");
                         maybeRemoveImport("java.util.HashSet");
                         maybeRemoveImport("java.util.LinkedHashSet");
                         maybeRemoveImport("java.util.Arrays");
@@ -79,15 +99,16 @@ public class UseCollectionsSingletonForSingleTag extends Recipe {
                         return JavaTemplate.builder("singleton(#{any(java.lang.String)})")
                                 .staticImports("java.util.Collections.singleton")
                                 .build()
-                                .apply(getCursor(), n.getCoordinates().replace(), tag);
+                                .apply(getCursor(), copy.getCoordinates().replace(), tag);
                     }
 
-                    private @Nullable Expression singleTag(J.NewClass newClass) {
-                        if (newClass.getBody() != null ||
-                            !(NEW_HASH_SET_MATCHER.matches(newClass) || NEW_LINKED_HASH_SET_MATCHER.matches(newClass))) {
+                    private @Nullable Expression singleTag(J copy) {
+                        if (!(copy instanceof J.NewClass) ||
+                            ((J.NewClass) copy).getBody() != null ||
+                            !(NEW_HASH_SET_MATCHER.matches((J.NewClass) copy) || NEW_LINKED_HASH_SET_MATCHER.matches((J.NewClass) copy))) {
                             return null;
                         }
-                        Expression list = newClass.getArguments().get(0);
+                        Expression list = ((J.NewClass) copy).getArguments().get(0);
                         if (!(ARRAYS_AS_LIST_MATCHER.matches(list) || SINGLETON_LIST_MATCHER.matches(list)) ||
                             ((J.MethodInvocation) list).getArguments().size() != 1) {
                             return null;
